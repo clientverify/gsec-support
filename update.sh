@@ -5,16 +5,17 @@ set -u # Exit if uninitialized value is used
 set -e # Exit on non-true value
 set -o pipefail # exit on fail of any command in a pipe
 
-####################### EDIT THIS SECTIONFOR YOUR SYSTEM ######################
+###################### EDIT THIS SECTION FOR YOUR SYSTEM ######################
 
 ROOT_DIR="/playpen1/rac/gsec_test"
 
-# GCC version 
-CC=gcc
-CXX=g++
-
 # Make configuration
 MAKE_THREADS=32
+
+# Alternative GCC version 
+#ALTCC=gcc-4.5
+#ALTCXX=g++-4.5
+#GXX_INCLUDE_DIR="/usr/include/c++/4.5"
 
 ###############################################################################
 
@@ -233,18 +234,27 @@ install_llvmgcc()
   mkdir -p $ROOT_DIR/build/$LLVMGCC
   cd $ROOT_DIR/build/$LLVMGCC
 
-  LLVM_CONFIG_OPTIONS="--enable-llvm=$LLVM_ROOT --prefix=$LLVMGCC_ROOT "
-  LLVM_CONFIG_OPTIONS+="--program-prefix=llvm- --enable-languages=c,c++ "
+  LLVMGCC_CONFIG_OPTIONS="--enable-llvm=$LLVM_ROOT --prefix=$LLVMGCC_ROOT "
+  LLVMGCC_CONFIG_OPTIONS+="--program-prefix=llvm- --enable-languages=c,c++ "
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$LLVMGCC.source/configure $LLVM_CONFIG_OPTIONS $LOGGER"
+  eval "$ROOT_DIR/src/$LLVMGCC.source/configure $LLVMGCC_CONFIG_OPTIONS $LOGGER"
+
+  LLVMGCC_MAKE_OPTIONS="-j $MAKE_THREADS "
+
+  if [[ -n "$ALTCC" ]]; then
+    LLVMGCC_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+  if [[ -n "$GXX_INCLUDE_DIR" ]]; then
+    LLVMGCC_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
+  fi
 
   echo -n "[Compiling] "
-  eval "CC=$CC CXX=$CXX make -j $MAKE_THREADS $LOGGER"
+  eval "make $LLVMGCC_MAKE_OPTIONS $LOGGER"
 
   echo -n "[Installing] "
   mkdir -p $LLVMGCC_ROOT
-  eval "CC=$CC CXX=$CXX make install -j $MAKE_THREADS $LOGGER"
+  eval "make $LLVMGCC_MAKE_OPTIONS install $LOGGER"
 
   echo "[Done]"
 }
@@ -266,8 +276,17 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  eval "make CC=$CC CXX=$CXX ENABLE_OPTIMIZED=0 -j $MAKE_THREADS $TARGET $LOGGER"
-  eval "make CC=$CC CXX=$CXX ENABLE_OPTIMIZED=1 -j $MAKE_THREADS $TARGET $LOGGER"
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
+
+  if [[ -n "$ALTCC" ]]; then
+    LLVM_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+  if [[ -n "$GXX_INCLUDE_DIR" ]]; then
+    LLVM_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
+  fi
+
+  eval "make ENABLE_OPTIMIZED=0 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
+  eval "make ENABLE_OPTIMIZED=1 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
 }
 
 update_llvm()
