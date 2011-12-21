@@ -242,10 +242,10 @@ install_llvmgcc()
 
   LLVMGCC_MAKE_OPTIONS="-j $MAKE_THREADS "
 
-  if [[ -n "$ALTCC" ]]; then
+  if test ${ALTCC+defined}; then
     LLVMGCC_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
-  if [[ -n "$GXX_INCLUDE_DIR" ]]; then
+  if test ${GXX_INCLUDE_DIR+defined}; then
     LLVMGCC_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
   fi
 
@@ -278,10 +278,10 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
 
-  if [[ -n "$ALTCC" ]]; then
+  if test ${ALTCC+defined}; then
     LLVM_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
-  if [[ -n "$GXX_INCLUDE_DIR" ]]; then
+  if test ${GXX_INCLUDE_DIR+defined}; then
     LLVM_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
   fi
 
