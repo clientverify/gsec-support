@@ -37,7 +37,7 @@ FORCE_UPDATE=0
 FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
 SKIP_INSTALL_ERRORS=0
-LLVM_GCC_BINARY=0
+INSTALL_LLVMGCC_BIN=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 ROOT_DIR=""
@@ -492,7 +492,7 @@ while getopts ":fkcivsbr:j:" opt; do
       ;;
 
     b)
-      LLVM_GCC_BINARY=1
+      INSTALL_LLVMGCC_BIN=1
       ;;
 
     r)
@@ -546,7 +546,7 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
 
   install_llvm
 
-  if [ $LLVMGCC_BINARY -eq 1 ]; then
+  if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
     install_llvmgcc_bin
   else
     install_llvmgcc_from_source
