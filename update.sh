@@ -5,38 +5,6 @@ set -u # Exit if uninitialized value is used
 set -e # Exit on non-true value
 set -o pipefail # exit on fail of any command in a pipe
 
-###################### EDIT THIS SECTION FOR YOUR SYSTEM ######################
-
-#ROOT_DIR="/playpen/rac/gsec"
-
-# Make configuration
-MAKE_THREADS=32
-
-# Alternative GCC version 
-#ALTCC=gcc-4.5
-#ALTCXX=g++-4.5
-#GXX_INCLUDE_DIR="/usr/include/c++/4.5"
-
-###############################################################################
-
-_gcc_fullversion() {
-  local ver="$1"; shift
-  set -- `$CC -E -P - <<<"__GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__"`
-  eval echo "$ver"
-}
-gcc-fullversion() {  
-  _gcc_fullversion '$1.$2.$3' "$@" 
-}
-gcc-version() {  
-  _gcc_fullversion '$1.$2' "$@" 
-}
-gcc-major-version() {  
-  _gcc_fullversion '$1' "$@"
-}
-gcc-minor-version() {
-  _gcc_fullversion '$2' "$@"
-}
-
 # Packages to install
 LLVM="llvm-2.7"
 LLVMGCC="llvm-gcc-4.2-2.7"
@@ -48,10 +16,12 @@ GOOGLE_PERFTOOLS="google-perftools-1.8.3"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
 
-GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research/"
+# Source repositories
+GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
 LLVM_GIT="$GIT_DIR/$LLVM.git"
 KLEE_GIT="$GIT_DIR/$KLEE.git"
 
+# Tarball locations
 PACKAGE_DIR="/afs/cs.unc.edu/home/rac/public/research/files"
 UCLIBC_PACKAGE="$PACKAGE_DIR/klee-uclibc-0.01-x64.tgz"
 BOOST_PACKAGE="$PACKAGE_DIR/$BOOST.tar.gz"
@@ -61,16 +31,6 @@ LIBUNWIND_PACKAGE="$PACKAGE_DIR/$LIBUNWIND.tar.gz"
 LLVMGCC_PACKAGE="$PACKAGE_DIR/$LLVMGCC.source.tgz"
 LLVMGCC_BIN_PACKAGE="$PACKAGE_DIR/$LLVMGCC_BIN.tar.bz2"
 
-# Install directories
-UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
-
-KLEE_ROOT="$ROOT_DIR/local"
-LLVM_ROOT="$ROOT_DIR/local"
-BOOST_ROOT="$ROOT_DIR/local"
-LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC"
-LIBUNWIND_ROOT="$ROOT_DIR/local"
-GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
-
 # Command line options
 FORCE_CLEAN=0
 FORCE_UPDATE=0
@@ -78,9 +38,32 @@ FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
 SKIP_INSTALL_ERRORS=0
 LLVM_GCC_BINARY=0
+VERBOSE_OUTPUT=0
+MAKE_THREADS=4
+ROOT_DIR=""
 
-LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
-LOGGER=">> $LOG_FILE 2>&1 "
+# GCC options
+#ALTCC=gcc-4.5
+#ALTCXX=g++-4.5
+#GXX_INCLUDE_DIR="/usr/include/c++/4.5"
+
+#_gcc_fullversion() {
+#  local ver="$1"; shift
+#  set -- `$CC -E -P - <<<"__GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__"`
+#  eval echo "$ver"
+#}
+#gcc-fullversion() {  
+#  _gcc_fullversion '$1.$2.$3' "$@" 
+#}
+#gcc-version() {  
+#  _gcc_fullversion '$1.$2' "$@" 
+#}
+#gcc-major-version() {  
+#  _gcc_fullversion '$1' "$@"
+#}
+#gcc-minor-version() {
+#  _gcc_fullversion '$2' "$@"
+#}
 
 function timer()
 {
@@ -98,6 +81,19 @@ function timer()
     dh=$((dt / 3600))
     printf '%d:%02d:%02d' $dh $dm $ds
   fi
+}
+
+confirm () {
+  # call with a prompt string or use a default
+  read -r -p "${1:-Are you sure? [Y/n]} " response
+  case $response in
+    [yY][eE][sS]|[yY]) 
+      true
+      ;;
+    *)
+      false
+      ;;
+  esac
 }
 
 check_dirs()
@@ -393,7 +389,6 @@ build_cliver()
   cd $ROOT_DIR/src/klee
   KLEE_MAKE_OPTIONS="RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
 
-  #eval "make ENABLE_OPTIMIZED=0 ENABLE_PROFILING=0 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
   eval "make ENABLE_OPTIMIZED=0 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
   eval "make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
 }
@@ -470,7 +465,7 @@ update_cliver()
 # main
 #==============================================================================#
 
-while getopts "fkcivsb" opt; do
+while getopts ":fkcivsbr:j:" opt; do
   case $opt in
     f)
       FORCE_UPDATE=1
@@ -487,24 +482,62 @@ while getopts "fkcivsb" opt; do
     i)
       INSTALL_PACKAGES=1
       ;;
- 
+
     v)
-      LOGGER=" 2>&1 | tee -a $LOG_FILE"
+      VERBOSE_OUTPUT=1
       ;;
- 
+
     s)
       SKIP_INSTALL_ERRORS=1
       ;;
+
     b)
       LLVM_GCC_BINARY=1
+      ;;
+
+    r)
+      echo "Setting root dir to $OPTARG"
+      ROOT_DIR="$OPTARG"
+      ;;
+
+    j)
+      MAKE_THREADS=$OPTARG
+      ;;
+
+    :)
+      echo "Option -$OPTARG requires an argument"
+      exit
       ;;
 
   esac
 done
 
+if [[ -z $ROOT_DIR ]] || [[ ! -e $ROOT_DIR ]]; then
+  echo "Valid root directory required. Use commandline option '-r dir-name'"
+  exit
+fi
+
+# Install directories
+UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
+KLEE_ROOT="$ROOT_DIR/local"
+LLVM_ROOT="$ROOT_DIR/local"
+BOOST_ROOT="$ROOT_DIR/local"
+LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC"
+LIBUNWIND_ROOT="$ROOT_DIR/local"
+GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
+
+LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
+
+if [ $VERBOSE_OUTPUT -eq 1 ]; then
+  LOGGER=" 2>&1 | tee -a $LOG_FILE"
+else
+  LOGGER=">> $LOG_FILE 2>&1 "
+fi
+
 touch $LOG_FILE
 echo "$0 ======= `date`" >> $LOG_FILE
 t=$(timer)
+
 
 if [ $INSTALL_PACKAGES -eq 1 ]; then
 
