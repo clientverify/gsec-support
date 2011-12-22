@@ -40,6 +40,7 @@ gcc-minor-version() {
 # Packages to install
 LLVM="llvm-2.7"
 LLVMGCC="llvm-gcc-4.2-2.7"
+LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
 KLEE="klee"
 UCLIBC="klee-uclibc"
 BOOST="boost_1_42_0"
@@ -58,6 +59,7 @@ GOOGLE_PERFTOOLS_PACKAGE="$PACKAGE_DIR/$GOOGLE_PERFTOOLS.tar.gz"
 UDIS86_PACKAGE="$PACKAGE_DIR/$UDIS86.tar.gz"
 LIBUNWIND_PACKAGE="$PACKAGE_DIR/$LIBUNWIND.tar.gz"
 LLVMGCC_PACKAGE="$PACKAGE_DIR/$LLVMGCC.source.tgz"
+LLVMGCC_BIN_PACKAGE="$PACKAGE_DIR/$LLVMGCC_BIN.tar.bz2"
 
 # Install directories
 UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
@@ -220,7 +222,22 @@ install_uclibc()
   echo "[Done]"
 } 
 
-install_llvmgcc()
+install_llvmgcc_bin()
+{
+  echo -ne "$LLVMGCC\t"
+
+  check_dirs $LLVMGCC || { return 0; }
+  check_dirs $LLVMGCC.source || { return 0; }
+
+  echo -n "[Extracting] "
+  eval "tar -xjf $LLVMGCC_BIN_PACKAGE -C $ROOT_DIR/local $LOGGER"
+
+  mv $ROOT_DIR/local/$LLVMGCC_BIN $LLVMGCC_ROOT
+
+  echo "[Done]"
+}
+
+install_llvmgcc_from_source()
 {
   echo -ne "$LLVMGCC\t"
 
@@ -491,7 +508,8 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   echo "Installing all packages" 
 
   install_llvm
-  install_llvmgcc
+  #install_llvmgcc_from_source
+  install_llvmgcc_bin
   install_libunwind
   install_google_perftools
   install_boost
