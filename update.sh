@@ -7,7 +7,7 @@ set -o pipefail # exit on fail of any command in a pipe
 
 ###################### EDIT THIS SECTION FOR YOUR SYSTEM ######################
 
-ROOT_DIR="/playpen1/rac/gsec_test"
+#ROOT_DIR="/playpen/rac/gsec"
 
 # Make configuration
 MAKE_THREADS=32
@@ -77,6 +77,7 @@ FORCE_UPDATE=0
 FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
 SKIP_INSTALL_ERRORS=0
+LLVM_GCC_BINARY=0
 
 LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
 LOGGER=">> $LOG_FILE 2>&1 "
@@ -469,7 +470,7 @@ update_cliver()
 # main
 #==============================================================================#
 
-while getopts "fkcivs" opt; do
+while getopts "fkcivsb" opt; do
   case $opt in
     f)
       FORCE_UPDATE=1
@@ -494,6 +495,9 @@ while getopts "fkcivs" opt; do
     s)
       SKIP_INSTALL_ERRORS=1
       ;;
+    b)
+      LLVM_GCC_BINARY=1
+      ;;
 
   esac
 done
@@ -508,8 +512,13 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   echo "Installing all packages" 
 
   install_llvm
-  #install_llvmgcc_from_source
-  install_llvmgcc_bin
+
+  if [ $LLVMGCC_BINARY -eq 1 ]; then
+    install_llvmgcc_bin
+  else
+    install_llvmgcc_from_source
+  fi
+
   install_libunwind
   install_google_perftools
   install_boost
