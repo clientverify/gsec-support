@@ -147,7 +147,7 @@ install_libunwind()
   cd $ROOT_DIR/build/$LIBUNWIND
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$LIBUNWIND/configure --prefix=$LIBUNWIND_ROOT $LOGGER"
+  eval "$ROOT_DIR/src/$LIBUNWIND/configure CFLAGS=\"-U_FORTIFY_SOURCE\" --prefix=$LIBUNWIND_ROOT $LOGGER"
 
   echo -n "[Compiling] "
   eval "make -j $MAKE_THREADS $LOGGER"
