@@ -99,6 +99,7 @@ confirm () {
 check_dirs()
 {
   if [ -e $ROOT_DIR/src/$1 ] ||
+     [ -e $ROOT_DIR/local/$1 ] ||
      [ -e $ROOT_DIR/build/$1 ]; then
     if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
       echo "[Skipping] (Already exists, integrity unconfirmed) "
@@ -213,7 +214,6 @@ install_uclibc()
   eval "./configure --with-llvm=$ROOT_DIR/build/$LLVM $LOGGER"
 
   echo -n "[Compiling] "
-  eval "make oldconfig $LOGGER"
   eval "make $LOGGER"
 
   echo "[Done]"
@@ -229,7 +229,10 @@ install_llvmgcc_bin()
   echo -n "[Extracting] "
   eval "tar -xjf $LLVMGCC_BIN_PACKAGE -C $ROOT_DIR/local $LOGGER"
 
-  mv $ROOT_DIR/local/$LLVMGCC_BIN $LLVMGCC_ROOT
+  #mv $ROOT_DIR/local/$LLVMGCC_BIN/ $LLVMGCC_ROOT
+  mkdir -p $LLVMGCC_ROOT
+  cp -R $ROOT_DIR/local/$LLVMGCC_BIN/* $LLVMGCC_ROOT
+  rm -rf $ROOT_DIR/local/$LLVMGCC_BIN
 
   echo "[Done]"
 }
@@ -277,7 +280,14 @@ config_llvm ()
 { 
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
-  eval "$ROOT_DIR/src/$LLVM/configure --enable-optimized --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT $LOGGER"
+
+  LLVM_CONFIG_OPTIONS="--enable-optimized --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
+
+  if test ${ALTCC+defined}; then
+    LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+
+  eval "$ROOT_DIR/src/$LLVM/configure $LLVM_CONFIG_OPTIONS $LOGGER"
 }
 
 build_llvm ()
@@ -291,13 +301,6 @@ build_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
-
-  if test ${ALTCC+defined}; then
-    LLVM_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
-  fi
-  if test ${GXX_INCLUDE_DIR+defined}; then
-    LLVM_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
-  fi
 
   eval "make ENABLE_OPTIMIZED=0 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
   eval "make ENABLE_OPTIMIZED=1 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
@@ -373,9 +376,15 @@ config_cliver()
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT "
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM --with-llvmobj=$ROOT_DIR/build/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
-  KLEE_CONFIG_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib/ -L$GOOGLE_PERFTOOLS_ROOT/lib\" "
-  KLEE_CONFIG_OPTIONS+="CPPFLAGS=\"-I$BOOST_ROOT/include/ -I$GOOGLE_PERFTOOLS_ROOT/include\" "
-  KLEE_CONFIG_OPTIONS+="CXXFLAGS=\"-I$BOOST_ROOT/include/ -I$GOOGLE_PERFTOOLS_ROOT/include\" "
+
+  KLEE_CONFIG_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib\" "
+  KLEE_CONFIG_OPTIONS+="CPPFLAGS=\"-I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
+  KLEE_CONFIG_OPTIONS+="CXXFLAGS=\"-I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
+
+  if test ${ALTCC+defined}; then
+   KLEE_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+
   eval "$ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS $LOGGER"
 }
 
@@ -388,6 +397,10 @@ build_cliver()
 
   cd $ROOT_DIR/src/klee
   KLEE_MAKE_OPTIONS="RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
+
+  if test ${ALTCC+defined}; then
+   KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
+  fi
 
   eval "make ENABLE_OPTIMIZED=0 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
   eval "make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
@@ -518,13 +531,22 @@ if [[ -z $ROOT_DIR ]] || [[ ! -e $ROOT_DIR ]]; then
 fi
 
 # Install directories
+
 UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
 KLEE_ROOT="$ROOT_DIR/local"
 LLVM_ROOT="$ROOT_DIR/local"
 BOOST_ROOT="$ROOT_DIR/local"
-LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC"
+LLVMGCC_ROOT="$ROOT_DIR/local"
 LIBUNWIND_ROOT="$ROOT_DIR/local"
 GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
+
+#UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
+#KLEE_ROOT="$ROOT_DIR/local/$KLEE"
+#LLVM_ROOT="$ROOT_DIR/local/$LLVM"
+#BOOST_ROOT="$ROOT_DIR/local/$BOOST"
+#LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC"
+#LIBUNWIND_ROOT="$ROOT_DIR/local/$LIBUNWIND"
+#GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local/$GOOGLE_PERFTOOLS"
 
 LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
 
@@ -537,7 +559,6 @@ fi
 touch $LOG_FILE
 echo "$0 ======= `date`" >> $LOG_FILE
 t=$(timer)
-
 
 if [ $INSTALL_PACKAGES -eq 1 ]; then
 
