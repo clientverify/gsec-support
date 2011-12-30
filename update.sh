@@ -99,7 +99,6 @@ confirm () {
 check_dirs()
 {
   if [ -e $ROOT_DIR/src/$1 ] ||
-     [ -e $ROOT_DIR/local/$1 ] ||
      [ -e $ROOT_DIR/build/$1 ]; then
     if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
       echo "[Skipping] (Already exists, integrity unconfirmed) "
@@ -251,13 +250,13 @@ install_llvmgcc_from_source()
   mkdir -p $ROOT_DIR/build/$LLVMGCC
   cd $ROOT_DIR/build/$LLVMGCC
 
-  LLVMGCC_CONFIG_OPTIONS="--enable-llvm=$LLVM_ROOT --prefix=$LLVMGCC_ROOT "
-  LLVMGCC_CONFIG_OPTIONS+="--program-prefix=llvm- --enable-languages=c,c++ "
+  LLVMGCC_CONFIG_OPTIONS="--prefix=$LLVMGCC_ROOT --disable-multilib --program-prefix=llvm- "
+  LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++,fortran "
 
   echo -n "[Configuring] "
   eval "$ROOT_DIR/src/$LLVMGCC.source/configure $LLVMGCC_CONFIG_OPTIONS $LOGGER"
 
-  LLVMGCC_MAKE_OPTIONS="-j $MAKE_THREADS "
+  LLVMGCC_MAKE_OPTIONS=""
 
   if test ${ALTCC+defined}; then
     LLVMGCC_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -267,7 +266,7 @@ install_llvmgcc_from_source()
   fi
 
   echo -n "[Compiling] "
-  eval "make $LLVMGCC_MAKE_OPTIONS $LOGGER"
+  eval "make $LLVMGCC_MAKE_OPTIONS -j $MAKE_THREADS $LOGGER"
 
   echo -n "[Installing] "
   mkdir -p $LLVMGCC_ROOT
