@@ -17,19 +17,21 @@ UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
 
 # Source repositories
+GIT_HOST="rac@snapper.cs.unc.edu"
 GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
-LLVM_GIT="$GIT_DIR/$LLVM.git"
-KLEE_GIT="$GIT_DIR/$KLEE.git"
+LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
+KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 
 # Tarball locations
-PACKAGE_DIR="/afs/cs.unc.edu/home/rac/public/research/files"
-UCLIBC_PACKAGE="$PACKAGE_DIR/klee-uclibc-0.01-x64.tgz"
-BOOST_PACKAGE="$PACKAGE_DIR/$BOOST.tar.gz"
-GOOGLE_PERFTOOLS_PACKAGE="$PACKAGE_DIR/$GOOGLE_PERFTOOLS.tar.gz"
-UDIS86_PACKAGE="$PACKAGE_DIR/$UDIS86.tar.gz"
-LIBUNWIND_PACKAGE="$PACKAGE_DIR/$LIBUNWIND.tar.gz"
-LLVMGCC_PACKAGE="$PACKAGE_DIR/$LLVMGCC.source.tgz"
-LLVMGCC_BIN_PACKAGE="$PACKAGE_DIR/$LLVMGCC_BIN.tar.bz2"
+PACKAGE_HOST="rac@snapper.cs.unc.edu"
+PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
+UCLIBC_PACKAGE="klee-uclibc-0.01-x64.tgz"
+BOOST_PACKAGE="$BOOST.tar.gz"
+GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
+UDIS86_PACKAGE="$UDIS86.tar.gz"
+LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
+LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
+LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
 
 # Command line options
 FORCE_CLEAN=0
@@ -96,6 +98,34 @@ confirm () {
   esac
 }
 
+get_package()
+{
+  # usage: get_package [package] [remote-path] [local-dest]
+  if [[ $# -lt 3 ]]; then
+    echo "[Error getting package] "
+    exit
+  fi
+
+  local PACKAGE=$1
+  local REMOTE_PATH=$2
+  local LOCAL_DEST=$3
+  local PACKAGE_TYPE=${PACKAGE##*.}
+
+  eval "scp $REMOTE_PATH/$PACKAGE $LOCAL_DEST/ $LOGGER"
+
+  if [ $PACKAGE_TYPE == "gz" ] || [ $PACKAGE_TYPE == "tgz" ]; then
+    eval "tar -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+  elif [ $PACKAGE_TYPE == "bz2" ]; then
+    eval "tar -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+  else
+    echo "[Error invalid package type] "
+    rm $LOCAL_DEST/$PACKAGE
+    exit
+  fi
+
+  rm $LOCAL_DEST/$PACKAGE
+}
+
 check_dirs()
 {
   if [ -e $ROOT_DIR/src/$1 ] ||
@@ -104,7 +134,7 @@ check_dirs()
       echo "[Skipping] (Already exists, integrity unconfirmed) "
       return 1
     else
-      echo "[Error] "
+      echo "[Error checking dirs] "
       exit
     fi
   fi
@@ -116,19 +146,19 @@ install_boost()
 
   check_dirs $BOOST || { return 0; }
 
-  cd $ROOT_DIR/src/
-
   echo -n "[Extracting] "
-  eval "tar -xvzf $BOOST_PACKAGE $LOGGER"
+  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
 
   cd $ROOT_DIR/src/$BOOST
 
+  BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
+
   echo -n "[Compiling] "
   eval "./bootstrap.sh --prefix=$BOOST_ROOT $LOGGER"
-  eval "./bjam --without-mpi -j$MAKE_THREADS $LOGGER"
+  eval "./bjam $BJAM_OPTIONS $LOGGER"
 
   echo -n "[Installing] "
-  eval "./bjam --without-mpi -j$MAKE_THREADS install $LOGGER"
+  eval "./bjam $BJAM_OPTIONS install $LOGGER"
 
   echo "[Done]"
 }
@@ -140,8 +170,7 @@ install_libunwind()
   check_dirs $LIBUNWIND || { return 0; }
 
   echo -n "[Extracting] "
-  cd $ROOT_DIR/src/
-  eval "tar -xvzf $LIBUNWIND_PACKAGE $LOGGER"
+  get_package $LIBUNWIND_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
 
   mkdir -p $ROOT_DIR/build/$LIBUNWIND
   cd $ROOT_DIR/build/$LIBUNWIND
@@ -166,8 +195,7 @@ install_google_perftools()
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
 
   echo -n "[Extracting] "
-  cd $ROOT_DIR/src/
-  eval "tar -xvzf $GOOGLE_PERFTOOLS_PACKAGE $LOGGER"
+  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
@@ -183,7 +211,13 @@ install_google_perftools()
   # google-perf-tools requires libunwind libraries on x86_64, so we provide
   # the libunwind directory to the compiler for static libraries, and add the libunwind directory
   # to LD_LIBRARY_PATH for shared libraries
-  eval "LD_LIBRARY_PATH=$LIBUNWIND_ROOT/lib $GOOGLE_PERFTOOLS_CONFIG_COMMAND $LOGGER"
+  if test ${LD_LIBRARY_PATH+defined}; then
+    GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$LIBUNWIND_ROOT/lib" 
+  else
+    GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LIBUNWIND_ROOT/lib" 
+  fi
+
+  eval "LD_LIBRARY_PATH=$GOOGLE_PERFTOOLS_LD_LIBRARY_PATH $GOOGLE_PERFTOOLS_CONFIG_COMMAND $LOGGER"
 
   echo -n "[Compiling] "
   eval "make -j $MAKE_THREADS $LOGGER"
@@ -202,10 +236,8 @@ install_uclibc()
 
   check_dirs $UCLIBC || { return 0; }
 
-  cd $ROOT_DIR/src/
-
   echo -n "[Extracting] "
-  eval "tar -xvzf $UCLIBC_PACKAGE $LOGGER"
+  get_package $UCLIBC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
 
   cd $ROOT_DIR/src/$UCLIBC
 
@@ -226,7 +258,7 @@ install_llvmgcc_bin()
   check_dirs $LLVMGCC.source || { return 0; }
 
   echo -n "[Extracting] "
-  eval "tar -xjf $LLVMGCC_BIN_PACKAGE -C $ROOT_DIR/local $LOGGER"
+  get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR "$ROOT_DIR/local"
 
   mkdir -p $LLVMGCC_ROOT
   cp -R $ROOT_DIR/local/$LLVMGCC_BIN/* $LLVMGCC_ROOT
@@ -243,8 +275,7 @@ install_llvmgcc_from_source()
   check_dirs $LLVMGCC.source || { return 0; }
 
   echo -n "[Extracting] "
-  cd $ROOT_DIR/src/
-  eval "tar -xzf $LLVMGCC_PACKAGE $LOGGER"
+  get_package $LLVMGCC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
 
   mkdir -p $ROOT_DIR/build/$LLVMGCC
   cd $ROOT_DIR/build/$LLVMGCC
