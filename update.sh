@@ -49,24 +49,6 @@ ROOT_DIR="`pwd`"
 #ALTCXX=g++-4.5
 #GXX_INCLUDE_DIR="/usr/include/c++/4.5"
 
-#_gcc_fullversion() {
-#  local ver="$1"; shift
-#  set -- `$CC -E -P - <<<"__GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__"`
-#  eval echo "$ver"
-#}
-#gcc-fullversion() {  
-#  _gcc_fullversion '$1.$2.$3' "$@" 
-#}
-#gcc-version() {  
-#  _gcc_fullversion '$1.$2' "$@" 
-#}
-#gcc-major-version() {  
-#  _gcc_fullversion '$1' "$@"
-#}
-#gcc-minor-version() {
-#  _gcc_fullversion '$2' "$@"
-#}
-
 function timer()
 {
   if [[ $# -eq 0 ]]; then
