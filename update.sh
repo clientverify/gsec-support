@@ -49,7 +49,7 @@ ROOT_DIR="`pwd`"
 #ALTCXX=g++-4.5
 #GXX_INCLUDE_DIR="/usr/include/c++/4.5"
 
-function timer()
+elapsed_time()
 {
   if [[ $# -eq 0 ]]; then
     echo $(date '+%s')
@@ -561,7 +561,7 @@ fi
 
 touch $LOG_FILE
 echo "$0 ======= `date`" >> $LOG_FILE
-t=$(timer)
+etime=$(elapsed_time)
 
 if [ $INSTALL_PACKAGES -eq 1 ]; then
 
@@ -589,4 +589,4 @@ else
 
 fi
 
-echo "Elapsed time: $(timer $t)"
+echo "Elapsed time: $(elapsed_time $etime)"
