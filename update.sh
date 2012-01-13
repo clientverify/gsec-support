@@ -15,12 +15,18 @@ BOOST="boost_1_42_0"
 GOOGLE_PERFTOOLS="google-perftools-1.8.3"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
+TETRINET="tetrinet"
 
 # Source repositories
 GIT_HOST="rac@snapper.cs.unc.edu"
 GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
+TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
+
+# Repository Branches
+KLEE_BRANCH="cliver"
+TETRINET_BRANCH="enumerate"
 
 # Tarball locations
 PACKAGE_HOST="rac@snapper.cs.unc.edu"
@@ -381,7 +387,7 @@ install_llvm()
   echo "[Done]"
 }
 
-config_cliver()
+config_klee()
 {
   cd $ROOT_DIR/src/$KLEE
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT "
@@ -399,7 +405,7 @@ config_cliver()
   eval "$ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS $LOGGER"
 }
 
-build_cliver()
+build_klee()
 {
   local TARGET=""
   if [[ $# -ge 1 ]]; then
@@ -417,7 +423,7 @@ build_cliver()
   eval "make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
 }
 
-install_cliver()
+install_klee()
 {
   echo -ne "$KLEE\t\t\t"
 
@@ -430,22 +436,22 @@ install_cliver()
 
   cd $ROOT_DIR"/src/$KLEE"
 
-  eval "git checkout -b cliver origin/cliver $LOGGER"
+  eval "git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH $LOGGER"
 
   echo -n "[Configuring] "
-  config_cliver
+  config_klee
 
   echo -n "[Compiling] "
-  build_cliver
+  build_klee
 
   echo -n "[Installing] "
   mkdir -p $KLEE_ROOT
-  build_cliver install
+  build_klee install
 
   echo "[Done]"
 }
 
-update_cliver()
+update_klee()
 {
   echo -ne "$KLEE\t\t\t"
 
@@ -465,25 +471,83 @@ update_cliver()
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
-      config_cliver
+      config_klee
     fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
       echo -n "[Cleaning] "
-      build_cliver clean
+      build_klee clean
     fi
 
     echo -n "[Compiling] "
-    build_cliver
+    build_klee
 
     echo -n "[Installing] "
     mkdir -p $KLEE_ROOT
-    build_cliver install
+    build_klee install
   fi
 
   echo "[Done]"
 }
 
+update_tetrinet()
+{
+  echo -ne "$TETRINET\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$TETRINET/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$TETRINET
+
+  echo -n "[Checking updates] "
+  eval "git remote update $LOGGER"
+
+  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+
+    echo -n "[Pulling updates] "
+    eval "git pull --all $LOGGER"
+
+    if [ $FORCE_CLEAN -eq 1 ]; then 
+      echo -n "[Cleaning] "
+      eval "make clean $LOGGER"
+    fi
+
+    echo -n "[Compiling] "
+    eval "make $LOGGER"
+
+    echo -n "[Installing] "
+    mkdir -p $TETRINET_ROOT
+    eval "make PREFIX=$TETRINET_ROOT install $LOGGER"
+  fi
+
+  echo "[Done]"
+}
+
+install_tetrinet()
+{
+  echo -ne "$TETRINET\t\t"
+
+  check_dirs $TETRINET|| { return 0; }
+
+  cd $ROOT_DIR"/src"
+
+  echo -n "[Cloning] "
+  eval "git clone $TETRINET_GIT $LOGGER"
+
+  cd $ROOT_DIR"/src/$TETRINET"
+
+  eval "git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $TETRINET_ROOT
+  eval "make PREFIX=$TETRINET_ROOT install $LOGGER"
+
+  echo "[Done]"
+}
 
 #==============================================================================#
 # main
@@ -550,6 +614,7 @@ BOOST_ROOT="$ROOT_DIR/local"
 LLVMGCC_ROOT="$ROOT_DIR/local"
 LIBUNWIND_ROOT="$ROOT_DIR/local"
 GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
+TETRINET_ROOT="$ROOT_DIR/local"
 
 LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
 
@@ -580,12 +645,14 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_google_perftools
   install_boost
   install_uclibc
-  install_cliver
+  install_klee
+  install_tetrinet
 
 else
 
   update_llvm
-  update_cliver
+  update_klee
+  update_tetrinet
 
 fi
 
