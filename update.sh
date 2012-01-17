@@ -148,7 +148,7 @@ install_ncurses()
   cd $ROOT_DIR/build/$NCURSES
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$NCURSES/configure --prefix=$NCURSES_ROOT $LOGGER"
+  eval "$ROOT_DIR/src/$NCURSES/configure --with-shared --prefix=$NCURSES_ROOT $LOGGER"
 
   echo -n "[Compiling] "
   eval "make -j $MAKE_THREADS $LOGGER"
@@ -522,6 +522,19 @@ update_klee()
   echo "[Done]"
 }
 
+build_tetrinet()
+{
+  TETRINET_MAKE_OPTIONS="NCURSES_DIR=$NCURSES_ROOT LLVM_BIN_DIR=$LLVM_ROOT/bin "
+  TETRINET_MAKE_OPTIONS+="LLVMGCC_BIN_DIR=$LLVMGCC_ROOT/bin PREFIX=$TETRINET_ROOT "
+
+  echo -n "[Compiling] "
+  eval "make $TETRINET_MAKE_OPTIONS $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $TETRINET_ROOT
+  eval "make $TETRINET_MAKE_OPTIONS install $LOGGER"
+}
+
 update_tetrinet()
 {
   echo -ne "$TETRINET\t\t"
@@ -545,12 +558,8 @@ update_tetrinet()
       eval "make clean $LOGGER"
     fi
 
-    echo -n "[Compiling] "
-    eval "make CFLAGS=$NCURSES_ROOT/include/ncurses/ $LOGGER"
+    build_tetrinet
 
-    echo -n "[Installing] "
-    mkdir -p $TETRINET_ROOT
-    eval "make PREFIX=$TETRINET_ROOT install $LOGGER"
   fi
 
   echo "[Done]"
@@ -571,12 +580,7 @@ install_tetrinet()
 
   eval "git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH $LOGGER"
 
-  echo -n "[Compiling] "
-  eval "make CFLAGS=$NCURSES_ROOT/include/ncurses/ $LOGGER"
-
-  echo -n "[Installing] "
-  mkdir -p $TETRINET_ROOT
-  eval "make PREFIX=$TETRINET_ROOT install $LOGGER"
+  build_tetrinet
 
   echo "[Done]"
 }
