@@ -15,6 +15,7 @@ BOOST="boost_1_42_0"
 GOOGLE_PERFTOOLS="google-perftools-1.8.3"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
+NCURSES="ncurses-5.7"
 TETRINET="tetrinet"
 XPILOT="xpilot"
 XPILOT_LLVM_PREFIX="llvm-"
@@ -43,6 +44,7 @@ UDIS86_PACKAGE="$UDIS86.tar.gz"
 LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
 LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
 LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
+NCURSES_PACKAGE="$NCURSES.tar.gz"
 
 # Command line options
 FORCE_CLEAN=0
@@ -131,6 +133,31 @@ check_dirs()
       exit
     fi
   fi
+}
+
+install_ncurses()
+{
+  echo -ne "$NCURSES\t\t"
+
+  check_dirs $NCURSES || { return 0; }
+
+  echo -n "[Extracting] "
+  get_package $NCURSES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+
+  mkdir -p $ROOT_DIR/build/$NCURSES
+  cd $ROOT_DIR/build/$NCURSES
+
+  echo -n "[Configuring] "
+  eval "$ROOT_DIR/src/$NCURSES/configure --prefix=$NCURSES_ROOT $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make -j $MAKE_THREADS $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $NCURSES_ROOT
+  eval "make -j $MAKE_THREADS install $LOGGER"
+
+  echo "[Done]"
 }
 
 install_boost()
@@ -519,7 +546,7 @@ update_tetrinet()
     fi
 
     echo -n "[Compiling] "
-    eval "make $LOGGER"
+    eval "make CFLAGS=$NCURSES_ROOT/include/ncurses/ $LOGGER"
 
     echo -n "[Installing] "
     mkdir -p $TETRINET_ROOT
@@ -545,7 +572,7 @@ install_tetrinet()
   eval "git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH $LOGGER"
 
   echo -n "[Compiling] "
-  eval "make $LOGGER"
+  eval "make CFLAGS=$NCURSES_ROOT/include/ncurses/ $LOGGER"
 
   echo -n "[Installing] "
   mkdir -p $TETRINET_ROOT
@@ -713,6 +740,7 @@ LLVM_ROOT="$ROOT_DIR/local"
 BOOST_ROOT="$ROOT_DIR/local"
 LLVMGCC_ROOT="$ROOT_DIR/local"
 LIBUNWIND_ROOT="$ROOT_DIR/local"
+NCURSES_ROOT="$ROOT_DIR/local"
 GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
 TETRINET_ROOT="$ROOT_DIR/local"
 XPILOT_ROOT="$ROOT_DIR/local"
@@ -747,6 +775,7 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_boost
   install_uclibc
   install_klee
+  install_ncurses
   install_tetrinet
   install_xpilot
 
