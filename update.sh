@@ -16,6 +16,9 @@ GOOGLE_PERFTOOLS="google-perftools-1.8.3"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
 TETRINET="tetrinet"
+XPILOT="xpilot"
+XPILOT_LLVM_PREFIX="llvm-"
+XPILOT_NATIVE_PREFIX="x86-"
 
 # Source repositories
 GIT_HOST="rac@snapper.cs.unc.edu"
@@ -23,10 +26,12 @@ GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
+XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 
 # Repository Branches
 KLEE_BRANCH="cliver"
 TETRINET_BRANCH="enumerate"
+XPILOT_BRANCH="nuklear-support"
 
 # Tarball locations
 PACKAGE_HOST="rac@snapper.cs.unc.edu"
@@ -549,6 +554,101 @@ install_tetrinet()
   echo "[Done]"
 }
 
+config_and_build_xpilot()
+{
+  # usage: config_xpilot [native|llvm]
+  if [[ $# -ne 1 ]]; then
+    echo "[Error] "
+    exit
+  fi
+
+  #echo -n "[$1] "
+
+  XPILOT_LLVM_OPTIONS="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
+  XPILOT_LLVM_OPTIONS+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT/llvm_gcc_script.py "
+  XPILOT_CONFIG_OPTIONS="--disable-sdl-client --disable-sdl-gameloop "
+  XPILOT_CONFIG_OPTIONS+="--disable-sdltest --disable-xp-mapedit "
+  XPILOT_CONFIG_OPTIONS+="--disable-replay --disable-sound "
+  XPILOT_CONFIG_OPTIONS+="--enable-select-sched --prefix=$XPILOT_ROOT "
+  XPILOT_MAKE_OPTIONS=""
+
+  if [ "$1" == "llvm" ]; then
+    XPILOT_CONFIG_OPTIONS="$XPILOT_LLVM_OPTIONS $XPILOT_CONFIG_OPTIONS "
+    XPILOT_CONFIG_OPTIONS+="--program-prefix=$XPILOT_LLVM_PREFIX "
+    XPILOT_MAKE_OPTIONS+="$XPILOT_LLVM_OPTIONS "
+  elif [ "$1" == "native" ]; then
+    XPILOT_CONFIG_OPTIONS+="--program-prefix=$XPILOT_NATIVE_PREFIX "
+    XPILOT_MAKE_OPTIONS+="-j $MAKE_THREADS "
+  else
+    echo "[Error] "
+    exit
+  fi
+
+  echo -n "[Configuring] "
+  eval "$ROOT_DIR/src/$XPILOT/configure $XPILOT_CONFIG_OPTIONS $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make clean $LOGGER"
+  eval "make $XPILOT_MAKE_OPTIONS $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $XPILOT_ROOT
+  eval "make $XPILOT_MAKE_OPTIONS install $LOGGER"
+
+  if [ "$1" == "llvm" ]; then
+    eval "cp -u $ROOT_DIR/src/$XPILOT/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/ $LOGGER"
+    eval "cp -u $ROOT_DIR/src/$XPILOT/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/ $LOGGER"
+  fi
+
+}
+
+update_xpilot()
+{
+  echo -ne "$XPILOT\t\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$XPILOT/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$XPILOT
+
+  echo -n "[Checking updates] "
+  eval "git remote update $LOGGER"
+
+  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+
+    echo -n "[Pulling updates] "
+    eval "git pull --all $LOGGER"
+
+    config_and_build_xpilot native
+    config_and_build_xpilot llvm
+  fi
+
+  echo "[Done]"
+}
+
+install_xpilot()
+{
+  echo -ne "$XPILOT\t\t\t"
+
+  check_dirs $XPILOT|| { return 0; }
+
+  cd $ROOT_DIR"/src"
+
+  echo -n "[Cloning] "
+  eval "git clone $XPILOT_GIT $LOGGER"
+
+  cd $ROOT_DIR"/src/$XPILOT"
+
+  eval "git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH $LOGGER"
+
+  config_and_build_xpilot native
+  config_and_build_xpilot llvm
+
+  echo "[Done]"
+}
+
+
 #==============================================================================#
 # main
 #==============================================================================#
@@ -615,6 +715,7 @@ LLVMGCC_ROOT="$ROOT_DIR/local"
 LIBUNWIND_ROOT="$ROOT_DIR/local"
 GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
 TETRINET_ROOT="$ROOT_DIR/local"
+XPILOT_ROOT="$ROOT_DIR/local"
 
 LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
 
@@ -647,12 +748,14 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_uclibc
   install_klee
   install_tetrinet
+  install_xpilot
 
 else
 
   update_llvm
   update_klee
   update_tetrinet
+  update_xpilot
 
 fi
 
