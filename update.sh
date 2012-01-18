@@ -230,7 +230,6 @@ install_boost()
 
   check_dirs $BOOST || { return 0; }
 
-  echo -n "[Extracting] "
   get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST"
 
   cd $ROOT_DIR/src/$BOOST
