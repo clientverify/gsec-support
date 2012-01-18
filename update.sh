@@ -10,13 +10,15 @@ LLVM="llvm-2.7"
 LLVMGCC="llvm-gcc-4.2-2.7"
 LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
 KLEE="klee"
-UCLIBC="klee-uclibc"
+UCLIBC="klee-uclibc-0.01-x64"
 BOOST="boost_1_42_0"
 GOOGLE_PERFTOOLS="google-perftools-1.8.3"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
 NCURSES="ncurses-5.7"
 TETRINET="tetrinet"
+ZLIB="zlib-1.2.5"
+EXPAT="expat-2.0.1"
 XPILOT="xpilot"
 XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
@@ -37,7 +39,7 @@ XPILOT_BRANCH="nuklear-support"
 # Tarball locations
 PACKAGE_HOST="rac@snapper.cs.unc.edu"
 PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
-UCLIBC_PACKAGE="klee-uclibc-0.01-x64.tgz"
+UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
 UDIS86_PACKAGE="$UDIS86.tar.gz"
@@ -45,6 +47,8 @@ LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
 LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
 LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
 NCURSES_PACKAGE="$NCURSES.tar.gz"
+ZLIB_PACKAGE="$ZLIB.tar.gz"
+EXPAT_PACKAGE="$EXPAT.tar.gz"
 
 # Command line options
 FORCE_CLEAN=0
@@ -95,6 +99,7 @@ confirm () {
 
 get_package()
 {
+  echo -n "[Extracting] "
   # usage: get_package [package] [remote-path] [local-dest]
   if [[ $# -lt 3 ]]; then
     echo "[Error getting package] "
@@ -106,12 +111,16 @@ get_package()
   local LOCAL_DEST=$3
   local PACKAGE_TYPE=${PACKAGE##*.}
 
+  TAR_OPTIONS="--strip-components=1"
+
+  mkdir -p $LOCAL_DEST
+
   eval "scp $REMOTE_PATH/$PACKAGE $LOCAL_DEST/ $LOGGER"
 
   if [ $PACKAGE_TYPE == "gz" ] || [ $PACKAGE_TYPE == "tgz" ]; then
-    eval "tar -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+    eval "tar $TAR_OPTIONS -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
   elif [ $PACKAGE_TYPE == "bz2" ]; then
-    eval "tar -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+    eval "tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
   else
     echo "[Error invalid package type] "
     rm $LOCAL_DEST/$PACKAGE
@@ -138,11 +147,8 @@ check_dirs()
 install_ncurses()
 {
   echo -ne "$NCURSES\t\t"
-
   check_dirs $NCURSES || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $NCURSES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $NCURSES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$NCURSES"
 
   mkdir -p $ROOT_DIR/build/$NCURSES
   cd $ROOT_DIR/build/$NCURSES
@@ -160,6 +166,69 @@ install_ncurses()
   echo "[Done]"
 }
 
+install_zlib()
+{
+  echo -ne "$ZLIB (x86) \t"
+  check_dirs $ZLIB || { return 0; }
+  get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB"
+
+  cd $ROOT_DIR/src/$ZLIB
+
+  echo -n "[Configuring] "
+  eval "$ROOT_DIR/src/$ZLIB/configure --prefix=$ZLIB_ROOT $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make -j $MAKE_THREADS $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $ZLIB_ROOT
+  eval "make -j $MAKE_THREADS install $LOGGER"
+
+  echo "[Done]"
+}
+
+install_zlib_llvm()
+{
+  echo -ne "$ZLIB (llvm) \t"
+  check_dirs $ZLIB-llvm || { return 0; }
+  get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB-llvm"
+
+  cd $ROOT_DIR/src/$ZLIB-llvm
+
+  echo -n "[Configuring] "
+  ZLIB_LLVM_OPTIONS="CC=$LLVMGCC_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
+  eval "$ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make libz.a $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $ZLIB_ROOT
+  eval "cp -p libz.a $ZLIB_ROOT/lib/libz-llvm.a"
+
+  echo "[Done]"
+}
+
+install_expat()
+{
+  echo -ne "$EXPAT\t\t"
+  check_dirs $EXPAT || { return 0; }
+  get_package $EXPAT_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$EXPAT"
+  cd $ROOT_DIR/src/$EXPAT
+
+  echo -n "[Configuring] "
+  eval "$ROOT_DIR/src/$EXPAT/configure --prefix=$EXPAT_ROOT $LOGGER"
+
+  echo -n "[Compiling] "
+  eval "make -j $MAKE_THREADS $LOGGER"
+
+  echo -n "[Installing] "
+  mkdir -p $EXPAT_ROOT
+  eval "make -j $MAKE_THREADS install $LOGGER"
+
+  echo "[Done]"
+}
+
 install_boost()
 {
   echo -ne "$BOOST\t\t"
@@ -167,7 +236,7 @@ install_boost()
   check_dirs $BOOST || { return 0; }
 
   echo -n "[Extracting] "
-  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST"
 
   cd $ROOT_DIR/src/$BOOST
 
@@ -186,11 +255,8 @@ install_boost()
 install_libunwind()
 {
   echo -ne "$LIBUNWIND\t\t"
-
   check_dirs $LIBUNWIND || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $LIBUNWIND_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $LIBUNWIND_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LIBUNWIND"
 
   mkdir -p $ROOT_DIR/build/$LIBUNWIND
   cd $ROOT_DIR/build/$LIBUNWIND
@@ -211,11 +277,8 @@ install_libunwind()
 install_google_perftools()
 {
   echo -ne "$GOOGLE_PERFTOOLS\t"
-
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
@@ -252,12 +315,9 @@ install_google_perftools()
 
 install_uclibc()
 {
-  echo -ne "$UCLIBC\t\t"
-
+  echo -ne "$UCLIBC\t"
   check_dirs $UCLIBC || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $UCLIBC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $UCLIBC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$UCLIBC"
 
   cd $ROOT_DIR/src/$UCLIBC
 
@@ -273,29 +333,16 @@ install_uclibc()
 install_llvmgcc_bin()
 {
   echo -ne "$LLVMGCC\t"
-
   check_dirs $LLVMGCC || { return 0; }
-  check_dirs $LLVMGCC.source || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR "$ROOT_DIR/local"
-
-  mkdir -p $LLVMGCC_ROOT
-  cp -R $ROOT_DIR/local/$LLVMGCC_BIN/* $LLVMGCC_ROOT
-  rm -rf $ROOT_DIR/local/$LLVMGCC_BIN
-
+  get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
   echo "[Done]"
 }
 
 install_llvmgcc_from_source()
 {
   echo -ne "$LLVMGCC\t"
-
   check_dirs $LLVMGCC || { return 0; }
-  check_dirs $LLVMGCC.source || { return 0; }
-
-  echo -n "[Extracting] "
-  get_package $LLVMGCC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src"
+  get_package $LLVMGCC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVMGCC"
 
   mkdir -p $ROOT_DIR/build/$LLVMGCC
   cd $ROOT_DIR/build/$LLVMGCC
@@ -304,7 +351,7 @@ install_llvmgcc_from_source()
   LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++,fortran "
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$LLVMGCC.source/configure $LLVMGCC_CONFIG_OPTIONS $LOGGER"
+  eval "$ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS $LOGGER"
 
   LLVMGCC_MAKE_OPTIONS=""
 
@@ -398,9 +445,7 @@ update_llvm()
 install_llvm()
 {
   echo -ne "$LLVM\t\t"
-
   check_dirs $LLVM || { return 0; }
-
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
@@ -593,8 +638,6 @@ config_and_build_xpilot()
     exit
   fi
 
-  #echo -n "[$1] "
-
   XPILOT_LLVM_OPTIONS="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
   XPILOT_LLVM_OPTIONS+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT/llvm_gcc_script.py "
   XPILOT_CONFIG_OPTIONS="--disable-sdl-client --disable-sdl-gameloop "
@@ -630,7 +673,6 @@ config_and_build_xpilot()
     eval "cp -u $ROOT_DIR/src/$XPILOT/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/ $LOGGER"
     eval "cp -u $ROOT_DIR/src/$XPILOT/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/ $LOGGER"
   fi
-
 }
 
 update_xpilot()
@@ -747,6 +789,8 @@ LIBUNWIND_ROOT="$ROOT_DIR/local"
 NCURSES_ROOT="$ROOT_DIR/local"
 GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
 TETRINET_ROOT="$ROOT_DIR/local"
+ZLIB_ROOT="$ROOT_DIR/local"
+EXPAT_ROOT="$ROOT_DIR/local"
 XPILOT_ROOT="$ROOT_DIR/local"
 
 LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
@@ -781,6 +825,8 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_klee
   install_ncurses
   install_tetrinet
+  install_zlib
+  install_expat
   install_xpilot
 
 else
