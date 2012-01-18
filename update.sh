@@ -148,8 +148,13 @@ install_ncurses()
   mkdir -p $ROOT_DIR/build/$NCURSES
   cd $ROOT_DIR/build/$NCURSES
 
+  NCURSES_CONFIG_OPTIONS="--with-shared --without-ada --without-manpages --prefix=$NCURSES_ROOT "
+  if test ${ALTCC+defined}; then
+    NCURSES_CONFIG_OPTIONS+="CC=$ALTCC LD=$ALTCC "
+  fi
+
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$NCURSES/configure --with-shared --prefix=$NCURSES_ROOT $LOGGER"
+  eval "$ROOT_DIR/src/$NCURSES/configure $NCURSES_CONFIG_OPTIONS $LOGGER"
 
   echo -n "[Compiling] "
   eval "make -j $MAKE_THREADS $LOGGER"
@@ -562,6 +567,10 @@ build_tetrinet()
   TETRINET_MAKE_OPTIONS="NCURSES_DIR=$NCURSES_ROOT LLVM_BIN_DIR=$LLVM_ROOT/bin "
   TETRINET_MAKE_OPTIONS+="LLVMGCC_BIN_DIR=$LLVMGCC_ROOT/bin PREFIX=$TETRINET_ROOT "
 
+  if test ${ALTCC+defined}; then
+    TETRINET_MAKE_OPTIONS+="CC=$ALTCC LD=$ALTCC "
+  fi
+
   echo -n "[Compiling] "
   eval "make $TETRINET_MAKE_OPTIONS $LOGGER"
 
@@ -712,9 +721,9 @@ while getopts ":afkcivsbr:j:" opt; do
   case $opt in
     a)
       # Use alternative GCC
-      ALTCC=gcc-4.5
-      ALTCXX=g++-4.5
-      GXX_INCLUDE_DIR="/usr/include/c++/4.5"
+      ALTCC=gcc-4.4
+      ALTCXX=g++-4.4
+      GXX_INCLUDE_DIR="/usr/include/c++/4.4"
       ;;
 
     f)
