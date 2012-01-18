@@ -61,11 +61,6 @@ VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 ROOT_DIR="`pwd`"
 
-# GCC options
-#ALTCC=gcc-4.5
-#ALTCXX=g++-4.5
-#GXX_INCLUDE_DIR="/usr/include/c++/4.5"
-
 elapsed_time()
 {
   if [[ $# -eq 0 ]]; then
@@ -714,8 +709,15 @@ install_xpilot()
 # main
 #==============================================================================#
 
-while getopts ":fkcivsbr:j:" opt; do
+while getopts ":afkcivsbr:j:" opt; do
   case $opt in
+    a)
+      # Use alternative GCC
+      ALTCC=gcc-4.5
+      ALTCXX=g++-4.5
+      GXX_INCLUDE_DIR="/usr/include/c++/4.5"
+      ;;
+
     f)
       FORCE_UPDATE=1
       ;;
