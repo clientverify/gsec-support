@@ -24,7 +24,7 @@ XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 
 # Source repositories
-GIT_HOST="rac@snapper.cs.unc.edu"
+GIT_HOST="rac@kudzoo.cs.unc.edu"
 GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
@@ -37,7 +37,7 @@ TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
 # Tarball locations
-PACKAGE_HOST="rac@snapper.cs.unc.edu"
+PACKAGE_HOST="rac@kudzoo.cs.unc.edu"
 PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
