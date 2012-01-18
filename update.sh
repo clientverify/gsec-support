@@ -168,7 +168,7 @@ install_ncurses()
 
 install_zlib()
 {
-  echo -ne "$ZLIB (x86) \t"
+  echo -ne "$ZLIB \t\t"
   check_dirs $ZLIB || { return 0; }
   get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB"
 
@@ -389,9 +389,7 @@ config_llvm ()
 build_llvm ()
 {
   local TARGET=""
-  if [[ $# -ge 1 ]]; then
-    TARGET=$1
-  fi
+  if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
@@ -412,12 +410,12 @@ update_llvm()
 
   cd $ROOT_DIR/src/$LLVM
 
-  echo -n "[Checking updates] "
+  echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling updates] "
+    echo -n "[Pulling] "
     eval "git pull --all $LOGGER"
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
@@ -485,9 +483,7 @@ config_klee()
 build_klee()
 {
   local TARGET=""
-  if [[ $# -ge 1 ]]; then
-    TARGET=$1
-  fi
+  if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
   cd $ROOT_DIR/src/klee
   KLEE_MAKE_OPTIONS="RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
@@ -538,12 +534,12 @@ update_klee()
 
   cd $ROOT_DIR/src/$KLEE
 
-  echo -n "[Checking updates] "
+  echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling updates] "
+    echo -n "[Pulling] "
     eval "git pull --all $LOGGER"
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
@@ -590,12 +586,12 @@ update_tetrinet()
 
   cd $ROOT_DIR/src/$TETRINET
 
-  echo -n "[Checking updates] "
+  echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling updates] "
+    echo -n "[Pulling] "
     eval "git pull --all $LOGGER"
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
@@ -632,37 +628,26 @@ install_tetrinet()
 
 config_and_build_xpilot()
 {
-  # usage: config_xpilot [native|llvm]
-  if [[ $# -ne 1 ]]; then
-    echo "[Error] "
-    exit
-  fi
+  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
-  XPILOT_LLVM_OPTIONS="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
-  XPILOT_LLVM_OPTIONS+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT/llvm_gcc_script.py "
   XPILOT_CONFIG_OPTIONS="--disable-sdl-client --disable-sdl-gameloop "
   XPILOT_CONFIG_OPTIONS+="--disable-sdltest --disable-xp-mapedit "
   XPILOT_CONFIG_OPTIONS+="--disable-replay --disable-sound "
   XPILOT_CONFIG_OPTIONS+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  XPILOT_MAKE_OPTIONS=""
+  XPILOT_CONFIG_OPTIONS+="--program-suffix=-$1 "
+
+  XPILOT_LLVM_OPTIONS="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
+  XPILOT_LLVM_OPTIONS+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT-$1/llvm_gcc_script.py "
 
   if [ "$1" == "llvm" ]; then
     XPILOT_CONFIG_OPTIONS="$XPILOT_LLVM_OPTIONS $XPILOT_CONFIG_OPTIONS "
-    XPILOT_CONFIG_OPTIONS+="--program-prefix=$XPILOT_LLVM_PREFIX "
     XPILOT_MAKE_OPTIONS+="$XPILOT_LLVM_OPTIONS "
-  elif [ "$1" == "native" ]; then
-    XPILOT_CONFIG_OPTIONS+="--program-prefix=$XPILOT_NATIVE_PREFIX "
-    XPILOT_MAKE_OPTIONS+="-j $MAKE_THREADS "
-  else
-    echo "[Error] "
-    exit
   fi
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$XPILOT/configure $XPILOT_CONFIG_OPTIONS $LOGGER"
+  eval "$ROOT_DIR/src/$xpilot_opt/configure $XPILOT_CONFIG_OPTIONS $LOGGER"
 
   echo -n "[Compiling] "
-  eval "make clean $LOGGER"
   eval "make $XPILOT_MAKE_OPTIONS $LOGGER"
 
   echo -n "[Installing] "
@@ -670,31 +655,33 @@ config_and_build_xpilot()
   eval "make $XPILOT_MAKE_OPTIONS install $LOGGER"
 
   if [ "$1" == "llvm" ]; then
-    eval "cp -u $ROOT_DIR/src/$XPILOT/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/ $LOGGER"
-    eval "cp -u $ROOT_DIR/src/$XPILOT/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/ $LOGGER"
+    eval "cp -u $ROOT_DIR/src/$XPILOT-$1/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/ $LOGGER"
+    eval "cp -u $ROOT_DIR/src/$XPILOT-$1/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/ $LOGGER"
   fi
 }
 
 update_xpilot()
 {
-  echo -ne "$XPILOT\t\t\t"
+  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
-  if [ ! -e "$ROOT_DIR/src/$XPILOT/.git" ]; then
+  local xpilot_opt=$XPILOT-$1
+  echo -ne "$xpilot_opt\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$xpilot_opt/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
   fi
 
-  cd $ROOT_DIR/src/$XPILOT
+  cd $ROOT_DIR/src/$xpilot_opt
 
-  echo -n "[Checking updates] "
+  echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling updates] "
+    echo -n "[Pulling] "
     eval "git pull --all $LOGGER"
 
-    config_and_build_xpilot native
-    config_and_build_xpilot llvm
+    config_and_build_xpilot $1
   fi
 
   echo "[Done]"
@@ -702,21 +689,22 @@ update_xpilot()
 
 install_xpilot()
 {
-  echo -ne "$XPILOT\t\t\t"
+  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
-  check_dirs $XPILOT|| { return 0; }
+  local xpilot_opt=$XPILOT-$1
+  echo -ne "$xpilot_opt \t\t"
 
+  check_dirs $xpilot_opt || { return 0; }
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
-  eval "git clone $XPILOT_GIT $LOGGER"
+  eval "git clone $XPILOT_GIT $xpilot_opt $LOGGER"
 
-  cd $ROOT_DIR"/src/$XPILOT"
+  cd $ROOT_DIR"/src/$xpilot_opt"
 
   eval "git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH $LOGGER"
 
-  config_and_build_xpilot native
-  config_and_build_xpilot llvm
+  config_and_build_xpilot $1
 
   echo "[Done]"
 }
@@ -827,14 +815,16 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_tetrinet
   install_zlib
   install_expat
-  install_xpilot
+  install_xpilot llvm
+  install_xpilot x86
 
 else
 
   update_llvm
   update_klee
   update_tetrinet
-  update_xpilot
+  update_xpilot llvm
+  update_xpilot x86
 
 fi
 
