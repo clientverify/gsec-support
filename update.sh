@@ -811,11 +811,11 @@ if [ $INSTALL_PACKAGES -eq 1 ]; then
   install_google_perftools
   install_boost
   install_uclibc
-  install_klee
   install_ncurses
-  install_tetrinet
   install_zlib
   install_expat
+  install_klee
+  install_tetrinet
   install_xpilot llvm
   install_xpilot x86
 
