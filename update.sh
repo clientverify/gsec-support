@@ -760,4 +760,4 @@ main()
 }
 
 # Run main
-main
+main "$@"
