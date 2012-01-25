@@ -5,50 +5,11 @@ set -u # Exit if uninitialized value is used
 set -e # Exit on non-true value
 set -o pipefail # exit on fail of any command in a pipe
 
-# Packages to install
-LLVM="llvm-2.7"
-LLVMGCC="llvm-gcc-4.2-2.7"
-LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
-KLEE="klee"
-UCLIBC="klee-uclibc-0.01-x64"
-BOOST="boost_1_42_0"
-GOOGLE_PERFTOOLS="google-perftools-1.8.3"
-UDIS86="udis86-1.7"
-LIBUNWIND="libunwind-1.0.1"
-NCURSES="ncurses-5.7"
-TETRINET="tetrinet"
-ZLIB="zlib-1.2.5"
-EXPAT="expat-2.0.1"
-XPILOT="xpilot"
-XPILOT_LLVM_PREFIX="llvm-"
-XPILOT_NATIVE_PREFIX="x86-"
+WRAPPER="`readlink -f "$0"`"
+HERE="`dirname "$WRAPPER"`"
 
-# Source repositories
-GIT_HOST="rac@kudzoo.cs.unc.edu"
-GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
-LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
-KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
-TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
-XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
-
-# Repository Branches
-KLEE_BRANCH="cliver"
-TETRINET_BRANCH="enumerate"
-XPILOT_BRANCH="nuklear-support"
-
-# Tarball locations
-PACKAGE_HOST="rac@kudzoo.cs.unc.edu"
-PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
-UCLIBC_PACKAGE="$UCLIBC.tgz"
-BOOST_PACKAGE="$BOOST.tar.gz"
-GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
-UDIS86_PACKAGE="$UDIS86.tar.gz"
-LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
-LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
-LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
-NCURSES_PACKAGE="$NCURSES.tar.gz"
-ZLIB_PACKAGE="$ZLIB.tar.gz"
-EXPAT_PACKAGE="$EXPAT.tar.gz"
+# Include gsec_common
+. $HERE/gsec_common
 
 # Command line options
 FORCE_CLEAN=0
@@ -60,37 +21,6 @@ INSTALL_LLVMGCC_BIN=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 ROOT_DIR="`pwd`"
-
-elapsed_time()
-{
-  if [[ $# -eq 0 ]]; then
-    echo $(date '+%s')
-  else
-    local  stime=$1
-    etime=$(date '+%s')
-
-    if [[ -z "$stime" ]]; then stime=$etime; fi
-
-    dt=$((etime - stime))
-    ds=$((dt % 60))
-    dm=$(((dt / 60) % 60))
-    dh=$((dt / 3600))
-    printf '%d:%02d:%02d' $dh $dm $ds
-  fi
-}
-
-confirm () {
-  # call with a prompt string or use a default
-  read -r -p "${1:-Are you sure? [Y/n]} " response
-  case $response in
-    [yY][eE][sS]|[yY]) 
-      true
-      ;;
-    *)
-      false
-      ;;
-  esac
-}
 
 get_package()
 {
@@ -409,6 +339,10 @@ update_llvm()
 
   cd $ROOT_DIR/src/$LLVM
 
+  #if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
+  #  echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+  #fi
+
   echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
@@ -533,6 +467,10 @@ update_klee()
 
   cd $ROOT_DIR/src/$KLEE
 
+  if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
+    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+  fi
+
   echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
@@ -589,6 +527,10 @@ update_tetrinet()
 
   cd $ROOT_DIR/src/$TETRINET
 
+  if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
+    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+  fi
+  
   echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
@@ -676,6 +618,10 @@ update_xpilot()
 
   cd $ROOT_DIR/src/$xpilot_opt
 
+  if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
+    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+  fi
+  
   echo -n "[Checking] "
   eval "git remote update $LOGGER"
 
@@ -712,130 +658,106 @@ install_xpilot()
   echo "[Done]"
 }
 
+main() 
+{
+  while getopts ":afkcivsbr:j:" opt; do
+    case $opt in
+      a)
+        # Use alternative GCC
+        ALTCC=gcc-4.4
+        ALTCXX=g++-4.4
+        GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+        ;;
+  
+      f)
+        FORCE_UPDATE=1
+        ;;
+  
+      k)
+        FORCE_CLEAN=1
+        ;;
+  
+      c)
+        FORCE_CONFIGURE=1
+        ;;
+  
+      i)
+        INSTALL_PACKAGES=1
+        ;;
+  
+      v)
+        VERBOSE_OUTPUT=1
+        ;;
+  
+      s)
+        SKIP_INSTALL_ERRORS=1
+        ;;
+  
+      b)
+        INSTALL_LLVMGCC_BIN=1
+        ;;
+  
+      r)
+        echo "Setting root dir to $OPTARG"
+        ROOT_DIR="$OPTARG"
+        ;;
+  
+      j)
+        MAKE_THREADS=$OPTARG
+        ;;
+  
+      :)
+        echo "Option -$OPTARG requires an argument"
+        exit
+        ;;
+  
+    esac
+  done
 
-#==============================================================================#
-# main
-#==============================================================================#
+  initialize_root_directories
 
-while getopts ":afkcivsbr:j:" opt; do
-  case $opt in
-    a)
-      # Use alternative GCC
-      ALTCC=gcc-4.4
-      ALTCXX=g++-4.4
-      GXX_INCLUDE_DIR="/usr/include/c++/4.4"
-      ;;
+  initialize_logging
 
-    f)
-      FORCE_UPDATE=1
-      ;;
-
-    k)
-      FORCE_CLEAN=1
-      ;;
-
-    c)
-      FORCE_CONFIGURE=1
-      ;;
-
-    i)
-      INSTALL_PACKAGES=1
-      ;;
-
-    v)
-      VERBOSE_OUTPUT=1
-      ;;
-
-    s)
-      SKIP_INSTALL_ERRORS=1
-      ;;
-
-    b)
-      INSTALL_LLVMGCC_BIN=1
-      ;;
-
-    r)
-      echo "Setting root dir to $OPTARG"
-      ROOT_DIR="$OPTARG"
-      ;;
-
-    j)
-      MAKE_THREADS=$OPTARG
-      ;;
-
-    :)
-      echo "Option -$OPTARG requires an argument"
-      exit
-      ;;
-
-  esac
-done
-
-if [[ -z $ROOT_DIR ]] || [[ ! -e $ROOT_DIR ]]; then
-  echo "Valid root directory required. Use commandline option '-r dir-name'"
-  exit
-fi
-
-# Install directories
-
-UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
-KLEE_ROOT="$ROOT_DIR/local"
-LLVM_ROOT="$ROOT_DIR/local"
-BOOST_ROOT="$ROOT_DIR/local"
-LLVMGCC_ROOT="$ROOT_DIR/local"
-LIBUNWIND_ROOT="$ROOT_DIR/local"
-NCURSES_ROOT="$ROOT_DIR/local"
-GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
-TETRINET_ROOT="$ROOT_DIR/local"
-ZLIB_ROOT="$ROOT_DIR/local"
-EXPAT_ROOT="$ROOT_DIR/local"
-XPILOT_ROOT="$ROOT_DIR/local"
-
-LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
-
-if [ $VERBOSE_OUTPUT -eq 1 ]; then
-  LOGGER=" 2>&1 | tee -a $LOG_FILE"
-else
-  LOGGER=">> $LOG_FILE 2>&1 "
-fi
-
-touch $LOG_FILE
-echo "$0 ======= `date`" >> $LOG_FILE
-etime=$(elapsed_time)
-
-if [ $INSTALL_PACKAGES -eq 1 ]; then
-
-  mkdir -p $ROOT_DIR/{src,local,build}
-  echo "Installing all packages" 
-
-  install_llvm
-
-  if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
-    install_llvmgcc_bin
+  # record start time
+  start_time=$(elapsed_time)
+  
+  if [ $INSTALL_PACKAGES -eq 1 ]; then
+  
+    mkdir -p $ROOT_DIR/{src,local,build}
+    echo "Installing all packages" 
+  
+    install_llvm
+  
+    if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
+      install_llvmgcc_bin
+    else
+      install_llvmgcc_from_source
+    fi
+  
+    install_libunwind
+    install_google_perftools
+    install_boost
+    install_uclibc
+    install_ncurses
+    install_zlib
+    install_expat
+    install_klee
+    install_tetrinet
+    install_xpilot llvm
+    install_xpilot x86
+  
   else
-    install_llvmgcc_from_source
+  
+    update_llvm
+    update_klee
+    update_tetrinet
+    update_xpilot llvm
+    update_xpilot x86
+  
   fi
+  
+  echo "Elapsed time: $(elapsed_time $start_time)"
+}
 
-  install_libunwind
-  install_google_perftools
-  install_boost
-  install_uclibc
-  install_ncurses
-  install_zlib
-  install_expat
-  install_klee
-  install_tetrinet
-  install_xpilot llvm
-  install_xpilot x86
-
-else
-
-  update_llvm
-  update_klee
-  update_tetrinet
-  update_xpilot llvm
-  update_xpilot x86
-
-fi
-
-echo "Elapsed time: $(elapsed_time $etime)"
+# Run main
+main

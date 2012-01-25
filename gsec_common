@@ -1,0 +1,119 @@
+# This file contains common variables and routines for the gsec scripts
+
+# Packages
+LLVM="llvm-2.7"
+LLVMGCC="llvm-gcc-4.2-2.7"
+LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
+KLEE="klee"
+UCLIBC="klee-uclibc-0.01-x64"
+BOOST="boost_1_42_0"
+GOOGLE_PERFTOOLS="google-perftools-1.8.3"
+UDIS86="udis86-1.7"
+LIBUNWIND="libunwind-1.0.1"
+NCURSES="ncurses-5.7"
+TETRINET="tetrinet"
+ZLIB="zlib-1.2.5"
+EXPAT="expat-2.0.1"
+XPILOT="xpilot"
+XPILOT_LLVM_PREFIX="llvm-"
+XPILOT_NATIVE_PREFIX="x86-"
+
+# Source repositories
+GIT_HOST="rac@kudzoo.cs.unc.edu"
+GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
+LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
+KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
+TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
+XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
+
+# Repository Branches
+KLEE_BRANCH="cliver"
+TETRINET_BRANCH="enumerate"
+XPILOT_BRANCH="nuklear-support"
+
+# Tarball locations
+PACKAGE_HOST="rac@kudzoo.cs.unc.edu"
+PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
+UCLIBC_PACKAGE="$UCLIBC.tgz"
+BOOST_PACKAGE="$BOOST.tar.gz"
+GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
+UDIS86_PACKAGE="$UDIS86.tar.gz"
+LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
+LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
+LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
+NCURSES_PACKAGE="$NCURSES.tar.gz"
+ZLIB_PACKAGE="$ZLIB.tar.gz"
+EXPAT_PACKAGE="$EXPAT.tar.gz"
+
+initialize_root_directories() 
+{
+  if [[ -z $ROOT_DIR ]] || [[ ! -e $ROOT_DIR ]]; then
+    echo "Valid root directory required. Use commandline option '-r dir-name'"
+    exit
+  fi
+
+  UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
+  KLEE_ROOT="$ROOT_DIR/local"
+  LLVM_ROOT="$ROOT_DIR/local"
+  BOOST_ROOT="$ROOT_DIR/local"
+  LLVMGCC_ROOT="$ROOT_DIR/local"
+  LIBUNWIND_ROOT="$ROOT_DIR/local"
+  NCURSES_ROOT="$ROOT_DIR/local"
+  GOOGLE_PERFTOOLS_ROOT="$ROOT_DIR/local"
+  TETRINET_ROOT="$ROOT_DIR/local"
+  ZLIB_ROOT="$ROOT_DIR/local"
+  EXPAT_ROOT="$ROOT_DIR/local"
+  XPILOT_ROOT="$ROOT_DIR/local"
+}
+
+initialize_logging()
+{
+  LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
+  
+  if [ $VERBOSE_OUTPUT -eq 1 ]; then
+    LOGGER=" 2>&1 | tee -a $LOG_FILE"
+  else
+    LOGGER=">> $LOG_FILE 2>&1 "
+  fi
+
+  touch $LOG_FILE
+  echo "$0 ======= `date`" >> $LOG_FILE
+}
+
+git_current_branch()
+{
+  git status | head -n 1 | awk '{ printf $4 }'
+}
+
+elapsed_time()
+{
+  if [[ $# -eq 0 ]]; then
+    echo $(date '+%s')
+  else
+    local  stime=$1
+    etime=$(date '+%s')
+
+    if [[ -z "$stime" ]]; then stime=$etime; fi
+
+    dt=$((etime - stime))
+    ds=$((dt % 60))
+    dm=$(((dt / 60) % 60))
+    dh=$((dt / 3600))
+    printf '%d:%02d:%02d' $dh $dm $ds
+  fi
+}
+
+confirm ()
+{
+  # call with a prompt string or use a default
+  read -r -p "${1:-Are you sure? [Y/n]} " response
+  case $response in
+    [yY][eE][sS]|[yY]) 
+      true
+      ;;
+    *)
+      false
+      ;;
+  esac
+}
+
