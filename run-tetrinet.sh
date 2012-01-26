@@ -46,7 +46,7 @@ done
 
 initialize_root_directories
 
-BASE_DIR="$DATA_DIR/tetrinet"
+BASE_DIR="$DATA_DIR/network/tetrinet"
 
 # record start time
 start_time=$(elapsed_time)
@@ -59,13 +59,15 @@ PLAYER_NAME="p1"
 KTEST_SUFFIX="ktest"
 RECENT_LINK="last-run"
 
-COUNT=5
+COUNT=0
 
-maxRound=100
-#ptypeValues=`seq 1 6`
-ptypeValues=`seq 1`
-#rateValues=`echo 1; seq 2 2 10`
-rateValues=`echo 1`
+#PTYPE_VALUES=`seq 1 6`
+PTYPE_VALUES=`seq 1`
+#RATE_VALUES=`echo 1; seq 2 2 10`
+RATE_VALUES=`echo 1`
+
+MAX_ROUND=100
+INPUT_GEN_TYPE=0
 
 #=============================================================================
 # game client and server paths
@@ -86,8 +88,8 @@ DATA_DIR=$BASE_DIR
 RESULTS_DIR=$BASE_DIR/"results"
 
 RUN_PREFIX=$(date +%F.%T)
-LOG_DIR=$DATA_DIR/$RUN_PREFIX/log
-KTEST_DIR=$DATA_DIR/$RUN_PREFIX/ktest
+LOG_DIR=$DATA_DIR/$RUN_PREFIX
+KTEST_DIR=$DATA_DIR/$RUN_PREFIX
 OUT_DIR=$RESULTS_DIR/$RUN_PREFIX
 
 #=============================================================================
@@ -112,21 +114,22 @@ then
   rm $DATA_DIR/$RECENT_LINK
   ln -sf $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 
-  ptypeValues=`seq 0 0`
-  rateValues=`echo 1`
-  COUNT=0
+  #PTYPE_VALUES=`seq 0 0`
+  #RATE_VALUES=`echo 1`
+  #COUNT=0
 
 
-  for ptype in $ptypeValues
+  for ptype in $PTYPE_VALUES
   do
-    for rate in $rateValues
+    for rate in $RATE_VALUES
     do 
       for i in `seq 0 $COUNT`
       do
         zpad_ptype=`printf "%02d" $ptype`
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
-        DESC="tetrinet_enumerate_inputs_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
+        #DESC="tetrinet_enumerate_inputs_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
+				DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -140,14 +143,14 @@ then
           done
 
           echo "creating $KTEST_FILE"
-          OPTS=" -inputgenerationtype 0 -maxround 40 "
-          #OPTS=" -inputgenerationtype 1 "
-          OPTS+=" -log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
-          OPTS+=" -random -seed $i "
-          OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
-          OPTS+=" -startingheight $i "
-          OPTS+=" -slowmode "
-          OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
+          OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
+					OPTS+="-maxround $MAX_ROUND "
+          OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
+          OPTS+="-random -seed $i "
+          OPTS+="-autostart -partialtype $ptype -partialrate $rate "
+          OPTS+="-startingheight $i "
+          #OPTS+="-slowmode "
+          OPTS+="$PLAYER_NAME $SERVER_ADDRESS "
 
           echo "executing $CLIENT_COMMAND $OPTS"
           $CLIENT_COMMAND $OPTS
@@ -175,9 +178,9 @@ then
   rm $DATA_DIR/$RECENT_LINK
   ln -sf $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 
-  for ptype in $ptypeValues
+  for ptype in $PTYPE_VALUES
   do
-    for rate in $rateValues
+    for rate in $RATE_VALUES
     do 
       for i in `seq 1 $COUNT`
       do
@@ -199,7 +202,7 @@ then
 
           echo "creating $KTEST_FILE"
           OPTS=" -log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
-          OPTS+=" -random -seed $i -maxround $maxRound"
+          OPTS+=" -random -seed $i -maxround $MAX_ROUND"
           OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
           OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
 
@@ -233,9 +236,9 @@ then
   rm $RESULTS_DIR/$RECENT_LINK
   ln -sf $OUT_DIR $RESULTS_DIR/$RECENT_LINK
 
-  for ptype in $ptypeValues
+  for ptype in $PTYPE_VALUES
   do
-    for rate in $rateValues
+    for rate in $RATE_VALUES
     do 
       for i in `seq 1 $COUNT`
       do
