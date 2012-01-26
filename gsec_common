@@ -47,6 +47,7 @@ EXPAT_PACKAGE="$EXPAT.tar.gz"
 
 # Other
 RUN_PREFIX=$(date +%F.%T)
+LSF_QUEUE="debug"
 
 initialize_root_directories() 
 {
@@ -79,6 +80,8 @@ initialize_logging()
   LOG_BASENAME=`basename $0 .sh`
   LOG_FILE=$LOG_DIR/$LOG_BASENAME"_"$RUN_PREFIX".log"
   
+	LSF_LOG_DIR=$LOG_DIR/$LOG_BASENAME"_"$RUN_PREFIX"_"lsf
+
   if [ $VERBOSE_OUTPUT -eq 1 ]; then
     LOGGER=" 2>&1 | tee -a $LOG_FILE"
   else
@@ -132,5 +135,15 @@ leval()
 {
 	eval "echo 'COMMAND: $@' $LOGGER"
   eval "$@ $LOGGER"
+}
+
+# Logging bsub function
+lbsub()
+{
+	mkdir -p $LSF_LOG_DIR
+
+	local bsub_command="bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
+	eval "echo 'COMMAND: $bsub_command $@' $LOGGER"
+	bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J $@
 }
 
