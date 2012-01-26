@@ -38,13 +38,13 @@ parse_ktest_file()
 initialize_training()
 {
 	KTEST_DIR="$DATA_DIR/network/tetrinet/last-run"
+	BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
+
 	TRAINING_DIR=$DATA_DIR/$CLIVER_MODE/$(basename $BC_FILE .bc)
 
 	CLIVER_OUTPUT_DIR=$TRAINING_DIR/$RUN_PREFIX
 	
 	CLIVER_BIN="$KLEE_ROOT/bin/cliver"
-
-	BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
 
 	leval mkdir -p $CLIVER_OUTPUT_DIR
 	leval ln -sf $CLIVER_OUTPUT_DIR $TRAINING_DIR/recent
