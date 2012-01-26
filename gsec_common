@@ -76,7 +76,8 @@ initialize_logging()
 
 	mkdir -p $LOG_DIR
 
-  LOG_FILE=$LOG_DIR/`basename $0 .sh`_$RUN_PREFIX.log
+  LOG_BASENAME=`basename $0 .sh`
+  LOG_FILE=$LOG_DIR/$LOG_BASENAME"_"$RUN_PREFIX".log"
   
   if [ $VERBOSE_OUTPUT -eq 1 ]; then
     LOGGER=" 2>&1 | tee -a $LOG_FILE"
@@ -85,6 +86,7 @@ initialize_logging()
   fi
 
   touch $LOG_FILE
+  ln -sf $LOG_FILE $LOG_DIR/$LOG_BASENAME"_recent.log"
   echo "`date` ==== $0 $@ " >> $LOG_FILE
 }
 
