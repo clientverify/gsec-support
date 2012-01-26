@@ -31,7 +31,7 @@ PRINT_OBJECT_BYTES=0
 
 parse_ktest_file()
 {
-	eval "basename $1 | awk -F_ '{ printf \$$2 }'"
+	eval "basename $1 .ktest | awk -F_ '{ printf \$$2 }'"
 }
 
 tetrinet_training()
@@ -49,7 +49,7 @@ tetrinet_training()
 		player_name="$(parse_ktest_file $i 7)"
 		server_address="$(parse_ktest_file $i 8)"
 
-		bc_file_opts="-autostart"
+		bc_file_opts="-autostart "
 		bc_file_opts+="-startingheight $starting_height "
 		bc_file_opts+="-partialtype $partial_type "
 		bc_file_opts+="-partialrate $partial_rate "
