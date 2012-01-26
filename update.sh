@@ -40,12 +40,12 @@ get_package()
 
   mkdir -p $LOCAL_DEST
 
-  eval "scp $REMOTE_PATH/$PACKAGE $LOCAL_DEST/ $LOGGER"
+  leval scp $REMOTE_PATH/$PACKAGE $LOCAL_DEST/ 
 
   if [ $PACKAGE_TYPE == "gz" ] || [ $PACKAGE_TYPE == "tgz" ]; then
-    eval "tar $TAR_OPTIONS -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+    leval tar $TAR_OPTIONS -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   elif [ $PACKAGE_TYPE == "bz2" ]; then
-    eval "tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST $LOGGER"
+    leval tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   else
     echo "[Error invalid package type] "
     rm $LOCAL_DEST/$PACKAGE
@@ -84,14 +84,14 @@ install_ncurses()
   fi
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$NCURSES/configure $NCURSES_CONFIG_OPTIONS $LOGGER"
+  leval $ROOT_DIR/src/$NCURSES/configure $NCURSES_CONFIG_OPTIONS 
 
   echo -n "[Compiling] "
-  eval "make -j $MAKE_THREADS $LOGGER"
+  leval make -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $NCURSES_ROOT
-  eval "make -j $MAKE_THREADS install $LOGGER"
+  leval make -j $MAKE_THREADS install 
 
   echo "[Done]"
 }
@@ -105,14 +105,14 @@ install_zlib()
   cd $ROOT_DIR/src/$ZLIB
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$ZLIB/configure --prefix=$ZLIB_ROOT $LOGGER"
+  leval $ROOT_DIR/src/$ZLIB/configure --prefix=$ZLIB_ROOT 
 
   echo -n "[Compiling] "
-  eval "make -j $MAKE_THREADS $LOGGER"
+  leval make -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $ZLIB_ROOT
-  eval "make -j $MAKE_THREADS install $LOGGER"
+  leval make -j $MAKE_THREADS install 
 
   echo "[Done]"
 }
@@ -127,14 +127,14 @@ install_zlib_llvm()
 
   echo -n "[Configuring] "
   ZLIB_LLVM_OPTIONS="CC=$LLVMGCC_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
-  eval "$ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT $LOGGER"
+  leval $ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT 
 
   echo -n "[Compiling] "
-  eval "make libz.a $LOGGER"
+  leval make libz.a 
 
   echo -n "[Installing] "
   mkdir -p $ZLIB_ROOT
-  eval "cp -p libz.a $ZLIB_ROOT/lib/libz-llvm.a"
+  leval cp -p libz.a $ZLIB_ROOT/lib/libz-llvm.a
 
   echo "[Done]"
 }
@@ -147,14 +147,14 @@ install_expat()
   cd $ROOT_DIR/src/$EXPAT
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$EXPAT/configure --prefix=$EXPAT_ROOT $LOGGER"
+  leval $ROOT_DIR/src/$EXPAT/configure --prefix=$EXPAT_ROOT 
 
   echo -n "[Compiling] "
-  eval "make -j $MAKE_THREADS $LOGGER"
+  leval make -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $EXPAT_ROOT
-  eval "make -j $MAKE_THREADS install $LOGGER"
+  leval make -j $MAKE_THREADS install 
 
   echo "[Done]"
 }
@@ -172,11 +172,11 @@ install_boost()
   BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
 
   echo -n "[Compiling] "
-  eval "./bootstrap.sh --prefix=$BOOST_ROOT $LOGGER"
-  eval "./bjam $BJAM_OPTIONS $LOGGER"
+  leval ./bootstrap.sh --prefix=$BOOST_ROOT 
+  leval ./bjam $BJAM_OPTIONS 
 
   echo -n "[Installing] "
-  eval "./bjam $BJAM_OPTIONS install $LOGGER"
+  leval ./bjam $BJAM_OPTIONS install 
 
   echo "[Done]"
 }
@@ -191,14 +191,14 @@ install_libunwind()
   cd $ROOT_DIR/build/$LIBUNWIND
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$LIBUNWIND/configure CFLAGS=\"-U_FORTIFY_SOURCE\" --prefix=$LIBUNWIND_ROOT $LOGGER"
+  leval $ROOT_DIR/src/$LIBUNWIND/configure CFLAGS=\"-U_FORTIFY_SOURCE\" --prefix=$LIBUNWIND_ROOT 
 
   echo -n "[Compiling] "
-  eval "make -j $MAKE_THREADS $LOGGER"
+  leval make -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $LIBUNWIND_ROOT
-  eval "make -j $MAKE_THREADS install $LOGGER"
+  leval make -j $MAKE_THREADS install 
 
   echo "[Done]"
 }
@@ -229,14 +229,14 @@ install_google_perftools()
     GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LIBUNWIND_ROOT/lib" 
   fi
 
-  eval "LD_LIBRARY_PATH=$GOOGLE_PERFTOOLS_LD_LIBRARY_PATH $GOOGLE_PERFTOOLS_CONFIG_COMMAND $LOGGER"
+  leval LD_LIBRARY_PATH=$GOOGLE_PERFTOOLS_LD_LIBRARY_PATH $GOOGLE_PERFTOOLS_CONFIG_COMMAND 
 
   echo -n "[Compiling] "
-  eval "make -j $MAKE_THREADS $LOGGER"
+  leval make -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $GOOGLE_PERFTOOLS_ROOT
-  eval "make -j $MAKE_THREADS install $LOGGER"
+  leval make -j $MAKE_THREADS install 
 
   echo "[Done]"
 }
@@ -251,10 +251,10 @@ install_uclibc()
   cd $ROOT_DIR/src/$UCLIBC
 
   echo -n "[Configuring] "
-  eval "./configure --with-llvm=$ROOT_DIR/build/$LLVM $LOGGER"
+  leval ./configure --with-llvm=$ROOT_DIR/build/$LLVM 
 
   echo -n "[Compiling] "
-  eval "make $LOGGER"
+  leval make 
 
   echo "[Done]"
 } 
@@ -280,7 +280,7 @@ install_llvmgcc_from_source()
   LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++,fortran "
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS $LOGGER"
+  leval $ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS 
 
   LLVMGCC_MAKE_OPTIONS=""
 
@@ -292,11 +292,11 @@ install_llvmgcc_from_source()
   fi
 
   echo -n "[Compiling] "
-  eval "make $LLVMGCC_MAKE_OPTIONS -j $MAKE_THREADS $LOGGER"
+  leval make $LLVMGCC_MAKE_OPTIONS -j $MAKE_THREADS 
 
   echo -n "[Installing] "
   mkdir -p $LLVMGCC_ROOT
-  eval "make $LLVMGCC_MAKE_OPTIONS install $LOGGER"
+  leval make $LLVMGCC_MAKE_OPTIONS install 
 
   echo "[Done]"
 }
@@ -312,7 +312,7 @@ config_llvm ()
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
-  eval "$ROOT_DIR/src/$LLVM/configure $LLVM_CONFIG_OPTIONS $LOGGER"
+  leval $ROOT_DIR/src/$LLVM/configure $LLVM_CONFIG_OPTIONS 
 }
 
 build_llvm ()
@@ -325,8 +325,8 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
 
-  eval "make ENABLE_OPTIMIZED=0 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
-  eval "make ENABLE_OPTIMIZED=1 $LLVM_MAKE_OPTIONS $TARGET $LOGGER"
+  leval make ENABLE_OPTIMIZED=0 $LLVM_MAKE_OPTIONS $TARGET 
+  leval make ENABLE_OPTIMIZED=1 $LLVM_MAKE_OPTIONS $TARGET 
 }
 
 update_llvm()
@@ -344,12 +344,12 @@ update_llvm()
   #fi
 
   echo -n "[Checking] "
-  eval "git remote update $LOGGER"
+  leval git remote update
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
     echo -n "[Pulling] "
-    eval "git pull --all $LOGGER"
+    leval git pull --all 
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -380,7 +380,7 @@ install_llvm()
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
-  eval "git clone $LLVM_GIT $LOGGER"
+  leval git clone $LLVM_GIT 
 
   echo -n "[Configuring] "
   config_llvm 
@@ -410,7 +410,7 @@ config_klee()
    KLEE_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
-  eval "$ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS $LOGGER"
+  leval $ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS 
 }
 
 build_klee()
@@ -425,8 +425,8 @@ build_klee()
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
-  eval "make ENABLE_OPTIMIZED=0 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
-  eval "make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET $LOGGER"
+  leval make ENABLE_OPTIMIZED=0 $KLEE_MAKE_OPTIONS $TARGET 
+  leval make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET 
 }
 
 install_klee()
@@ -438,11 +438,11 @@ install_klee()
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
-  eval "git clone $KLEE_GIT $LOGGER"
+  leval git clone $KLEE_GIT 
 
   cd $ROOT_DIR"/src/$KLEE"
 
-  eval "git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH $LOGGER"
+  leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
 
   echo -n "[Configuring] "
   config_klee
@@ -472,12 +472,12 @@ update_klee()
   fi
 
   echo -n "[Checking] "
-  eval "git remote update $LOGGER"
+  leval git remote update 
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
     echo -n "[Pulling] "
-    eval "git pull --all $LOGGER"
+    leval git pull --all 
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -510,11 +510,11 @@ build_tetrinet()
   fi
 
   echo -n "[Compiling] "
-  eval "make $TETRINET_MAKE_OPTIONS $LOGGER"
+  leval make $TETRINET_MAKE_OPTIONS 
 
   echo -n "[Installing] "
   mkdir -p $TETRINET_ROOT
-  eval "make $TETRINET_MAKE_OPTIONS install $LOGGER"
+  leval make $TETRINET_MAKE_OPTIONS install 
 }
 
 update_tetrinet()
@@ -532,16 +532,16 @@ update_tetrinet()
   fi
   
   echo -n "[Checking] "
-  eval "git remote update $LOGGER"
+  leval git remote update 
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
     echo -n "[Pulling] "
-    eval "git pull --all $LOGGER"
+    leval git pull --all 
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
       echo -n "[Cleaning] "
-      eval "make clean $LOGGER"
+      leval make clean 
     fi
 
     build_tetrinet
@@ -560,11 +560,11 @@ install_tetrinet()
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
-  eval "git clone $TETRINET_GIT $LOGGER"
+  leval git clone $TETRINET_GIT 
 
   cd $ROOT_DIR"/src/$TETRINET"
 
-  eval "git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH $LOGGER"
+  leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
 
   build_tetrinet
 
@@ -590,18 +590,18 @@ config_and_build_xpilot()
   fi
 
   echo -n "[Configuring] "
-  eval "$ROOT_DIR/src/$xpilot_opt/configure $XPILOT_CONFIG_OPTIONS $LOGGER"
+  leval $ROOT_DIR/src/$xpilot_opt/configure $XPILOT_CONFIG_OPTIONS 
 
   echo -n "[Compiling] "
-  eval "make $XPILOT_MAKE_OPTIONS $LOGGER"
+  leval make $XPILOT_MAKE_OPTIONS 
 
   echo -n "[Installing] "
   mkdir -p $XPILOT_ROOT
-  eval "make $XPILOT_MAKE_OPTIONS install $LOGGER"
+  leval make $XPILOT_MAKE_OPTIONS install 
 
   if [ "$1" == "llvm" ]; then
-    eval "cp -u $ROOT_DIR/src/$XPILOT-$1/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/ $LOGGER"
-    eval "cp -u $ROOT_DIR/src/$XPILOT-$1/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/ $LOGGER"
+    leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/
+    leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/
   fi
 }
 
@@ -623,12 +623,12 @@ update_xpilot()
   fi
   
   echo -n "[Checking] "
-  eval "git remote update $LOGGER"
+  leval git remote update
 
   if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
 
     echo -n "[Pulling] "
-    eval "git pull --all $LOGGER"
+    leval git pull --all
 
     config_and_build_xpilot $1
   fi
@@ -647,11 +647,11 @@ install_xpilot()
   cd $ROOT_DIR"/src"
 
   echo -n "[Cloning] "
-  eval "git clone $XPILOT_GIT $xpilot_opt $LOGGER"
+  leval git clone $XPILOT_GIT $xpilot_opt
 
   cd $ROOT_DIR"/src/$xpilot_opt"
 
-  eval "git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH $LOGGER"
+  leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
 
   config_and_build_xpilot $1
 
@@ -716,7 +716,7 @@ main()
 
   initialize_root_directories
 
-  initialize_logging
+  initialize_logging $@
 
   # record start time
   start_time=$(elapsed_time)

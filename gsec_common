@@ -18,6 +18,11 @@ XPILOT="xpilot"
 XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 
+# Repository Branches
+KLEE_BRANCH="priorityqueue"
+TETRINET_BRANCH="enumerate"
+XPILOT_BRANCH="nuklear-support"
+
 # Source repositories
 GIT_HOST="rac@kudzoo.cs.unc.edu"
 GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
@@ -25,11 +30,6 @@ LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
-
-# Repository Branches
-KLEE_BRANCH="cliver"
-TETRINET_BRANCH="enumerate"
-XPILOT_BRANCH="nuklear-support"
 
 # Tarball locations
 PACKAGE_HOST="rac@kudzoo.cs.unc.edu"
@@ -44,6 +44,9 @@ LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
 NCURSES_PACKAGE="$NCURSES.tar.gz"
 ZLIB_PACKAGE="$ZLIB.tar.gz"
 EXPAT_PACKAGE="$EXPAT.tar.gz"
+
+# Other
+RUN_PREFIX=$(date +%F.%T)
 
 initialize_root_directories() 
 {
@@ -64,11 +67,16 @@ initialize_root_directories()
   ZLIB_ROOT="$ROOT_DIR/local"
   EXPAT_ROOT="$ROOT_DIR/local"
   XPILOT_ROOT="$ROOT_DIR/local"
+	DATA_DIR="$ROOT_DIR/data"
 }
 
 initialize_logging()
 {
-  LOG_FILE=$ROOT_DIR/`basename $0 .sh`.log
+  LOG_DIR=$DATA_DIR/logs
+
+	mkdir -p $LOG_DIR
+
+  LOG_FILE=$LOG_DIR/`basename $0 .sh`_$RUN_PREFIX.log
   
   if [ $VERBOSE_OUTPUT -eq 1 ]; then
     LOGGER=" 2>&1 | tee -a $LOG_FILE"
@@ -77,7 +85,7 @@ initialize_logging()
   fi
 
   touch $LOG_FILE
-  echo "$0 ======= `date`" >> $LOG_FILE
+  echo "`date` ==== $0 $@ " >> $LOG_FILE
 }
 
 git_current_branch()
@@ -115,5 +123,12 @@ confirm ()
       false
       ;;
   esac
+}
+
+# Logging eval function
+leval()
+{
+	eval "echo 'COMMAND: $@' $LOGGER"
+  eval "$@ $LOGGER"
 }
 
