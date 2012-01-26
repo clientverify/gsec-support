@@ -14,10 +14,11 @@ HERE="`dirname "$WRAPPER"`"
 
 ROOT_DIR="`pwd`"
 
-# default mode
+# default config values
 MODE="enumerate"
+COUNT=0
 
-while getopts ":vr:j:t:" opt; do
+while getopts ":vr:j:t:c:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -25,6 +26,10 @@ while getopts ":vr:j:t:" opt; do
 
     t)
       MODE="$OPTARG"
+      ;;
+
+    c)
+      COUNT=$OPTARG
       ;;
 
     r)
@@ -58,8 +63,6 @@ SERVER_ADDRESS="localhost"
 PLAYER_NAME="p1"
 KTEST_SUFFIX="ktest"
 RECENT_LINK="last-run"
-
-COUNT=0
 
 #PTYPE_VALUES=`seq 1 6`
 PTYPE_VALUES=`seq 1`
