@@ -34,6 +34,20 @@ parse_ktest_file()
 	eval "basename $1 .ktest | awk -F_ '{ printf \$$2 }'"
 }
 
+initialize_training()
+{
+	KTEST_DIR="$DATA_DIR/network/tetrinet/last-run"
+	TRAINING_DIR=$DATA_DIR/$CLIVER_MODE/$(basename $BC_FILE .bc)
+	CLIVER_OUTPUT_DIR=$TRAINING_DIR/$RUN_PREFIX
+	
+	CLIVER_BIN="$KLEE_ROOT/bin/cliver"
+
+	BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
+
+	leval mkdir -p $TRAINING_DIR
+	leval ln -sf $CLIVER_OUTPUT_DIR $TRAINING_DIR/recent
+}
+
 tetrinet_training()
 {
 	for i in $KTEST_DIR/*ktest; do
@@ -67,16 +81,9 @@ do_training()
 {
   echo "[cliver training]"
 
-	BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
-
-	KTEST_DIR="$DATA_DIR/network/tetrinet/last-run"
-	CLIVER_OUTPUT_DIR=$DATA_DIR/$CLIVER_MODE/$(basename $BC_FILE .bc)
-	mkdir -p $CLIVER_OUTPUT_DIR
-  CLIVER_BIN="$KLEE_ROOT/bin/cliver"
-
 	CLIVER_OPTS+="-libc=uclibc -posix-runtime "
 	CLIVER_OPTS+="-pc-single-line -debug-stderr -emit-all-errors "
-	CLIVER_OPTS+="-output-dir $CLIVER_OUTPUT_DIR/$RUN_PREFIX "
+	CLIVER_OPTS+="-output-dir $CLIVER_OUTPUT_DIR/"
 	CLIVER_OPTS+="-switch-type=$SWITCH_TYPE "
 	CLIVER_OPTS+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
 	CLIVER_OPTS+="-max-memory=$MAX_MEMORY "
