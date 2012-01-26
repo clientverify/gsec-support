@@ -47,7 +47,7 @@ initialize_training()
 	CLIVER_BIN="$KLEE_ROOT/bin/cliver"
 
 	leval mkdir -p $CLIVER_OUTPUT_DIR
-	leval ln -sf $CLIVER_OUTPUT_DIR $TRAINING_DIR/recent
+	leval ln -sf $RUN_PREFIX $TRAINING_DIR/recent
 }
 
 tetrinet_training()
@@ -76,7 +76,7 @@ tetrinet_training()
 
 		cliver_opts+="$BC_FILE $bc_file_opts "
 
-		if [ $USE_LSF -eq 1]; then
+		if [ $USE_LSF -eq 1 ]; then
 			lbsub $CLIVER_BIN $cliver_opts
 		else
 			leval $CLIVER_BIN $cliver_opts
@@ -141,6 +141,10 @@ main()
   initialize_root_directories
 
   initialize_logging $@
+
+	if [ $USE_LSF -eq 1 ]; then
+		initialize_lsf
+	fi
 
   # record start time
   start_time=$(elapsed_time)

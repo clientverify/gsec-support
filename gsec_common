@@ -77,10 +77,11 @@ initialize_logging()
 
 	mkdir -p $LOG_DIR
 
-  LOG_BASENAME=`basename $0 .sh`
-  LOG_FILE=$LOG_DIR/$LOG_BASENAME"_"$RUN_PREFIX".log"
-  
-	LSF_LOG_DIR=$LOG_DIR/$LOG_BASENAME"_"$RUN_PREFIX"_"lsf
+  SCRIPT_BASENAME=`basename $0 .sh`
+
+  LOG_FILE_BASENAME=$SCRIPT_BASENAME"_"$RUN_PREFIX".log"
+  LOG_FILE=$LOG_DIR/$LOG_FILE_BASENAME
+  RECENT_LOG_FILE=$SCRIPT_BASENAME"_recent.log"
 
   if [ $VERBOSE_OUTPUT -eq 1 ]; then
     LOGGER=" 2>&1 | tee -a $LOG_FILE"
@@ -89,8 +90,20 @@ initialize_logging()
   fi
 
   touch $LOG_FILE
-  ln -sf $LOG_FILE $LOG_DIR/$LOG_BASENAME"_recent.log"
+  ln -sf $LOG_FILE_BASENAME $LOG_DIR/$RECENT_LOG_FILE
+
   echo "`date` ==== $0 $@ " >> $LOG_FILE
+}
+
+initialize_lsf()
+{
+  SCRIPT_BASENAME=`basename $0 .sh`
+	LSF_LOG_DIR_BASENAME=$SCRIPT_BASENAME"_lsf_"$RUN_PREFIX
+  RECENT_LSF_LOG_DIR=$SCRIPT_BASENAME"_lsf_recent"
+	LSF_LOG_DIR=$LOG_DIR/$LSF_LOG_DIR_BASENAME
+
+	mkdir -p $LSF_LOG_DIR
+  ln -sf $LSF_LOG_DIR_BASENAME $LOG_DIR/$RECENT_LSF_LOG_DIR
 }
 
 git_current_branch()
@@ -140,10 +153,8 @@ leval()
 # Logging bsub function
 lbsub()
 {
-	mkdir -p $LSF_LOG_DIR
-
 	local bsub_command="bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
 	eval "echo 'COMMAND: $bsub_command $@' $LOGGER"
-	bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J $@
+	bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
 }
 
