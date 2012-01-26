@@ -145,6 +145,7 @@ main()
   # record start time
   start_time=$(elapsed_time)
 
+	initialize_training
 	do_training
 
   echo "Elapsed time: $(elapsed_time $start_time)"
