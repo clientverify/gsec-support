@@ -47,7 +47,7 @@ EXPAT_PACKAGE="$EXPAT.tar.gz"
 
 # Other
 RUN_PREFIX=$(date +%F.%T)
-LSF_QUEUE="debug"
+LSF_QUEUE="day"
 
 initialize_root_directories() 
 {
