@@ -18,13 +18,13 @@ ROOT_DIR="`pwd`"
 MODE="enumerate"
 COUNT=0
 
-while getopts ":vr:j:t:c:" opt; do
+while getopts ":vr:j:t:c:m:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
       ;;
 
-    t)
+    m)
       MODE="$OPTARG"
       ;;
 
@@ -69,7 +69,7 @@ PTYPE_VALUES=`seq 1`
 #RATE_VALUES=`echo 1; seq 2 2 10`
 RATE_VALUES=`echo 1`
 
-MAX_ROUND=100
+MAX_ROUND=10
 INPUT_GEN_TYPE=0
 
 #=============================================================================
@@ -115,12 +115,7 @@ then
   mkdir -p $LOG_DIR $KTEST_DIR 
 
   rm $DATA_DIR/$RECENT_LINK
-  ln -sf $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
-
-  #PTYPE_VALUES=`seq 0 0`
-  #RATE_VALUES=`echo 1`
-  #COUNT=0
-
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 
   for ptype in $PTYPE_VALUES
   do
@@ -179,18 +174,19 @@ then
   mkdir -p $LOG_DIR $KTEST_DIR 
 
   rm $DATA_DIR/$RECENT_LINK
-  ln -sf $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 
   for ptype in $PTYPE_VALUES
   do
     for rate in $RATE_VALUES
     do 
-      for i in `seq 1 $COUNT`
+      for i in `seq 0 $COUNT`
       do
         zpad_ptype=`printf "%02d" $ptype`
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
-        DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
+        #DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
+				DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -204,8 +200,10 @@ then
           done
 
           echo "creating $KTEST_FILE"
-          OPTS=" -log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
-          OPTS+=" -random -seed $i -maxround $MAX_ROUND"
+
+					OPTS+="-maxround $MAX_ROUND "
+          OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
+          OPTS+="-random -seed $i -slowmode"
           OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
           OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
 
