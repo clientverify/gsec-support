@@ -147,7 +147,14 @@ confirm ()
 leval()
 {
 	eval "echo 'COMMAND: $@' $LOGGER"
-  eval "$@ $LOGGER"
+  eval $@ $LOGGER
+}
+
+# Logging gdb eval function
+geval()
+{
+	eval "echo 'GDB COMMAND: $@' $LOGGER"
+  eval gdb -ex run --args $@
 }
 
 # Logging bsub function
