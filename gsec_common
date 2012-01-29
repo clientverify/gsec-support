@@ -146,22 +146,22 @@ confirm ()
 # Logging eval function
 leval()
 {
-	eval "echo 'COMMAND: $@' $LOGGER"
+  eval "echo 'EXEC ($(pwd -P))\$ $@' $LOGGER"
   eval $@ $LOGGER
 }
 
 # Logging gdb eval function
 geval()
 {
-	eval "echo 'GDB COMMAND: $@' $LOGGER"
+  eval "echo 'EXEC ($(pwd -P))\$ gdb -ex run --args $@' $LOGGER"
   eval gdb -ex run --args $@
 }
 
 # Logging bsub function
 lbsub()
 {
-	local bsub_command="bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
-	eval "echo 'COMMAND: $bsub_command $@' $LOGGER"
-	bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
+  local bsub_command="bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
+  eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
+  bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
 }
 
