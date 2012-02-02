@@ -28,6 +28,8 @@ MAX_MEMORY=32000
 SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
+DEBUG_PRINT_EXECUTION_EVENTS=0
+DEBUG_EXECUTION_TREE=1
 DEBUG_ADDRESS_SPACE_GRAPH=0
 DEBUG_STATE_MERGER=0
 DEBUG_NETWORK_MANAGER=0
@@ -88,6 +90,8 @@ cliver_parameters()
 	cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
 	cliver_params+="-max-memory=$MAX_MEMORY "
 	cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
+	cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
+	cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
 	cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
 	cliver_params+="-debug-state-merger=$DEBUG_STATE_MERGER "
 	cliver_params+="-debug-network-manager=$DEBUG_NETWORK_MANAGER "
