@@ -16,6 +16,8 @@ VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 USE_LSF=0
 USE_GDB=0
+USE_HEAP_PROFILER=0
+USE_HEAP_CHECK=0
 ROOT_DIR="`pwd`"
 	
 # Default cliver options
@@ -29,13 +31,14 @@ SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
 DEBUG_PRINT_EXECUTION_EVENTS=0
-DEBUG_EXECUTION_TREE=1
+DEBUG_EXECUTION_TREE=0
 DEBUG_ADDRESS_SPACE_GRAPH=0
 DEBUG_STATE_MERGER=0
 DEBUG_NETWORK_MANAGER=0
 DEBUG_SOCKET=0
 DEBUG_SEARCHER=0
 PRINT_OBJECT_BYTES=0
+EXTRA_CLIVER_OPTIONS=""
 
 parse_ktest_file()
 {
@@ -99,6 +102,8 @@ cliver_parameters()
 	cliver_params+="-debug-searcher=$DEBUG_SEARCHER "
 	cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
 	cliver_params+="-cliver-mode=$CLIVER_MODE "
+	cliver_params+=" $EXTRA_CLIVER_OPTIONS "
+
 	printf "%s" "$cliver_params"
 }
 
@@ -108,6 +113,10 @@ run_cliver()
  		lbsub $CLIVER_BIN $@
  	elif [ $USE_GDB -eq 1 ]; then
  		geval $CLIVER_BIN-bin $@
+ 	elif [ $USE_HEAP_PROFILER -eq 1 ]; then
+ 		leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
+ 	elif [ $USE_HEAP_CHECK -eq 1 ]; then
+ 		leval env HEAPCHECK=normal $CLIVER_BIN-bin $@
  	else
  		leval $CLIVER_BIN-bin $@
  	fi
@@ -149,8 +158,11 @@ do_verification()
 
 main() 
 {
-  while getopts ":vr:j:blm:dg" opt; do
+  while getopts ":vr:j:blm:dgx:eh:" opt; do
     case $opt in
+			x)
+				EXTRA_CLIVER_OPTIONS="$OPTARG"
+				;;
       l)
         USE_LSF=1
 				;;
@@ -158,13 +170,27 @@ main()
 			g)
         USE_GDB=1
 				;;
+ 
+			h)
+				case $OPTARG in
+					heapprofile*)
+						USE_HEAP_PROFILER=1
+						;;
+					heapcheck*)
+						USE_HEAP_CHECK=1
+				esac
+				;;
 
+			e)
+        DEBUG_PRINT_EXECUTION_EVENTS=1
+				;;
 			d)
 				DEBUG_ADDRESS_SPACE_GRAPH=1
 				DEBUG_STATE_MERGER=1
 				DEBUG_NETWORK_MANAGER=1
 				DEBUG_SOCKET=1
 				DEBUG_SEARCHER=1
+				DEBUG_EXECUTION_TREE=1
 				;;
 
       v)
