@@ -19,7 +19,7 @@ XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 
 # Repository Branches
-KLEE_BRANCH="priorityqueue"
+KLEE_BRANCH="eventhandler"
 TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
