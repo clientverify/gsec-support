@@ -241,6 +241,10 @@ main()
 			do_training
 			;;
 
+		testtraining )
+			do_verification
+			;;
+
 		verif*)
 			do_verification
 			;;
