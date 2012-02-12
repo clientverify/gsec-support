@@ -13,13 +13,17 @@ HERE="`dirname "$WRAPPER"`"
 
 # Command line options
 FORCE_CLEAN=0
-FORCE_UPDATE=0
+FORCE_COMPILATION=0
 FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
-SKIP_INSTALL_ERRORS=0
+BUILD_DEBUG=0
+BUILD_LOCAL=0 # build local code, don't checkout from git
+SELECTIVE_BUILD=0
+SELECTIVE_BUILD_TARGET=""
+SKIP_INSTALL_ERRORS=1
 INSTALL_LLVMGCC_BIN=0
 VERBOSE_OUTPUT=0
-MAKE_THREADS=4
+MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
 
 get_package()
@@ -325,8 +329,13 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
 
-  leval make ENABLE_OPTIMIZED=0 $LLVM_MAKE_OPTIONS $TARGET 
-  leval make ENABLE_OPTIMIZED=1 $LLVM_MAKE_OPTIONS $TARGET 
+	if [ $BUILD_DEBUG -eq 1 ]; then
+		LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
+	else
+		LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+	fi
+
+  leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
 
 update_llvm()
@@ -339,17 +348,21 @@ update_llvm()
 
   cd $ROOT_DIR/src/$LLVM
 
-  #if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
-  #  echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-  #fi
+  if [ $BUILD_LOCAL -eq 0 ]; then
+		#if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
+		#  echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+		#fi
 
-  echo -n "[Checking] "
-  leval git remote update
+		echo -n "[Checking] "
+		leval git remote update
+	fi
 
-  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling] "
-    leval git pull --all 
+		if [ $BUILD_LOCAL -eq 0 ]; then
+			echo -n "[Pulling] "
+			leval git pull --all 
+		fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -398,7 +411,7 @@ install_llvm()
 config_klee()
 {
   cd $ROOT_DIR/src/$KLEE
-  KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT "
+  KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM --with-llvmobj=$ROOT_DIR/build/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
@@ -419,14 +432,23 @@ build_klee()
   if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
   cd $ROOT_DIR/src/klee
-  KLEE_MAKE_OPTIONS="RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
+  KLEE_MAKE_OPTIONS="NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
 
   if test ${ALTCC+defined}; then
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
-  leval make ENABLE_OPTIMIZED=0 $KLEE_MAKE_OPTIONS $TARGET 
-  leval make ENABLE_OPTIMIZED=1 $KLEE_MAKE_OPTIONS $TARGET 
+	if [ $BUILD_DEBUG -eq 1 ]; then
+		KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
+	else
+		KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+	fi
+
+	### HACK ### need to remove libraries from install location so that
+	# old klee/cliver libs are not used before recently compiled libs
+	leval make $KLEE_MAKE_OPTIONS uninstall
+
+  leval make $KLEE_MAKE_OPTIONS $TARGET 
 }
 
 install_klee()
@@ -467,17 +489,21 @@ update_klee()
 
   cd $ROOT_DIR/src/$KLEE
 
-  if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
-    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-  fi
+  if [ $BUILD_LOCAL -eq 0 ]; then
+		if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
+			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+		fi
 
-  echo -n "[Checking] "
-  leval git remote update 
+		echo -n "[Checking] "
+		leval git remote update 
+	fi
 
-  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling] "
-    leval git pull --all 
+		if [ $BUILD_LOCAL -eq 0 ]; then
+			echo -n "[Pulling] "
+			leval git pull --all 
+		fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -527,17 +553,21 @@ update_tetrinet()
 
   cd $ROOT_DIR/src/$TETRINET
 
-  if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
-    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-  fi
-  
-  echo -n "[Checking] "
-  leval git remote update 
+  if [ $BUILD_LOCAL -eq 0 ]; then
+		if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
+			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+		fi
+		
+		echo -n "[Checking] "
+		leval git remote update 
+	fi
 
-  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-    echo -n "[Pulling] "
-    leval git pull --all 
+		if [ $BUILD_LOCAL -eq 0 ]; then
+			echo -n "[Pulling] "
+			leval git pull --all 
+		fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
       echo -n "[Cleaning] "
@@ -618,17 +648,21 @@ update_xpilot()
 
   cd $ROOT_DIR/src/$xpilot_opt
 
-  if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
-    echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-  fi
-  
-  echo -n "[Checking] "
-  leval git remote update
+  if [ $BUILD_LOCAL -eq 0 ]; then
+		if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
+			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+		fi
+		
+		echo -n "[Checking] "
+		leval git remote update
+	fi
 
-  if [ $FORCE_UPDATE -eq 1 ] || git status -uno | grep -q behind ; then
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
+  if [ $BUILD_LOCAL -eq 0 ]; then
     echo -n "[Pulling] "
     leval git pull --all
+	fi
 
     config_and_build_xpilot $1
   fi
@@ -660,7 +694,7 @@ install_xpilot()
 
 main() 
 {
-  while getopts ":afkcivsbr:j:" opt; do
+  while getopts ":afkcivs:br:j:dl" opt; do
     case $opt in
       a)
         # Use alternative GCC
@@ -670,9 +704,18 @@ main()
         ;;
   
       f)
-        FORCE_UPDATE=1
+        FORCE_COMPILATION=1
         ;;
-  
+   
+      d)
+        BUILD_DEBUG=1
+        ;;
+ 
+      l)
+        BUILD_LOCAL=1
+				FORCE_COMPILATION=1
+        ;;
+
       k)
         FORCE_CLEAN=1
         ;;
@@ -690,7 +733,8 @@ main()
         ;;
   
       s)
-        SKIP_INSTALL_ERRORS=1
+				SELECTIVE_BUILD=1
+				SELECTIVE_BUILD_TARGET="$OPTARG"
         ;;
   
       b)
@@ -746,7 +790,25 @@ main()
     install_xpilot llvm
     install_xpilot x86
   
+  elif [ $SELECTIVE_BUILD -eq 1 ]; then
+		case $SELECTIVE_BUILD_TARGET in 
+			*llvm*)
+				update_llvm
+				;;
+			*klee*)
+				update_klee
+				;;
+			*tetrinet*)
+				update_tetrinet
+				;;
+			*xpilot*)
+				update_xpilot llvm
+				update_xpilot x86
+				;;
+		esac
+
   else
+		# update all
   
     update_llvm
     update_klee
