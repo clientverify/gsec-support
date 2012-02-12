@@ -18,6 +18,7 @@ USE_LSF=0
 USE_GDB=0
 USE_HEAP_PROFILER=0
 USE_HEAP_CHECK=0
+USE_HEAP_CHECK_LOCAL=0
 ROOT_DIR="`pwd`"
 	
 # Default cliver options
@@ -117,6 +118,8 @@ run_cliver()
  		leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
  	elif [ $USE_HEAP_CHECK -eq 1 ]; then
  		leval env HEAPCHECK=normal $CLIVER_BIN-bin $@
+ 	elif [ $USE_HEAP_CHECK_LOCAL -eq 1 ]; then
+ 		leval env HEAPCHECK=local $CLIVER_BIN-bin $@
  	else
  		leval $CLIVER_BIN-bin $@
  	fi
@@ -176,8 +179,12 @@ main()
 					heapprofile*)
 						USE_HEAP_PROFILER=1
 						;;
+					heaplocal*)
+						USE_HEAP_CHECK_LOCAL=1
+						;;
 					heapcheck*)
 						USE_HEAP_CHECK=1
+						;;
 				esac
 				;;
 
