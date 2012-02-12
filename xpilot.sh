@@ -100,6 +100,7 @@ case "$MODE":
 		leval $CLIENT_BIN -join $CLIENT_OPTIONS $SERVER_ADDRESS
 		;;
 	playback*)
+		CLIENT_OPTIONS+=" -recordInputFile $KTEST_DIR/input.record "
 		leval $CLIENT_BIN -join $CLIENT_OPTIONS $SERVER_ADDRESS
 		;;
 esac
