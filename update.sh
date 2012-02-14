@@ -605,29 +605,32 @@ config_and_build_xpilot()
 {
   if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
-  XPILOT_CONFIG_OPTIONS="--disable-sdl-client --disable-sdl-gameloop "
-  XPILOT_CONFIG_OPTIONS+="--disable-sdltest --disable-xp-mapedit "
-  XPILOT_CONFIG_OPTIONS+="--disable-replay --disable-sound "
-  XPILOT_CONFIG_OPTIONS+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  XPILOT_CONFIG_OPTIONS+="--program-suffix=-$1 "
+  local xpilot_config_options=""
+  xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
+  xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
+  xpilot_config_options+="--disable-replay --disable-sound "
+  xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
+  xpilot_config_options+="--program-suffix=-$1 "
 
-  XPILOT_LLVM_OPTIONS="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
-  XPILOT_LLVM_OPTIONS+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT-$1/llvm_gcc_script.py "
+  local xpilot_llvm_options=""
+  xpilot_llvm_options+="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
+  xpilot_llvm_options+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT-$1/llvm_gcc_script.py "
 
+	local xpilot_make_options=""
   if [ "$1" == "llvm" ]; then
-    XPILOT_CONFIG_OPTIONS="$XPILOT_LLVM_OPTIONS $XPILOT_CONFIG_OPTIONS "
-    XPILOT_MAKE_OPTIONS+="$XPILOT_LLVM_OPTIONS "
+    xpilot_config_options+="$xpilot_llvm_options"
+    xpilot_make_options+="$xpilot_llvm_options "
   fi
 
   echo -n "[Configuring] "
-  leval $ROOT_DIR/src/$xpilot_opt/configure $XPILOT_CONFIG_OPTIONS 
+  leval $ROOT_DIR/src/$xpilot_opt/configure $xpilot_config_options 
 
   echo -n "[Compiling] "
-  leval make $XPILOT_MAKE_OPTIONS 
+  leval make $xpilot_make_options 
 
   echo -n "[Installing] "
   mkdir -p $XPILOT_ROOT
-  leval make $XPILOT_MAKE_OPTIONS install 
+  leval make $xpilot_make_options install 
 
   if [ "$1" == "llvm" ]; then
     leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/
@@ -659,10 +662,10 @@ update_xpilot()
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    echo -n "[Pulling] "
-    leval git pull --all
-	fi
+		if [ $BUILD_LOCAL -eq 0 ]; then
+			echo -n "[Pulling] "
+			leval git pull --all
+		fi
 
     config_and_build_xpilot $1
   fi
@@ -801,9 +804,15 @@ main()
 			*tetrinet*)
 				update_tetrinet
 				;;
-			*xpilot*)
+			xpilot)
 				update_xpilot llvm
 				update_xpilot x86
+				;;
+			xpilot-llvm)
+				update_xpilot llvm
+				;;
+			xpilot-x86)
+				update_xpilot x86 
 				;;
 		esac
 
