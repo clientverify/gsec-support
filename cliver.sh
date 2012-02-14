@@ -27,7 +27,7 @@ CLIVER_LIBC="uclibc"
 OUTPUT_LLVM_ASSEMBLY=0
 OUTPUT_LLVM_BITCODE=0
 PRINT_INSTRUCTIONS=0
-MAX_MEMORY=32000
+MAX_MEMORY=64000
 SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
@@ -60,6 +60,7 @@ parse_tetrinet_parameters()
 	bc_file_opts+="-startingheight $starting_height "
 	bc_file_opts+="-partialtype $partial_type "
 	bc_file_opts+="-partialrate $partial_rate "
+	bc_file_opts+="-inputgenerationtype 4 "
 	bc_file_opts+="-seed $random_seed "
 	bc_file_opts+=" $player_name $server_address "
 	printf "%s" "$bc_file_opts"
