@@ -804,9 +804,15 @@ main()
 			*tetrinet*)
 				update_tetrinet
 				;;
-			*xpilot*)
+			xpilot)
 				update_xpilot llvm
 				update_xpilot x86
+				;;
+			xpilot-llvm)
+				update_xpilot llvm
+				;;
+			xpilot-x86)
+				update_xpilot x86 
 				;;
 		esac
 
