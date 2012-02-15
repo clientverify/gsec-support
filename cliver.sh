@@ -221,6 +221,7 @@ main()
 				;;
 			l)
 				USE_LSF=1
+                                MAX_MEMORY=46000
 				;;
       
 			g)
