@@ -167,6 +167,6 @@ lbsub()
 {
   local bsub_command="bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
   eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
-  bsub -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
+  bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
 }
 
