@@ -205,11 +205,12 @@ then
 	  OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
           OPTS+="-random -seed $i -slowmode"
+          #OPTS+="-random -seed $i "
           OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
           OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
 
           echo "executing $CLIENT_COMMAND $OPTS"
-          $CLIENT_COMMAND $OPTS
+          $CLIENT_COMMAND $OPTS 
 
           echo "exiting. now killing server process. "
           pkill $SERVER_BIN

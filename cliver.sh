@@ -58,10 +58,12 @@ tetrinet_parameters()
 	local server_address="$(parse_tetrinet_ktest_filename $1 8)"
 
 	local bc_file_opts="-autostart "
-	bc_file_opts+="-startingheight $starting_height "
+	#bc_file_opts+="-startingheight $starting_height "
+	bc_file_opts+="-startingheight 0 "
 	bc_file_opts+="-partialtype $partial_type "
 	bc_file_opts+="-partialrate $partial_rate "
 	#bc_file_opts+="-inputgenerationtype 13 "
+	bc_file_opts+="-inputgenerationtype 0 "
 	bc_file_opts+="-seed $random_seed "
 	bc_file_opts+=" $player_name $server_address "
 	printf "%s" "$bc_file_opts"
