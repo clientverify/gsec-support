@@ -49,7 +49,7 @@ parse_tetrinet_ktest_filename()
 
 tetrinet_parameters()
 {
-  local random_seed=$(parse_tetrinet_ktest_filename $1 2)
+	local random_seed=$(parse_tetrinet_ktest_filename $1 2)
 	local starting_height=$(parse_tetrinet_ktest_filename $1 2)
 	local input_gen_type=$(parse_tetrinet_ktest_filename $1 3)
 	local partial_type=$(parse_tetrinet_ktest_filename $1 4)
@@ -61,7 +61,7 @@ tetrinet_parameters()
 	bc_file_opts+="-startingheight $starting_height "
 	bc_file_opts+="-partialtype $partial_type "
 	bc_file_opts+="-partialrate $partial_rate "
-	bc_file_opts+="-inputgenerationtype 4 "
+	bc_file_opts+="-inputgenerationtype 13 "
 	bc_file_opts+="-seed $random_seed "
 	bc_file_opts+=" $player_name $server_address "
 	printf "%s" "$bc_file_opts"
@@ -87,7 +87,7 @@ initialize_bc()
 			;;
 		xpilot*)
 			# need to automatically set this var...
-			if [ -n "${XPILOTHOST:+x}" ] 
+			if [ -n "${XPILOTHOST:+x}" ] ; then
 				echo "set XPILOTHOST environment variable before running xpilot"
 				exit
 			fi
@@ -209,20 +209,20 @@ do_verification()
 
 main() 
 {
-  while getopts ":vr:j:b:lm:dgx:eh:" opt; do
-    case $opt in
+	while getopts ":vr:j:b:lm:dgx:eh:" opt; do
+		case $opt in
 			b)
 				BC_MODE="$OPTARG"
 				;;
 			x)
 				EXTRA_CLIVER_OPTIONS="$OPTARG"
 				;;
-      l)
-        USE_LSF=1
+			l)
+				USE_LSF=1
 				;;
       
 			g)
-        USE_GDB=1
+				USE_GDB=1
 				;;
  
 			h)
@@ -240,7 +240,7 @@ main()
 				;;
 
 			e)
-        DEBUG_PRINT_EXECUTION_EVENTS=1
+				DEBUG_PRINT_EXECUTION_EVENTS=1
 				;;
 			d)
 				DEBUG_ADDRESS_SPACE_GRAPH=1
@@ -251,35 +251,34 @@ main()
 				DEBUG_EXECUTION_TREE=1
 				;;
 
-      v)
-        VERBOSE_OUTPUT=1
-        ;;
-  
-      r)
-        echo "Setting root dir to $OPTARG"
-        ROOT_DIR="$OPTARG"
-        ;;
-   
-      m)
-        CLIVER_MODE="$OPTARG"
-        ;;
+			v)
+				VERBOSE_OUTPUT=1
+				;;
 
-      j)
-        MAKE_THREADS=$OPTARG
-        ;;
-  
-      :)
-        echo "Option -$OPTARG requires an argument"
-        exit
-        ;;
-  
-    esac
-  done
+			r)
+				echo "Setting root dir to $OPTARG"
+				ROOT_DIR="$OPTARG"
+				;;
+
+			m)
+				CLIVER_MODE="$OPTARG"
+				;;
+
+			j)
+				MAKE_THREADS=$OPTARG
+				;;
+			:)
+				echo "Option -$OPTARG requires an argument"
+				exit
+				;;
+
+		esac
+	done
 
 	echo "[cliver mode: $CLIVER_MODE]"
 
-  initialize_root_directories
-  initialize_logging $@
+	initialize_root_directories
+ 	initialize_logging $@
 	initialize_bc
 	initialize_cliver
 
@@ -287,8 +286,8 @@ main()
 		initialize_lsf
 	fi
 
-  # record start time
-  start_time=$(elapsed_time)
+ 	# record start time
+	start_time=$(elapsed_time)
 
 	case $CLIVER_MODE in
 
@@ -305,8 +304,7 @@ main()
 			;;
 
 	esac
-
-  echo "[elapsed time: $(elapsed_time $start_time)]"
+	echo "[elapsed time: $(elapsed_time $start_time)]"
 }
 
 # Run main
