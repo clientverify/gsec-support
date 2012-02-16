@@ -216,7 +216,7 @@ then
 
           echo "exiting. now killing server process. "
           pkill $SERVER_BIN
-          sleep 4
+          sleep 1
         done
       done
     done

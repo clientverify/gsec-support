@@ -142,7 +142,6 @@ cliver_parameters()
 	cliver_params+="-debug-socket=$DEBUG_SOCKET "
 	cliver_params+="-debug-searcher=$DEBUG_SEARCHER "
 	cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
-	cliver_params+="-cliver-mode=$CLIVER_MODE "
 	cliver_params+=" $EXTRA_CLIVER_OPTIONS "
 
 	# BC specific cliver options
@@ -184,6 +183,8 @@ do_training()
 
 		cliver_params+=" -socket-log $i "
 		cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+		cliver_params+=" -copy-input-files-to-output-dir "
+		cliver_params+=" -cliver-mode=$CLIVER_MODE "
 
 		cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -201,6 +202,7 @@ do_verification()
 
 		cliver_params+=" -socket-log $i "
 		cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+		cliver_params+=" -cliver-mode=$CLIVER_MODE "
 
 		cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -209,10 +211,47 @@ do_verification()
 	done
 }
 
+do_ncross_verification()
+{
+	NCROSS_MODE="verify-with-edit-cost"
+	declare -a ktest_list=( $KTEST_DIR/*ktest )
+	num_ktest=${#ktest_list[@]}
+
+	echo "Number of elements in array is $num_ktest"
+	#echo ${ktest_list[2]}
+
+	indices="$(seq 0 $(($num_ktest -1)))"
+	for i in $indices; do
+		echo "Cross validating ${ktest_list[$i]} with:"
+
+		local ktest_file="${ktest_list[$i]}"
+		local ktest_basename=$(basename $ktest_file .ktest)
+		local cliver_params="$(cliver_parameters)"
+
+		cliver_params+=" -socket-log $ktest_file "
+		cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+		cliver_params+=" -cliver-mode=$NCROSS_MODE "
+
+		for k in $indices; do
+			if [ $i != $k ]; then
+				cliver_params+=" -training-path-file=\"${ktest_list[$k]}\" "
+			fi
+		done
+
+		cliver_params+="$BC_FILE $(bc_parameters $ktest_file) "
+		run_cliver $cliver_params
+
+	done
+}
+
 main() 
 {
-	while getopts ":vr:j:b:lm:dgx:eh:" opt; do
+	while getopts ":vr:j:b:lm:dgx:eh:n" opt; do
 		case $opt in
+			n)
+				DRY_RUN=1
+				;;
+
 			b)
 				BC_MODE="$OPTARG"
 				;;
@@ -293,6 +332,10 @@ main()
 	start_time=$(elapsed_time)
 
 	case $CLIVER_MODE in
+
+		ncross* )
+			do_ncross_verification
+			;;
 
 		training )
 			do_training
