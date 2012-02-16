@@ -15,8 +15,8 @@ COUNT=0
 #=============================================================================
 # need to automatically set this var...
 if [ -n "${XPILOTHOST:+x}" ] 
-	echo "set XPILOTHOST environment variable before running client"
-	exit
+  echo "set XPILOTHOST environment variable before running client"
+  exit
 fi
 #=============================================================================
 
@@ -102,28 +102,28 @@ SERVER_OPTIONS+=" -ktestFileName \"$KTEST_DIR/xpilot.ktest\" "
 
 make_xpilot_dirs()
 {
-	mkdir -p $KTEST_DIR 
-	rm $DATA_DIR/$RECENT_LINK
-	ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  mkdir -p $KTEST_DIR 
+  rm $DATA_DIR/$RECENT_LINK
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 }
 
 case "$MODE" in 
-	server)
-		make_xpilot_dirs
-		leval $SERVER_COMMAND $SERVER_OPTIONS
-		;;
-	client)
-		leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
-		;;
-	record)
-		make_xpilot_dirs
-		CLIENT_OPTIONS+=" -recordInputFile $KTEST_DIR/$RECORD_FILE "
-		leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
-		;;
-	playback)
-		CLIENT_OPTIONS+=" -playInputFile $RECORD_DIR/$RECENT_LINK/$RECORD_FILE "
-		leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
-		;;
+  server)
+    make_xpilot_dirs
+    leval $SERVER_COMMAND $SERVER_OPTIONS
+    ;;
+  client)
+    leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
+    ;;
+  record)
+    make_xpilot_dirs
+    CLIENT_OPTIONS+=" -recordInputFile $KTEST_DIR/$RECORD_FILE "
+    leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
+    ;;
+  playback)
+    CLIENT_OPTIONS+=" -playInputFile $RECORD_DIR/$RECENT_LINK/$RECORD_FILE "
+    leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
+    ;;
 esac
 
 leval xset r on

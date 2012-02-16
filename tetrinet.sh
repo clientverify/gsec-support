@@ -69,7 +69,7 @@ PTYPE_VALUES=`seq 1`
 #RATE_VALUES=`echo 1; seq 2 2 10`
 RATE_VALUES=`echo 1`
 
-MAX_ROUND=100
+MAX_ROUND=10
 INPUT_GEN_TYPE=0
 
 #=============================================================================
@@ -129,7 +129,7 @@ then
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
         #DESC="tetrinet_enumerate_inputs_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
-	DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
+        DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -144,7 +144,7 @@ then
 
           echo "creating $KTEST_FILE"
           OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
-	  #OPTS+="-maxround $MAX_ROUND "
+          #OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
           OPTS+="-random -seed $i "
           OPTS+="-autostart -partialtype $ptype -partialrate $rate "
@@ -188,7 +188,7 @@ then
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
         #DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
-	DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
+        DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -204,7 +204,7 @@ then
           echo "creating $KTEST_FILE"
 
           OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
-	  OPTS+="-maxround $MAX_ROUND "
+          OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
           OPTS+="-random -seed $i -slowmode"
           #OPTS+="-random -seed $i "
@@ -246,7 +246,7 @@ then
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
         #DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
-	DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
+        DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -262,7 +262,7 @@ then
           echo "creating $KTEST_FILE"
 
           OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
-	  OPTS+="-maxround $MAX_ROUND "
+          OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
           #OPTS+="-random -seed $i -slowmode"
           OPTS+=" -autostart -partialtype $ptype -partialrate $rate"

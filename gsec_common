@@ -68,14 +68,14 @@ initialize_root_directories()
   ZLIB_ROOT="$ROOT_DIR/local"
   EXPAT_ROOT="$ROOT_DIR/local"
   XPILOT_ROOT="$ROOT_DIR/local"
-	DATA_DIR="$ROOT_DIR/data"
+  DATA_DIR="$ROOT_DIR/data"
 }
 
 initialize_logging()
 {
   LOG_DIR=$DATA_DIR/logs
 
-	mkdir -p $LOG_DIR
+  mkdir -p $LOG_DIR
 
   SCRIPT_BASENAME=`basename $0 .sh`
 
@@ -145,7 +145,7 @@ confirm ()
 
 max_threads()
 {
-	grep "^processor" /proc/cpuinfo | tail -n 1 | awk -F' ' '{ printf ($3+1)*2 }'
+  grep "^processor" /proc/cpuinfo | tail -n 1 | awk -F' ' '{ printf ($3+1)*2 }'
 }
 
 # Logging eval function
@@ -153,8 +153,8 @@ leval()
 {
   eval "echo 'EXEC ($(pwd -P))\$ $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-	eval $@ $LOGGER
-	fi
+  	eval $@ $LOGGER
+  fi
 }
 
 # Logging gdb eval function
@@ -162,8 +162,8 @@ geval()
 {
   eval "echo 'EXEC ($(pwd -P))\$ gdb -ex run --args $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-		eval gdb -ex run --args $@
-	fi
+  eval gdb -ex run --args $@
+  fi
 }
 
 # Logging bsub function
@@ -172,7 +172,7 @@ lbsub()
   local bsub_command="bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
   eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-		bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
-	fi
+  bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
+  fi
 }
 

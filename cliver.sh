@@ -21,7 +21,7 @@ USE_HEAP_CHECK=0
 USE_HEAP_CHECK_LOCAL=0
 ROOT_DIR="`pwd`"
 BC_MODE="tetrinet"
-	
+
 # Default cliver options
 CLIVER_MODE="training"
 CLIVER_LIBC="uclibc"
@@ -159,19 +159,19 @@ cliver_parameters()
 
 run_cliver()
 {
- 	if [ $USE_LSF -eq 1 ]; then
- 		lbsub $CLIVER_BIN $@
- 	elif [ $USE_GDB -eq 1 ]; then
- 		geval $CLIVER_BIN-bin $@
- 	elif [ $USE_HEAP_PROFILER -eq 1 ]; then
- 		leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
- 	elif [ $USE_HEAP_CHECK -eq 1 ]; then
- 		leval env HEAPCHECK=normal $CLIVER_BIN-bin $@
- 	elif [ $USE_HEAP_CHECK_LOCAL -eq 1 ]; then
- 		leval env HEAPCHECK=local $CLIVER_BIN-bin $@
- 	else
- 		leval $CLIVER_BIN-bin $@
- 	fi
+	if [ $USE_LSF -eq 1 ]; then
+		lbsub $CLIVER_BIN $@
+	elif [ $USE_GDB -eq 1 ]; then
+		geval $CLIVER_BIN-bin $@
+	elif [ $USE_HEAP_PROFILER -eq 1 ]; then
+		leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
+	elif [ $USE_HEAP_CHECK -eq 1 ]; then
+		leval env HEAPCHECK=normal $CLIVER_BIN-bin $@
+	elif [ $USE_HEAP_CHECK_LOCAL -eq 1 ]; then
+		leval env HEAPCHECK=local $CLIVER_BIN-bin $@
+	else
+		leval $CLIVER_BIN-bin $@
+	fi
 }
 
 do_training()
@@ -235,7 +235,7 @@ do_ncross_verification()
 		for k in $indices; do
 			if [ $i != $k ]; then
 				cliver_params+=" -training-path-file=\"${ktest_list[$k]}\" "
-			fi
+			fi 
 		done
 
 		cliver_params+="$BC_FILE $(bc_parameters $ktest_file) "
@@ -260,9 +260,9 @@ main()
 				;;
 			l)
 				USE_LSF=1
-                                MAX_MEMORY=46000
+				MAX_MEMORY=46000
 				;;
-      
+			
 			g)
 				USE_GDB=1
 				;;
