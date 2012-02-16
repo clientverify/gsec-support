@@ -69,7 +69,7 @@ PTYPE_VALUES=`seq 1`
 #RATE_VALUES=`echo 1; seq 2 2 10`
 RATE_VALUES=`echo 1`
 
-MAX_ROUND=30
+MAX_ROUND=100
 INPUT_GEN_TYPE=0
 
 #=============================================================================
@@ -117,6 +117,8 @@ then
   rm $DATA_DIR/$RECENT_LINK
   ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
 
+  INPUT_GEN_TYPE=2
+
   for ptype in $PTYPE_VALUES
   do
     for rate in $RATE_VALUES
@@ -142,7 +144,7 @@ then
 
           echo "creating $KTEST_FILE"
           OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
-	  OPTS+="-maxround $MAX_ROUND "
+	  #OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
           OPTS+="-random -seed $i "
           OPTS+="-autostart -partialtype $ptype -partialrate $rate "
