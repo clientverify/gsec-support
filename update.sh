@@ -329,11 +329,11 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
 
-	if [ $BUILD_DEBUG -eq 1 ]; then
-		LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-	else
-		LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-	fi
+  if [ $BUILD_DEBUG -eq 1 ]; then
+    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
+  else
+    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+  fi
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
@@ -349,20 +349,20 @@ update_llvm()
   cd $ROOT_DIR/src/$LLVM
 
   if [ $BUILD_LOCAL -eq 0 ]; then
-		#if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
-		#  echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-		#fi
+    #if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
+    #  echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+    #fi
 
-		echo -n "[Checking] "
-		leval git remote update
-	fi
+    echo -n "[Checking] "
+    leval git remote update
+  fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-		if [ $BUILD_LOCAL -eq 0 ]; then
-			echo -n "[Pulling] "
-			leval git pull --all 
-		fi
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      echo -n "[Pulling] "
+      leval git pull --all 
+    fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -438,15 +438,15 @@ build_klee()
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
-	if [ $BUILD_DEBUG -eq 1 ]; then
-		KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-	else
-		KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-	fi
+  if [ $BUILD_DEBUG -eq 1 ]; then
+    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
+  else
+    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+  fi
 
-	### HACK ### need to remove libraries from install location so that
-	# old klee/cliver libs are not used before recently compiled libs
-	leval make $KLEE_MAKE_OPTIONS uninstall
+  ### HACK ### need to remove libraries from install location so that
+  # old klee/cliver libs are not used before recently compiled libs
+  leval make $KLEE_MAKE_OPTIONS uninstall
 
   leval make $KLEE_MAKE_OPTIONS $TARGET 
 }
@@ -490,20 +490,20 @@ update_klee()
   cd $ROOT_DIR/src/$KLEE
 
   if [ $BUILD_LOCAL -eq 0 ]; then
-		if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
-			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-		fi
+    if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
+      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+    fi
 
-		echo -n "[Checking] "
-		leval git remote update 
-	fi
+    echo -n "[Checking] "
+    leval git remote update 
+  fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-		if [ $BUILD_LOCAL -eq 0 ]; then
-			echo -n "[Pulling] "
-			leval git pull --all 
-		fi
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      echo -n "[Pulling] "
+      leval git pull --all 
+    fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       echo -n "[Configuring] "
@@ -554,20 +554,20 @@ update_tetrinet()
   cd $ROOT_DIR/src/$TETRINET
 
   if [ $BUILD_LOCAL -eq 0 ]; then
-		if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
-			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-		fi
-		
-		echo -n "[Checking] "
-		leval git remote update 
-	fi
+    if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
+      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+    fi
+    
+    echo -n "[Checking] "
+    leval git remote update 
+  fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-		if [ $BUILD_LOCAL -eq 0 ]; then
-			echo -n "[Pulling] "
-			leval git pull --all 
-		fi
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      echo -n "[Pulling] "
+      leval git pull --all 
+    fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
       echo -n "[Cleaning] "
@@ -616,7 +616,7 @@ config_and_build_xpilot()
   xpilot_llvm_options+="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
   xpilot_llvm_options+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT-$1/llvm_gcc_script.py "
 
-	local xpilot_make_options=""
+  local xpilot_make_options=""
   if [ "$1" == "llvm" ]; then
     xpilot_config_options+="$xpilot_llvm_options"
     xpilot_make_options+="$xpilot_llvm_options "
@@ -652,20 +652,20 @@ update_xpilot()
   cd $ROOT_DIR/src/$xpilot_opt
 
   if [ $BUILD_LOCAL -eq 0 ]; then
-		if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
-			echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
-		fi
-		
-		echo -n "[Checking] "
-		leval git remote update
-	fi
+    if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
+      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+    fi
+    
+    echo -n "[Checking] "
+    leval git remote update
+  fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
-		if [ $BUILD_LOCAL -eq 0 ]; then
-			echo -n "[Pulling] "
-			leval git pull --all
-		fi
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      echo -n "[Pulling] "
+      leval git pull --all
+    fi
 
     config_and_build_xpilot $1
   fi
@@ -716,7 +716,7 @@ main()
  
       l)
         BUILD_LOCAL=1
-				FORCE_COMPILATION=1
+        FORCE_COMPILATION=1
         ;;
 
       k)
@@ -736,8 +736,8 @@ main()
         ;;
   
       s)
-				SELECTIVE_BUILD=1
-				SELECTIVE_BUILD_TARGET="$OPTARG"
+        SELECTIVE_BUILD=1
+        SELECTIVE_BUILD_TARGET="$OPTARG"
         ;;
   
       b)
@@ -794,31 +794,30 @@ main()
     install_xpilot x86
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
-		case $SELECTIVE_BUILD_TARGET in 
-			*llvm*)
-				update_llvm
-				;;
-			*klee*)
-				update_klee
-				;;
-			*tetrinet*)
-				update_tetrinet
-				;;
-			xpilot)
-				update_xpilot llvm
-				update_xpilot x86
-				;;
-			xpilot-llvm)
-				update_xpilot llvm
-				;;
-			xpilot-x86)
-				update_xpilot x86 
-				;;
-		esac
+    case $SELECTIVE_BUILD_TARGET in 
+      *llvm*)
+        update_llvm
+        ;;
+      *klee*)
+        update_klee
+        ;;
+      *tetrinet*)
+        update_tetrinet
+        ;;
+      xpilot)
+        update_xpilot llvm
+        update_xpilot x86
+        ;;
+      xpilot-llvm)
+        update_xpilot llvm
+        ;;
+      xpilot-x86)
+        update_xpilot x86 
+        ;;
+    esac
 
   else
-		# update all
-  
+    # update all
     update_llvm
     update_klee
     update_tetrinet
