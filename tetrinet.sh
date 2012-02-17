@@ -69,7 +69,7 @@ PTYPE_VALUES=`seq 1`
 #RATE_VALUES=`echo 1; seq 2 2 10`
 RATE_VALUES=`echo 1`
 
-MAX_ROUND=10
+MAX_ROUND=50
 INPUT_GEN_TYPE=0
 
 #=============================================================================
@@ -203,13 +203,13 @@ then
 
           echo "creating $KTEST_FILE"
 
-          OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
+          OPTS=""
+          OPTS+="-inputgenerationtype $INPUT_GEN_TYPE "
           OPTS+="-maxround $MAX_ROUND "
           OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
-          OPTS+="-random -seed $i -slowmode"
-          #OPTS+="-random -seed $i "
-          OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
-          OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
+          OPTS+="-random -seed $i "
+          OPTS+="-autostart -partialtype $ptype -partialrate $rate "
+          OPTS+="$PLAYER_NAME $SERVER_ADDRESS "
 
           echo "executing $CLIENT_COMMAND $OPTS"
           $CLIENT_COMMAND $OPTS 

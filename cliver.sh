@@ -54,6 +54,7 @@ tetrinet_parameters()
 	local input_gen_type=$(parse_tetrinet_ktest_filename $1 3)
 	local partial_type=$(parse_tetrinet_ktest_filename $1 4)
 	local partial_rate=$(parse_tetrinet_ktest_filename $1 5)
+	local max_round=$(parse_tetrinet_ktest_filename $1 6)
 	local player_name="$(parse_tetrinet_ktest_filename $1 7)"
 	local server_address="$(parse_tetrinet_ktest_filename $1 8)"
 
@@ -62,8 +63,9 @@ tetrinet_parameters()
 	bc_file_opts+="-startingheight 0 "
 	bc_file_opts+="-partialtype $partial_type "
 	bc_file_opts+="-partialrate $partial_rate "
-	bc_file_opts+="-inputgenerationtype 13 "
-	#bc_file_opts+="-inputgenerationtype 0 "
+	#bc_file_opts+="-inputgenerationtype 13 "
+	bc_file_opts+="-inputgenerationtype 0 "
+	bc_file_opts+="-maxround $max_round "
 	bc_file_opts+="-seed $random_seed "
 	bc_file_opts+=" $player_name $server_address "
 	printf "%s" "$bc_file_opts"
