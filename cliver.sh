@@ -181,10 +181,10 @@ do_training()
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
-    cliver_params+=" -socket-log $i "
-    cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
-    cliver_params+=" -copy-input-files-to-output-dir "
-    cliver_params+=" -cliver-mode=$CLIVER_MODE "
+    cliver_params+="-socket-log $i "
+    cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+    cliver_params+="-copy-input-files-to-output-dir=1 "
+    cliver_params+="-cliver-mode=$CLIVER_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -200,9 +200,9 @@ do_verification()
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
-    cliver_params+=" -socket-log $i "
-    cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
-    cliver_params+=" -cliver-mode=$CLIVER_MODE "
+    cliver_params+="-socket-log $i "
+    cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+    cliver_params+="-cliver-mode=$CLIVER_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
