@@ -58,12 +58,10 @@ tetrinet_parameters()
   local server_address="$(parse_tetrinet_ktest_filename $1 8)"
 
   local bc_file_opts="-autostart "
-  #bc_file_opts+="-startingheight $starting_height "
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
   bc_file_opts+="-inputgenerationtype 13 "
-  #bc_file_opts+="-inputgenerationtype 0 "
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -219,11 +217,21 @@ do_ncross_verification()
   local num_dirs=${#training_dirs[@]}
 
   indices="$(seq 0 $(($num_dirs - 1)))"
+
+  # Check that we trained on the same bc file used for verification
   for i in $indices; do
-    echo "Cross validating ${training_dirs[$i]} with:"
+    local training_bc_file="${training_dirs[$i]}/input.bc" 
+    if ! cmp $training_bc_file $BC_FILE > /dev/null; then
+      echo "Error: $training_bc_file and $BC_FILE differ."
+      exit 1
+    fi 
+  done
+
+  for i in $indices; do
+    leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
-    local ktest_basename="${training_dirs[$i]}"
+    local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters)"
 
     cliver_params+=" -socket-log $ktest_file "
@@ -232,11 +240,11 @@ do_ncross_verification()
 
     for k in $indices; do
       if [ $i != $k ]; then
-        cliver_params+=" -training-path-dir=\"${training_dirs[$k]}\" "
+        cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
       fi 
     done
 
-    cliver_params+="$BC_FILE $(bc_parameters $ktest_file) "
+    cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
     run_cliver $cliver_params
   done
 }
@@ -285,7 +293,7 @@ main()
         DEBUG_ADDRESS_SPACE_GRAPH=1
         DEBUG_STATE_MERGER=1
         DEBUG_NETWORK_MANAGER=1
-        DEBUG_SOCKET=1
+        DEBUG_SOCKET=0
         DEBUG_SEARCHER=1
         DEBUG_EXECUTION_TREE=1
         ;;
@@ -317,7 +325,7 @@ main()
   echo "[cliver mode: $CLIVER_MODE]"
 
   initialize_root_directories
- 	initialize_logging $@
+  initialize_logging $@
   initialize_bc
   initialize_cliver
 
@@ -325,7 +333,7 @@ main()
     initialize_lsf
   fi
 
- 	# record start time
+  # record start time
   start_time=$(elapsed_time)
 
   case $CLIVER_MODE in
