@@ -86,6 +86,7 @@ initialize_bc()
     tetri*)
       KTEST_DIR="$DATA_DIR/network/tetrinet/last-run"
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
+      TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/recent"
       ;;
     xpilot*)
       # need to automatically set this var...
@@ -214,18 +215,15 @@ do_verification()
 do_ncross_verification()
 {
   NCROSS_MODE="verify-with-edit-cost"
-  declare -a ktest_list=( $KTEST_DIR/*ktest )
-  num_ktest=${#ktest_list[@]}
+  declare -a training_dirs=( $TRAINING_DIR/* )
+  local num_dirs=${#training_dirs[@]}
 
-  echo "Number of elements in array is $num_ktest"
-  #echo ${ktest_list[2]}
-
-  indices="$(seq 0 $(($num_ktest -1)))"
+  indices="$(seq 0 $(($num_dirs - 1)))"
   for i in $indices; do
-    echo "Cross validating ${ktest_list[$i]} with:"
+    echo "Cross validating ${training_dirs[$i]} with:"
 
-    local ktest_file="${ktest_list[$i]}"
-    local ktest_basename=$(basename $ktest_file .ktest)
+    local ktest_file="${training_dirs[$i]}/socket_000.ktest"
+    local ktest_basename="${training_dirs[$i]}"
     local cliver_params="$(cliver_parameters)"
 
     cliver_params+=" -socket-log $ktest_file "
@@ -234,13 +232,12 @@ do_ncross_verification()
 
     for k in $indices; do
       if [ $i != $k ]; then
-        cliver_params+=" -training-path-file=\"${ktest_list[$k]}\" "
+        cliver_params+=" -training-path-dir=\"${training_dirs[$k]}\" "
       fi 
     done
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_file) "
     run_cliver $cliver_params
-
   done
 }
 
