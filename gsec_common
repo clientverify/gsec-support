@@ -71,6 +71,25 @@ initialize_root_directories()
   DATA_DIR="$ROOT_DIR/data"
 }
 
+### echo message to screen and log to file (even when verbose is disabled)
+lecho()
+{
+  echo "[ $@ ]"
+  if test ${LOG_FILE+defined}; then
+    if test ! ${DRY_RUN+defined}; then
+      eval echo "LOG: $@" >> $LOG_FILE 2>&1
+    fi
+  fi
+}
+
+### echo message to screen if not in verbose mode
+necho()
+{
+  if ! [ $VERBOSE_OUTPUT -eq 1 ]; then
+    echo -ne "$@"
+  fi
+}
+
 ###  Initialize gsec logging directories
 initialize_logging()
 {
@@ -93,8 +112,10 @@ initialize_logging()
   touch $LOG_FILE
   ln -sf $LOG_FILE_BASENAME $LOG_DIR/$RECENT_LOG_FILE
 
-  echo "`date` ==== $0 $@ " >> $LOG_FILE
+  echo "LOG: `date` $(basename $0) $@ " >> $LOG_FILE
 }
+
+
 
 ###  Initialize gsec logging directories under LSF(killdevil)
 initialize_lsf()
@@ -166,7 +187,7 @@ set_alternate_gcc()
   ALTCC=gcc-4.4
   ALTCXX=g++-4.4
   GXX_INCLUDE_DIR="/usr/include/c++/4.4"
-  echo "[ Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion) ]" 
+  lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
 }
 
 check_gcc_version()

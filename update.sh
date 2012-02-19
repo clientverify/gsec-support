@@ -28,7 +28,7 @@ ROOT_DIR="`pwd`"
 
 get_package()
 {
-  echo -n "[Extracting] "
+  necho "[Extracting] "
   # usage: get_package [package] [remote-path] [local-dest]
   if [[ $# -lt 3 ]]; then
     echo "[Error getting package] "
@@ -75,7 +75,7 @@ check_dirs()
 
 install_ncurses()
 {
-  echo -ne "$NCURSES\t\t"
+  necho "$NCURSES\t\t"
   check_dirs $NCURSES || { return 0; }
   get_package $NCURSES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$NCURSES"
 
@@ -87,85 +87,85 @@ install_ncurses()
     NCURSES_CONFIG_OPTIONS+="CC=$ALTCC LD=$ALTCC "
   fi
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$NCURSES/configure $NCURSES_CONFIG_OPTIONS 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $NCURSES_ROOT
   leval make -j $MAKE_THREADS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_zlib()
 {
-  echo -ne "$ZLIB \t\t"
+  necho "$ZLIB \t\t"
   check_dirs $ZLIB || { return 0; }
   get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB"
 
   cd $ROOT_DIR/src/$ZLIB
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$ZLIB/configure --prefix=$ZLIB_ROOT 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $ZLIB_ROOT
   leval make -j $MAKE_THREADS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_zlib_llvm()
 {
-  echo -ne "$ZLIB (llvm) \t"
+  necho "$ZLIB (llvm) \t"
   check_dirs $ZLIB-llvm || { return 0; }
   get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB-llvm"
 
   cd $ROOT_DIR/src/$ZLIB-llvm
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   ZLIB_LLVM_OPTIONS="CC=$LLVMGCC_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
   leval $ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make libz.a 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $ZLIB_ROOT
   leval cp -p libz.a $ZLIB_ROOT/lib/libz-llvm.a
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_expat()
 {
-  echo -ne "$EXPAT\t\t"
+  necho "$EXPAT\t\t"
   check_dirs $EXPAT || { return 0; }
   get_package $EXPAT_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$EXPAT"
   cd $ROOT_DIR/src/$EXPAT
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$EXPAT/configure --prefix=$EXPAT_ROOT 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $EXPAT_ROOT
   leval make -j $MAKE_THREADS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_boost()
 {
-  echo -ne "$BOOST\t\t"
+  necho "$BOOST\t\t"
 
   check_dirs $BOOST || { return 0; }
 
@@ -175,48 +175,48 @@ install_boost()
 
   BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval ./bootstrap.sh --prefix=$BOOST_ROOT 
   leval ./bjam $BJAM_OPTIONS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   leval ./bjam $BJAM_OPTIONS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_libunwind()
 {
-  echo -ne "$LIBUNWIND\t\t"
+  necho "$LIBUNWIND\t\t"
   check_dirs $LIBUNWIND || { return 0; }
   get_package $LIBUNWIND_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LIBUNWIND"
 
   mkdir -p $ROOT_DIR/build/$LIBUNWIND
   cd $ROOT_DIR/build/$LIBUNWIND
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$LIBUNWIND/configure CFLAGS=\"-U_FORTIFY_SOURCE\" --prefix=$LIBUNWIND_ROOT 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $LIBUNWIND_ROOT
   leval make -j $MAKE_THREADS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_google_perftools()
 {
-  echo -ne "$GOOGLE_PERFTOOLS\t"
+  necho "$GOOGLE_PERFTOOLS\t"
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
   get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   GOOGLE_PERFTOOLS_CONFIG_OPTIONS="LDFLAGS=-L$LIBUNWIND_ROOT/lib/ "
   GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="CPPFLAGS=-I$LIBUNWIND_ROOT/include/ "
   GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="LIBS=-lunwind-x86_64 "
@@ -235,45 +235,45 @@ install_google_perftools()
 
   leval LD_LIBRARY_PATH=$GOOGLE_PERFTOOLS_LD_LIBRARY_PATH $GOOGLE_PERFTOOLS_CONFIG_COMMAND 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $GOOGLE_PERFTOOLS_ROOT
   leval make -j $MAKE_THREADS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 
 install_uclibc()
 {
-  echo -ne "$UCLIBC\t"
+  necho "$UCLIBC\t"
   check_dirs $UCLIBC || { return 0; }
   get_package $UCLIBC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$UCLIBC"
 
   cd $ROOT_DIR/src/$UCLIBC
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval ./configure --with-llvm=$ROOT_DIR/build/$LLVM 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make 
 
-  echo "[Done]"
+  necho "[Done]\n"
 } 
 
 install_llvmgcc_bin()
 {
-  echo -ne "$LLVMGCC\t"
+  necho "$LLVMGCC\t"
   check_dirs $LLVMGCC || { return 0; }
   get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_llvmgcc_from_source()
 {
-  echo -ne "$LLVMGCC\t"
+  necho "$LLVMGCC\t"
   check_dirs $LLVMGCC || { return 0; }
   get_package $LLVMGCC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVMGCC"
 
@@ -283,7 +283,7 @@ install_llvmgcc_from_source()
   LLVMGCC_CONFIG_OPTIONS="--prefix=$LLVMGCC_ROOT --disable-multilib --program-prefix=llvm- "
   LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++,fortran "
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS 
 
   LLVMGCC_MAKE_OPTIONS=""
@@ -295,14 +295,14 @@ install_llvmgcc_from_source()
     LLVMGCC_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
   fi
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make $LLVMGCC_MAKE_OPTIONS -j $MAKE_THREADS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $LLVMGCC_ROOT
   leval make $LLVMGCC_MAKE_OPTIONS install 
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 config_llvm ()
@@ -340,7 +340,7 @@ build_llvm ()
 
 update_llvm()
 {
-  echo -ne "$LLVM\t\t"
+  necho "$LLVM\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
@@ -353,59 +353,59 @@ update_llvm()
     #  echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
     #fi
 
-    echo -n "[Checking] "
+    necho "[Checking] "
     leval git remote update
   fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
     if [ $BUILD_LOCAL -eq 0 ]; then
-      echo -n "[Pulling] "
+      necho "[Pulling] "
       leval git pull --all 
     fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
-      echo -n "[Configuring] "
+      necho "[Configuring] "
       config_llvm 
     fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
-      echo -n "[Cleaning] "
+      necho "[Cleaning] "
       build_llvm clean
     fi
 
-    echo -n "[Compiling] "
+    necho "[Compiling] "
     build_llvm
 
-    echo -n "[Installing] "
+    necho "[Installing] "
     mkdir -p $LLVM_ROOT
     build_llvm install
 
   fi
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_llvm()
 {
-  echo -ne "$LLVM\t\t"
+  necho "$LLVM\t\t"
   check_dirs $LLVM || { return 0; }
   cd $ROOT_DIR"/src"
 
-  echo -n "[Cloning] "
+  necho "[Cloning] "
   leval git clone $LLVM_GIT 
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   config_llvm 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   build_llvm
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $LLVM_ROOT
   build_llvm install
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 config_klee()
@@ -453,35 +453,35 @@ build_klee()
 
 install_klee()
 {
-  echo -ne "$KLEE\t\t\t"
+  necho "$KLEE\t\t\t"
 
   check_dirs $KLEE || { return 0; }
 
   cd $ROOT_DIR"/src"
 
-  echo -n "[Cloning] "
+  necho "[Cloning] "
   leval git clone $KLEE_GIT 
 
   cd $ROOT_DIR"/src/$KLEE"
 
   leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   config_klee
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   build_klee
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $KLEE_ROOT
   build_klee install
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 update_klee()
 {
-  echo -ne "$KLEE\t\t\t"
+  necho "$KLEE\t\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$KLEE/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
@@ -494,36 +494,36 @@ update_klee()
       echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
     fi
 
-    echo -n "[Checking] "
+    necho "[Checking] "
     leval git remote update 
   fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
     if [ $BUILD_LOCAL -eq 0 ]; then
-      echo -n "[Pulling] "
+      necho "[Pulling] "
       leval git pull --all 
     fi
 
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
-      echo -n "[Configuring] "
+      necho "[Configuring] "
       config_klee
     fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
-      echo -n "[Cleaning] "
+      necho "[Cleaning] "
       build_klee clean
     fi
 
-    echo -n "[Compiling] "
+    necho "[Compiling] "
     build_klee
 
-    echo -n "[Installing] "
+    necho "[Installing] "
     mkdir -p $KLEE_ROOT
     build_klee install
   fi
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 build_tetrinet()
@@ -535,17 +535,17 @@ build_tetrinet()
     TETRINET_MAKE_OPTIONS+="CC=$ALTCC LD=$ALTCC "
   fi
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make $TETRINET_MAKE_OPTIONS 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $TETRINET_ROOT
   leval make $TETRINET_MAKE_OPTIONS install 
 }
 
 update_tetrinet()
 {
-  echo -ne "$TETRINET\t\t"
+  necho "$TETRINET\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$TETRINET/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
@@ -558,19 +558,19 @@ update_tetrinet()
       echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
     fi
     
-    echo -n "[Checking] "
+    necho "[Checking] "
     leval git remote update 
   fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
     if [ $BUILD_LOCAL -eq 0 ]; then
-      echo -n "[Pulling] "
+      necho "[Pulling] "
       leval git pull --all 
     fi
 
     if [ $FORCE_CLEAN -eq 1 ]; then 
-      echo -n "[Cleaning] "
+      necho "[Cleaning] "
       leval make clean 
     fi
 
@@ -578,18 +578,18 @@ update_tetrinet()
 
   fi
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_tetrinet()
 {
-  echo -ne "$TETRINET\t\t"
+  necho "$TETRINET\t\t"
 
   check_dirs $TETRINET|| { return 0; }
 
   cd $ROOT_DIR"/src"
 
-  echo -n "[Cloning] "
+  necho "[Cloning] "
   leval git clone $TETRINET_GIT 
 
   cd $ROOT_DIR"/src/$TETRINET"
@@ -598,7 +598,7 @@ install_tetrinet()
 
   build_tetrinet
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 config_and_build_xpilot()
@@ -622,13 +622,13 @@ config_and_build_xpilot()
     xpilot_make_options+="$xpilot_llvm_options "
   fi
 
-  echo -n "[Configuring] "
+  necho "[Configuring] "
   leval $ROOT_DIR/src/$xpilot_opt/configure $xpilot_config_options 
 
-  echo -n "[Compiling] "
+  necho "[Compiling] "
   leval make $xpilot_make_options 
 
-  echo -n "[Installing] "
+  necho "[Installing] "
   mkdir -p $XPILOT_ROOT
   leval make $xpilot_make_options install 
 
@@ -643,7 +643,7 @@ update_xpilot()
   if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
   local xpilot_opt=$XPILOT-$1
-  echo -ne "$xpilot_opt\t\t"
+  necho "$xpilot_opt\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$xpilot_opt/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
@@ -656,21 +656,21 @@ update_xpilot()
       echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
     fi
     
-    echo -n "[Checking] "
+    necho "[Checking] "
     leval git remote update
   fi
 
   if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
 
     if [ $BUILD_LOCAL -eq 0 ]; then
-      echo -n "[Pulling] "
+      necho "[Pulling] "
       leval git pull --all
     fi
 
     config_and_build_xpilot $1
   fi
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 install_xpilot()
@@ -678,12 +678,12 @@ install_xpilot()
   if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
 
   local xpilot_opt=$XPILOT-$1
-  echo -ne "$xpilot_opt \t\t"
+  necho "$xpilot_opt \t\t"
 
   check_dirs $xpilot_opt || { return 0; }
   cd $ROOT_DIR"/src"
 
-  echo -n "[Cloning] "
+  necho "[Cloning] "
   leval git clone $XPILOT_GIT $xpilot_opt
 
   cd $ROOT_DIR"/src/$xpilot_opt"
@@ -692,7 +692,7 @@ install_xpilot()
 
   config_and_build_xpilot $1
 
-  echo "[Done]"
+  necho "[Done]\n"
 }
 
 main() 
@@ -700,53 +700,64 @@ main()
   while getopts ":afkcivs:br:j:dl" opt; do
     case $opt in
       a)
-        # Use alternative GCC
+        lecho "Forcing alternative gcc"
+        set_alternative_gcc
         ;;
   
       f)
+        lecho "Forcing compilation"
         FORCE_COMPILATION=1
         ;;
    
       d)
+        lecho "Building debug version"
         BUILD_DEBUG=1
         ;;
  
       l)
+        lecho "Compiling with local changes"
         BUILD_LOCAL=1
         FORCE_COMPILATION=1
         ;;
 
       k)
+        lecho "Forcing make clean"
         FORCE_CLEAN=1
         ;;
   
       c)
+        lecho "Forcing configure"
         FORCE_CONFIGURE=1
         ;;
   
       i)
+        lecho "Installing packages"
         INSTALL_PACKAGES=1
         ;;
   
       v)
+        lecho "Verbose output"
         VERBOSE_OUTPUT=1
         ;;
   
       s)
+        lecho "Selective update"
         SELECTIVE_BUILD=1
         SELECTIVE_BUILD_TARGET="$OPTARG"
         ;;
   
       b)
+        lecho "Installing llvm-gcc binaries"
         INSTALL_LLVMGCC_BIN=1
         ;;
   
       r)
-        echo "Setting root dir to $OPTARG"
+        lecho "Setting root dir to $OPTARG"
         ROOT_DIR="$OPTARG"
         ;;
   
       j)
+        lecho "Using $OPTARG threads"
         MAKE_THREADS=$OPTARG
         ;;
   
@@ -770,7 +781,6 @@ main()
   if [ $INSTALL_PACKAGES -eq 1 ]; then
   
     mkdir -p $ROOT_DIR/{src,local,build}
-    echo "Installing all packages" 
   
     install_llvm
   
@@ -825,7 +835,7 @@ main()
   
   fi
   
-  echo "Elapsed time: $(elapsed_time $start_time)"
+  lecho "Elapsed time: $(elapsed_time $start_time)"
 }
 
 # Run main
