@@ -701,9 +701,6 @@ main()
     case $opt in
       a)
         # Use alternative GCC
-        ALTCC=gcc-4.4
-        ALTCXX=g++-4.4
-        GXX_INCLUDE_DIR="/usr/include/c++/4.4"
         ;;
   
       f)
@@ -764,6 +761,8 @@ main()
   initialize_root_directories
 
   initialize_logging $@
+
+  check_gcc_version
 
   # record start time
   start_time=$(elapsed_time)
