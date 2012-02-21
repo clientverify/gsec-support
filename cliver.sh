@@ -88,7 +88,7 @@ initialize_bc()
       ;;
     xpilot*)
       # need to automatically set this var...
-      if [ -n "${XPILOTHOST:+x}" ] ; then
+      if test ! ${XPILOTHOST+defined}; then
         echo "set XPILOTHOST environment variable before running xpilot"
         exit
       fi
@@ -146,9 +146,13 @@ cliver_parameters()
   # BC specific cliver options
   case $BC_MODE in
     xpilot*)
-      cliver_params+="-load=/usr/lib64/libSM.so -load=/usr/lib64/libICE.so "
-      cliver_params+="-load=/usr/lib64/libXext.so  -load=/usr/lib64/libX11.so "
-      cliver_params+="-load=/usr/lib64/libXxf86misc.so.1 "
+      local XLIB_DIR="$ROOT_DIR/local/lib64"
+      cliver_params+="-load=$XLIB_DIR/libSM.so "
+      cliver_params+="-load=$XLIB_DIR/libICE.so "
+      cliver_params+="-load=$XLIB_DIR/libX11.so "
+      cliver_params+="-load=$XLIB_DIR/libXext.so "
+      cliver_params+="-load=$XLIB_DIR/libXxf86misc.so.1 "
+      cliver_params+="-no-xwindows "
       cliver_params+="-xpilot-socket=1 "
       ;;
   esac
@@ -184,6 +188,7 @@ do_training()
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-copy-input-files-to-output-dir=1 "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
+    cliver_params+="-client-model=$BC_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -202,6 +207,7 @@ do_verification()
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
+    cliver_params+="-client-model=$BC_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
