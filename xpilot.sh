@@ -14,7 +14,7 @@ COUNT=0
 
 #=============================================================================
 # need to automatically set this var...
-if [ -n "${XPILOTHOST:+x}" ] 
+if test ! ${XPILOTHOST+defined}; then
   echo "set XPILOTHOST environment variable before running client"
   exit
 fi
