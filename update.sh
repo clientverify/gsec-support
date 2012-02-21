@@ -804,13 +804,13 @@ main()
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     case $SELECTIVE_BUILD_TARGET in 
-      *llvm*)
+      llvm*)
         update_llvm
         ;;
-      *klee*)
+      klee*)
         update_klee
         ;;
-      *tetrinet*)
+      tetrinet*)
         update_tetrinet
         ;;
       xpilot)
