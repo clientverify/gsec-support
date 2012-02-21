@@ -108,6 +108,24 @@ make_xpilot_dirs()
 }
 
 case "$MODE" in 
+  multi)
+    make_xpilot_dirs
+    for i in `seq 0 $COUNT` ; do
+      #while ! [[ `pgrep $SERVER_BIN` ]]
+      #do
+      #  echo "starting server in background..."
+      #  exec $SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &
+      #  sleep 1
+      #done
+      echo "starting server in background..."
+      exec $SERVER_COMMAND $SERVER_OPTIONS 
+      sleep 1
+      echo "starting client..."
+      leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
+      sleep 3
+      #pkill $SERVER_BIN
+    done
+    ;;
   server)
     make_xpilot_dirs
     leval $SERVER_COMMAND $SERVER_OPTIONS
