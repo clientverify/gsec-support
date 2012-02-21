@@ -224,7 +224,7 @@ leval()
 {
   eval "echo 'EXEC ($(pwd -P))\$ $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-  	eval $@ $LOGGER
+    eval $@ $LOGGER
   fi
 }
 
@@ -234,7 +234,7 @@ geval()
 {
   eval "echo 'EXEC ($(pwd -P))\$ gdb -ex run --args $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-  eval gdb -ex run --args $@
+    eval gdb -ex run --args $@
   fi
 }
 
@@ -244,7 +244,7 @@ lbsub()
   local bsub_command="bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
   eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-  bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
+    bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
   fi
 }
 
