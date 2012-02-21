@@ -10,7 +10,7 @@ colnames = c(
 )
 
 plotnames = c(
-"time","solvertime", "roundinsts","totalstates", "mem"
+"time","solvertime", "roundinsts", "mem"
 )
 plotwidth=11
 plotheight=7
@@ -43,23 +43,26 @@ library(ggplot2)
 
 for (p in plotnames) {
   x_axis = "round"
-  ggplot(data, aes_string(x=x_axis, y=p)) + geom_line(aes(colour=factor(mode))) + facet_grid(. ~ name)
   name = paste(paste("stat",p,sep="-"), "geom-line", sep="_")
+  theplot <- ggplot(data, aes_string(x=x_axis, y=p))
+  theplot + geom_line(aes(colour=factor(mode),linetype=factor(mode))) + facet_grid(name ~ .) + opts(title=name)
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(root_dir, output_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
 for (p in plotnames) {
   x_axis = "round"
-  ggplot(data, aes_string(x=x_axis, y=p)) + geom_point(aes(colour=factor(mode))) + scale_y_log10() + facet_grid(. ~ name)
-  name = paste(paste("stat",p,sep="-"), "geom-point", "yscale-log10", sep="_")
+  name = paste(paste("stat",p,sep="-"), "geom-line", "yscale-log10", sep="_")
+  theplot <- ggplot(data, aes_string(x=x_axis, y=p)) 
+  theplot + geom_line(aes(colour=factor(mode),linetype=factor(mode))) + scale_y_log10() + facet_grid(name ~ .) + opts(title=name)
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(root_dir, output_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
 for (p in plotnames) {
-  ggplot(subset(data, round < min_size), aes_string(x="mode", y=p)) + stat_summary(fun.y="sum", geom="bar")
-  name = paste(paste("stat",p,sep="-"), "func-sum", "geom-bar", sep="_")
+  name = paste(paste("stat",p,sep="-"),paste("round","lt",min_size,sep="-"),"func-sum","geom-bar",sep="_")
+  theplot <- ggplot(subset(data, round < min_size), aes_string(x="mode", y=p)) 
+  theplot + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray") + opts(title=name)
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(root_dir, output_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
