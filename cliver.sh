@@ -29,6 +29,7 @@ OUTPUT_LLVM_ASSEMBLY=0
 OUTPUT_LLVM_BITCODE=0
 PRINT_INSTRUCTIONS=0
 MAX_MEMORY=64000
+WARN_MEMORY=32000
 SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
@@ -132,6 +133,7 @@ cliver_parameters()
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
+  cliver_params+="-state-trees-memory-limit=$WARN_MEMORY "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
@@ -271,7 +273,8 @@ main()
         ;;
       l)
         USE_LSF=1
-        MAX_MEMORY=46000
+        MAX_MEMORY=32000
+        WARN_MEMORY=28000
         ;;
       
       g)

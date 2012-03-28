@@ -241,10 +241,10 @@ geval()
 # Logging bsub function
 lbsub()
 {
-  local bsub_command="bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
+  local bsub_command="bsub -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -o $LSF_LOG_DIR/%J"
   eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-    bsub -x -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
+    bsub -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -o $LSF_LOG_DIR/out.%J $@
   fi
 }
 
