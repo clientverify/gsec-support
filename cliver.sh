@@ -62,7 +62,11 @@ tetrinet_parameters()
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
-  bc_file_opts+="-inputgenerationtype 13 "
+  if [ "$CLIVER_MODE" == "training" ]; then
+    bc_file_opts+="-inputgenerationtype 0 "
+  else
+    bc_file_opts+="-inputgenerationtype 13 "
+  fi
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -273,8 +277,8 @@ main()
         ;;
       l)
         USE_LSF=1
-        MAX_MEMORY=32000
-        WARN_MEMORY=28000
+        MAX_MEMORY=46000
+        WARN_MEMORY=32000
         ;;
       
       g)
