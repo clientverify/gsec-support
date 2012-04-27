@@ -12,7 +12,7 @@ HERE="`dirname "$WRAPPER"`"
 . $HERE/gsec_common
 
 # Default command line options
-VERBOSE_OUTPUT=0
+VERBOSE_OUTPUT=1
 MAKE_THREADS=4
 USE_LSF=0
 USE_INTERACTIVE_LSF=0
@@ -29,8 +29,8 @@ CLIVER_LIBC="uclibc"
 OUTPUT_LLVM_ASSEMBLY=0
 OUTPUT_LLVM_BITCODE=0
 PRINT_INSTRUCTIONS=0
-MAX_MEMORY=64000
-WARN_MEMORY=32000
+MAX_MEMORY=8000
+WARN_MEMORY=6000
 SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
@@ -263,37 +263,59 @@ do_ncross_verification()
   done
 }
 
+usage()
+{
+  echo -e "$0\n\nUSAGE:"
+  echo -e "\t-t [verify|training|ncross]\t\t(type of verification)(REQUIRED)" 
+  echo -e "\t-c [xpilot|tetrinet]\t\t\t(client binary)(REQUIRED)"
+  echo -e "\t-i [gdb|lsf|interactive]\t\t(run mode)"
+  echo -e "\t-x [\"\"]\t\t\t\t\t(additional cliver options)"
+  echo -e "\t-d [0|1|2]\t\t\t\t(debug level)"
+  echo -e "\t-m [gigabytes]\t\t\t\t(maximum memory usage)"
+  echo -e "\t-p [heapprofile|heaplocal|heapcheck]\t(memory profiling options)"
+  echo -e "\t-r [dir]\t\t\t\t(alternative root directory)"
+  echo -e "\t-n \t\t\t\t\t(dry run)"
+  echo -e "\t-s \t\t\t\t\t(silent)"
+  echo -e "\t-h \t\t\t\t\t(help/usage)"
+}
+
 main() 
 {
-  while getopts ":vr:j:b:lim:dgx:eh:n" opt; do
+  while getopts "t:c:x:i:p:d:r:m:nsh" opt; do
     case $opt in
-      n)
-        DRY_RUN=1
+
+      t)
+        CLIVER_MODE="$OPTARG"
         ;;
 
-      b)
+      c)
         BC_MODE="$OPTARG"
         ;;
+
       x)
         EXTRA_CLIVER_OPTIONS="$OPTARG"
         ;;
-      l)
-        USE_LSF=1
-        MAX_MEMORY=72000
-        WARN_MEMORY=0
-        ;;
 
-      i)
-        USE_INTERACTIVE_LSF=1
-        MAX_MEMORY=72000
-        WARN_MEMORY=0
+      m)
+        MAX_MEMORY=$(($OPTARG*1000))
+        WARN_MEMORY=$(($MAX_MEMORY-2000))
         ;;
-      
-      g)
-        USE_GDB=1
+      i)
+        case $OPTARG in
+          interactive*)
+            USE_INTERACTIVE_LSF=1
+            ;;
+          gdb*)
+            USE_GDB=1
+            ;;
+          lsf*)
+            USE_LSF=1
+            VERBOSE_OUTPUT=0
+            ;;
+        esac
         ;;
  
-      h)
+      p)
         case $OPTARG in
           heapprofile*)
             USE_HEAP_PROFILER=1
@@ -307,20 +329,21 @@ main()
         esac
         ;;
 
-      e)
-        DEBUG_PRINT_EXECUTION_EVENTS=1
-        ;;
       d)
-        DEBUG_ADDRESS_SPACE_GRAPH=1
-        DEBUG_STATE_MERGER=1
-        DEBUG_NETWORK_MANAGER=1
-        DEBUG_SOCKET=0
-        DEBUG_SEARCHER=1
-        DEBUG_EXECUTION_TREE=1
-        ;;
-
-      v)
-        VERBOSE_OUTPUT=1
+        # debug levels
+        if [[ $OPTARG -ge 0 ]]; then
+          DEBUG_SEARCHER=1
+          DEBUG_EXECUTION_TREE=1
+        fi
+        if [[ $OPTARG -ge 1 ]]; then
+          DEBUG_STATE_MERGER=1
+          DEBUG_ADDRESS_SPACE_GRAPH=1
+          DEBUG_NETWORK_MANAGER=1
+        fi
+        if [[ $OPTARG -ge 2 ]]; then
+          DEBUG_SOCKET=1
+          DEBUG_PRINT_EXECUTION_EVENTS=1
+        fi
         ;;
 
       r)
@@ -328,15 +351,21 @@ main()
         ROOT_DIR="$OPTARG"
         ;;
 
-      m)
-        CLIVER_MODE="$OPTARG"
+      n)
+        DRY_RUN=1
         ;;
 
-      j)
-        MAKE_THREADS=$OPTARG
+      s)
+        VERBOSE_OUTPUT=0
+        ;;
+
+      h)
+        usage
+        exit
         ;;
       :)
         echo "Option -$OPTARG requires an argument"
+        usage
         exit
         ;;
 
