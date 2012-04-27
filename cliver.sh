@@ -126,7 +126,6 @@ initialize_cliver()
 cliver_parameters()
 {
   local cliver_params="-posix-runtime -pc-single-line -emit-all-errors -debug-stderr "
-  cliver_params+="-no-output=$DISABLE_OUTPUT "
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
@@ -135,25 +134,25 @@ cliver_parameters()
   cliver_params+="-max-memory=$MAX_MEMORY "
   cliver_params+="-state-trees-memory-limit=$WARN_MEMORY "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
-  cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
   cliver_params+="-debug-state-merger=$DEBUG_STATE_MERGER "
   cliver_params+="-debug-network-manager=$DEBUG_NETWORK_MANAGER "
   cliver_params+="-debug-socket=$DEBUG_SOCKET "
   cliver_params+="-debug-searcher=$DEBUG_SEARCHER "
-  cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
+  #cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
+  #cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
+  #cliver_params+="-no-output=$DISABLE_OUTPUT "
   cliver_params+=" $EXTRA_CLIVER_OPTIONS "
 
   # BC specific cliver options
   case $BC_MODE in
     xpilot*)
-      local XLIB_DIR="$ROOT_DIR/local/lib64"
-      cliver_params+="-load=$XLIB_DIR/libSM.so "
-      cliver_params+="-load=$XLIB_DIR/libICE.so "
-      cliver_params+="-load=$XLIB_DIR/libX11.so "
-      cliver_params+="-load=$XLIB_DIR/libXext.so "
-      cliver_params+="-load=$XLIB_DIR/libXxf86misc.so.1 "
+      cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libSM.so "
+      cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libICE.so "
+      cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libX11.so "
+      cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXext.so "
+      cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXxf86misc.so.1 "
       cliver_params+="-no-xwindows "
       cliver_params+="-xpilot-socket=1 "
       ;;

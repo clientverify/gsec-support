@@ -19,7 +19,7 @@ XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 
 # Repository Branches
-KLEE_BRANCH="eventhandler"
+KLEE_BRANCH="radixtree"
 TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
@@ -48,6 +48,7 @@ EXPAT_PACKAGE="$EXPAT.tar.gz"
 # Other
 RUN_PREFIX=$(date +%F.%T)
 LSF_QUEUE="day"
+XLIB_DIR="gsec-support/Xlibs"
 
 initialize_root_directories() 
 {
