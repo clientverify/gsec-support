@@ -15,6 +15,7 @@ HERE="`dirname "$WRAPPER"`"
 VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 USE_LSF=0
+USE_INTERACTIVE_LSF=0
 USE_GDB=0
 USE_HEAP_PROFILER=0
 USE_HEAP_CHECK=0
@@ -62,7 +63,11 @@ tetrinet_parameters()
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
-  bc_file_opts+="-inputgenerationtype 13 "
+  if [ "$CLIVER_MODE" == "training" ]; then
+    bc_file_opts+="-inputgenerationtype 0 "
+  else
+    bc_file_opts+="-inputgenerationtype 13 "
+  fi
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -165,6 +170,8 @@ run_cliver()
 {
   if [ $USE_LSF -eq 1 ]; then
     lbsub $CLIVER_BIN $@
+  elif [ $USE_INTERACTIVE_LSF -eq 1 ]; then
+    ibsub $CLIVER_BIN $@
   elif [ $USE_GDB -eq 1 ]; then
     geval $CLIVER_BIN-bin $@
   elif [ $USE_HEAP_PROFILER -eq 1 ]; then
@@ -258,7 +265,7 @@ do_ncross_verification()
 
 main() 
 {
-  while getopts ":vr:j:b:lm:dgx:eh:n" opt; do
+  while getopts ":vr:j:b:lim:dgx:eh:n" opt; do
     case $opt in
       n)
         DRY_RUN=1
@@ -272,8 +279,14 @@ main()
         ;;
       l)
         USE_LSF=1
-        MAX_MEMORY=32000
-        WARN_MEMORY=28000
+        MAX_MEMORY=72000
+        WARN_MEMORY=0
+        ;;
+
+      i)
+        USE_INTERACTIVE_LSF=1
+        MAX_MEMORY=72000
+        WARN_MEMORY=0
         ;;
       
       g)
