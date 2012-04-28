@@ -66,7 +66,7 @@ tetrinet_parameters()
   if [ "$CLIVER_MODE" == "training" ]; then
     bc_file_opts+="-inputgenerationtype 0 "
   else
-    bc_file_opts+="-inputgenerationtype 13 "
+    bc_file_opts+="-inputgenerationtype 5 "
   fi
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
@@ -246,11 +246,12 @@ do_ncross_verification()
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
-    local cliver_params="$(cliver_parameters)"
+    local cliver_params="$(cliver_parameters) "
 
-    cliver_params+=" -socket-log $ktest_file "
-    cliver_params+=" -output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
-    cliver_params+=" -cliver-mode=$NCROSS_MODE "
+    cliver_params+="-socket-log $ktest_file "
+    cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+    cliver_params+="-cliver-mode=$NCROSS_MODE "
+    cliver_params+="-client-model=$BC_MODE "
 
     for k in $indices; do
       if [ $i != $k ]; then
@@ -281,7 +282,7 @@ usage()
 
 main() 
 {
-  while getopts "t:c:x:i:p:d:r:m:nsh" opt; do
+  while getopts "t:c:x:i:p:d:r:m:nshv" opt; do
     case $opt in
 
       t)
@@ -333,12 +334,12 @@ main()
         # debug levels
         if [[ $OPTARG -ge 0 ]]; then
           DEBUG_SEARCHER=1
-          DEBUG_EXECUTION_TREE=1
+          DEBUG_NETWORK_MANAGER=1
         fi
         if [[ $OPTARG -ge 1 ]]; then
+          DEBUG_EXECUTION_TREE=1
           DEBUG_STATE_MERGER=1
           DEBUG_ADDRESS_SPACE_GRAPH=1
-          DEBUG_NETWORK_MANAGER=1
         fi
         if [[ $OPTARG -ge 2 ]]; then
           DEBUG_SOCKET=1
@@ -353,6 +354,10 @@ main()
 
       n)
         DRY_RUN=1
+        ;;
+
+      v)
+        VERBOSE_OUTPUT=1
         ;;
 
       s)
