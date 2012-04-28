@@ -17,8 +17,9 @@ ROOT_DIR="`pwd`"
 # default config values
 MODE="enumerate"
 COUNT=0
+MAX_ROUND=50
 
-while getopts ":vr:j:t:c:m:" opt; do
+while getopts ":vr:j:t:c:m:x:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -26,6 +27,10 @@ while getopts ":vr:j:t:c:m:" opt; do
 
     m)
       MODE="$OPTARG"
+      ;;
+
+    x)
+      MAX_ROUND=$OPTARG
       ;;
 
     c)
@@ -69,7 +74,6 @@ PTYPE_VALUES=`seq 1`
 #RATE_VALUES=`echo 1; seq 2 2 10`
 RATE_VALUES=`echo 1`
 
-MAX_ROUND=50
 INPUT_GEN_TYPE=0
 
 #=============================================================================
