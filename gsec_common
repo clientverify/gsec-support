@@ -252,10 +252,10 @@ lbsub()
 # Interactive bsub function, stdout/stderr not logged
 ibsub()
 {
-  local bsub_command="bsub -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip "
+  local bsub_command="bsub -C 1MB -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip "
   eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
   if test ! ${DRY_RUN+defined}; then
-    bsub -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip $@
+    bsub -C 1MB -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip $@
   fi
 }
 
