@@ -66,7 +66,7 @@ tetrinet_parameters()
   if [ "$CLIVER_MODE" == "training" ]; then
     bc_file_opts+="-inputgenerationtype 0 "
   else
-    bc_file_opts+="-inputgenerationtype 5 "
+    bc_file_opts+="-inputgenerationtype 13 "
   fi
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
