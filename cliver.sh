@@ -161,7 +161,6 @@ cliver_parameters()
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXext.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXxf86misc.so.1 "
       cliver_params+="-no-xwindows "
-      cliver_params+="-xpilot-socket=1 "
       ;;
   esac
 
