@@ -51,6 +51,7 @@ parse_tetrinet_ktest_filename()
 
 tetrinet_parameters()
 {
+  # FORMAT: $MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
   local random_seed=$(parse_tetrinet_ktest_filename $1 2)
   local starting_height=$(parse_tetrinet_ktest_filename $1 2)
   local input_gen_type=$(parse_tetrinet_ktest_filename $1 3)
@@ -67,6 +68,7 @@ tetrinet_parameters()
     bc_file_opts+="-inputgenerationtype 0 "
   else
     bc_file_opts+="-inputgenerationtype 13 "
+    #bc_file_opts+="-inputgenerationtype 0 "
   fi
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
@@ -98,7 +100,7 @@ initialize_bc()
         echo "set XPILOTHOST environment variable before running xpilot"
         exit
       fi
-      KTEST_DIR="$DATA_DIR/network/xpilot-server/recent"
+      KTEST_DIR="$DATA_DIR/network/xpilot-game/recent"
       BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11.bc"
       ;;
   esac
@@ -174,6 +176,7 @@ run_cliver()
     ibsub $CLIVER_BIN $@
   elif [ $USE_GDB -eq 1 ]; then
     geval $CLIVER_BIN-bin $@
+    exit
   elif [ $USE_HEAP_PROFILER -eq 1 ]; then
     leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
   elif [ $USE_HEAP_CHECK -eq 1 ]; then
@@ -226,7 +229,7 @@ do_verification()
 
 do_ncross_verification()
 {
-  NCROSS_MODE="verify-with-edit-cost"
+  NCROSS_MODE="verify-with-edit-cost-prefix"
   declare -a training_dirs=( $TRAINING_DIR/* )
   local num_dirs=${#training_dirs[@]}
 
@@ -307,6 +310,7 @@ main()
             USE_INTERACTIVE_LSF=1
             ;;
           gdb*)
+            DISABLE_OUTPUT=1
             USE_GDB=1
             ;;
           lsf*)
