@@ -11,6 +11,7 @@ ROOT_DIR="`pwd`"
 VERBOSE_OUTPUT=0
 MODE="client"
 COUNT=0
+MAX_ROUND=0
 
 #=============================================================================
 # need to automatically set this var...
@@ -20,7 +21,7 @@ if test ! ${XPILOTHOST+defined}; then
 fi
 #=============================================================================
 
-while getopts ":vr:j:t:c:m:" opt; do
+while getopts ":vr:j:t:c:m:x:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -28,6 +29,10 @@ while getopts ":vr:j:t:c:m:" opt; do
 
     m)
       MODE="$OPTARG"
+      ;;
+
+    x)
+      MAX_ROUND=$OPTARG
       ;;
 
     c)
@@ -89,12 +94,16 @@ KTEST_DIR=$DATA_DIR/$RUN_PREFIX
 # Default options 
 #=============================================================================
 CLIENT_OPTIONS=""
-CLIENT_OPTIONS+=" -join -texturedWalls no -texturedDecor no -texturedObjects no "
-CLIENT_OPTIONS+=" -fullColor no -geometry $GEOMETRY "
-CLIENT_OPTIONS+=" -keyTurnLeft a -keyTurnRight d -keyThrust w "
+CLIENT_OPTIONS+="-join -texturedWalls no -texturedDecor no -texturedObjects no "
+CLIENT_OPTIONS+="-fullColor no -geometry $GEOMETRY "
+CLIENT_OPTIONS+="-keyTurnLeft a -keyTurnRight d -keyThrust w "
+
+if [[ $MAX_ROUND -gt 0 ]]; then
+  CLIENT_OPTIONS+="-quitRound $MAX_ROUND "
+fi
 
 SERVER_OPTIONS=""
-SERVER_OPTIONS+=" -ktestFileName \"$KTEST_DIR/xpilot.ktest\" "
+SERVER_OPTIONS+="-ktestFileName \"$KTEST_DIR/xpilot.ktest\" "
 
 #=============================================================================
 # Xpilot execution
@@ -105,25 +114,30 @@ make_xpilot_dirs()
   mkdir -p $KTEST_DIR 
   rm $DATA_DIR/$RECENT_LINK
   ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  cd $KTEST_DIR
 }
 
 case "$MODE" in 
-  multi)
+  game)
     make_xpilot_dirs
     for i in `seq 0 $COUNT` ; do
-      #while ! [[ `pgrep $SERVER_BIN` ]]
-      #do
-      #  echo "starting server in background..."
-      #  exec $SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &
-      #  sleep 1
-      #done
-      echo "starting server in background..."
-      exec $SERVER_COMMAND $SERVER_OPTIONS 
-      sleep 1
+
+      SERVER_OPTIONS=""
+      SERVER_OPTIONS+=" -ktestFileName \"$KTEST_DIR/xpilot_$i.ktest\" "
+      while ! [[ `pgrep -f $SERVER_BIN` ]] 
+      do
+        echo "starting server in background..."
+        echo "$SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &"
+        eval $SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &
+        sleep 3
+      done
+
       echo "starting client..."
-      leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
-      sleep 3
-      #pkill $SERVER_BIN
+      eval $CLIENT_COMMAND $CLIENT_OPTIONS $SERVER_ADDRESS
+      sleep 1
+      pkill $SERVER_BIN
+      sleep 1
+
     done
     ;;
   server)
@@ -131,6 +145,7 @@ case "$MODE" in
     leval $SERVER_COMMAND $SERVER_OPTIONS
     ;;
   client)
+    make_xpilot_dirs
     leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
     ;;
   record)
@@ -144,6 +159,7 @@ case "$MODE" in
     ;;
 esac
 
+#cd -
 leval xset r on
 
 
