@@ -16,12 +16,22 @@ colnames = c(
 "STATS","Round","ActiveStates",
 "Time","TimeUser","PruneTime","MergeTime",
 "SearcherTime","RebuildTime", "InstructionsExecuted",
-"CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound"
+"CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
+"ExecutionTreeTime", "ExecutionTreeExtendTime", 
+"EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTrainingTreeSize"
 )
+
+# colnames = c(
+# "STATS","Round","ActiveStates",
+# "Time","TimeUser","PruneTime","MergeTime",
+# "SearcherTime","RebuildTime", "InstructionsExecuted",
+# "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound"
+# )
 
 plotnames = c(
 "Time","InstructionsExecuted","CummulativeStates", "AllocatedMemoryAtEndOfRound"
 )
+
 plotwidth=9
 plotheight=6
 
@@ -33,7 +43,7 @@ output_filetype="png"
 data_subdirs = c('editcost','exhaustive')
 
 #create a new dir
-save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F"), sep="/")
+save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
 data_save_dir = paste(save_dir,"data_used",sep="/")
 dir.create(save_dir)
 dir.create(data_save_dir)
@@ -58,7 +68,7 @@ for (i in seq(length(data_subdirs))) {
   }
 }
 
-min_size = min_size - 1
+#min_size = 10
 
 library(ggplot2)
 
