@@ -281,18 +281,22 @@ install_llvmgcc_from_source()
   cd $ROOT_DIR/build/$LLVMGCC
 
   LLVMGCC_CONFIG_OPTIONS="--prefix=$LLVMGCC_ROOT --disable-multilib --program-prefix=llvm- "
-  LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++,fortran "
+  LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++ "
+
+  LLVMGCC_CONFIG_ENV_OPTIONS=""
+
+  if test ${ALTCC+defined}; then
+    LLVMGCC_CONFIG_ENV_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
 
   necho "[Configuring] "
-  leval $ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS 
+  leval $LLVMGCC_CONFIG_ENV_OPTIONS $ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS 
 
   LLVMGCC_MAKE_OPTIONS=""
 
   if test ${ALTCC+defined}; then
-    LLVMGCC_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
-  fi
-  if test ${GXX_INCLUDE_DIR+defined}; then
-    LLVMGCC_MAKE_OPTIONS+="--with-gxx-include-dir=$GXX_INCLUDE_DIR "
+    # HACK for LLVM 2.7 + GCC 4.2 support: needs path to crti.o
+    LLVMGCC_MAKE_OPTIONS+="LIBRARY_PATH=/usr/lib/x86_64-linux-gnu "
   fi
 
   necho "[Compiling] "
