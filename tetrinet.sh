@@ -99,15 +99,15 @@ LOG_DIR=$DATA_DIR/$RUN_PREFIX
 KTEST_DIR=$DATA_DIR/$RUN_PREFIX
 OUT_DIR=$RESULTS_DIR/$RUN_PREFIX
 
-#=============================================================================
-# script path
-#=============================================================================
-SCRIPTS_ROOT=$BASE_DIR
-SCRIPT=$SCRIPTS_ROOT"/run-nuklear.sh "
-TMP_SCRIPT="/tmp/$RANDOM.sh"
-cp $SCRIPT $TMP_SCRIPT
-chmod +x $TMP_SCRIPT
-SCRIPT=$TMP_SCRIPT
+##=============================================================================
+## script path
+##=============================================================================
+#SCRIPTS_ROOT=$BASE_DIR
+#SCRIPT=$SCRIPTS_ROOT"/run-nuklear.sh "
+#TMP_SCRIPT="/tmp/$RANDOM.sh"
+#cp $SCRIPT $TMP_SCRIPT
+#chmod +x $TMP_SCRIPT
+#SCRIPT=$TMP_SCRIPT
 
 #=============================================================================
 # enumerate all possible input moves with no simulated losses
@@ -287,49 +287,49 @@ else
 fi
 
 
-#=============================================================================
-# verify ktest files
-#=============================================================================
-if [[ $MODE == "test" || $MODE == "all" ]]
-then
-  echo "running test"
-
-  if [[ $MODE != "all" ]] ; then
-    KTEST_DIR=$DATA_DIR/$RECENT_LINK/ktest
-  fi
-
-  mkdir -p $OUT_DIR
-
-  rm $RESULTS_DIR/$RECENT_LINK
-  ln -sf $OUT_DIR $RESULTS_DIR/$RECENT_LINK
-
-  for ptype in $PTYPE_VALUES
-  do
-    for rate in $RATE_VALUES
-    do 
-      for i in `seq 1 $COUNT`
-      do
-        zpad_ptype=`printf "%02d" $ptype`
-        zpad_rate=`printf "%02d" $rate`
-        zpad_i=`printf "%02d" $i`
-        DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
-        KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
-
-        OPTS=" -autostart -partialtype $ptype -partialrate $rate"
-        OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
-
-        echo "verifying $KTEST_FILE"
-        bash $SCRIPT release $KTEST_FILE $DESC $OUT_DIR "$OPTS" &
-        sleep 1
-      done
-
-      echo "waiting for $COUNT jobs to finish"
-      wait
-    done
-  done
-else
-  echo "not running test"
-fi
+##=============================================================================
+## verify ktest files
+##=============================================================================
+#if [[ $MODE == "test" || $MODE == "all" ]]
+#then
+#  echo "running test"
+#
+#  if [[ $MODE != "all" ]] ; then
+#    KTEST_DIR=$DATA_DIR/$RECENT_LINK/ktest
+#  fi
+#
+#  mkdir -p $OUT_DIR
+#
+#  rm $RESULTS_DIR/$RECENT_LINK
+#  ln -sf $OUT_DIR $RESULTS_DIR/$RECENT_LINK
+#
+#  for ptype in $PTYPE_VALUES
+#  do
+#    for rate in $RATE_VALUES
+#    do 
+#      for i in `seq 1 $COUNT`
+#      do
+#        zpad_ptype=`printf "%02d" $ptype`
+#        zpad_rate=`printf "%02d" $rate`
+#        zpad_i=`printf "%02d" $i`
+#        DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
+#        KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
+#
+#        OPTS=" -autostart -partialtype $ptype -partialrate $rate"
+#        OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
+#
+#        echo "verifying $KTEST_FILE"
+#        bash $SCRIPT release $KTEST_FILE $DESC $OUT_DIR "$OPTS" &
+#        sleep 1
+#      done
+#
+#      echo "waiting for $COUNT jobs to finish"
+#      wait
+#    done
+#  done
+#else
+#  echo "not running test"
+#fi
 #=============================================================================
 #=============================================================================
 
