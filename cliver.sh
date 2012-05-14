@@ -90,7 +90,7 @@ initialize_bc()
 {
   case $BC_MODE in
     tetri*)
-      KTEST_DIR="$DATA_DIR/network/tetrinet/last-run"
+      KTEST_DIR="$DATA_DIR/network/tetrinet/recent"
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/recent"
       ;;

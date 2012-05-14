@@ -67,7 +67,7 @@ start_time=$(elapsed_time)
 SERVER_ADDRESS="localhost"
 PLAYER_NAME="p1"
 KTEST_SUFFIX="ktest"
-RECENT_LINK="last-run"
+RECENT_LINK="recent"
 
 #PTYPE_VALUES=`seq 1 6`
 PTYPE_VALUES=`seq 1`
