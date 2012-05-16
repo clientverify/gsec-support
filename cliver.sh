@@ -102,6 +102,7 @@ initialize_bc()
       fi
       KTEST_DIR="$DATA_DIR/network/xpilot-game/recent"
       BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11.bc"
+      TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/recent"
       ;;
   esac
 }
