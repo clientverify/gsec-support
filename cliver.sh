@@ -231,10 +231,10 @@ do_ncross_verification()
 {
   if [[ $(expr match $CLIVER_MODE "self") -gt 0 ]]; then
     NCROSS_MODE="self"
-    CLIVER_MODE=${CLIVER_MODE#"self"}
+    CLIVER_MODE=${CLIVER_MODE#"self-"}
   elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
     NCROSS_MODE="ncross"
-    CLIVER_MODE=${CLIVER_MODE#"ncross"}
+    CLIVER_MODE=${CLIVER_MODE#"ncross-"}
   else
     echo "Error: invalid mode $CLIVER_MODE"
     exit 1
