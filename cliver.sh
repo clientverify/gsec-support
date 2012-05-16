@@ -228,7 +228,17 @@ do_verification()
 
 do_ncross_verification()
 {
-  NCROSS_MODE="verify-with-edit-cost-prefix"
+  if [[ $(expr match $CLIVER_MODE "self") -gt 0 ]]; then
+    NCROSS_MODE="self"
+    CLIVER_MODE=${CLIVER_MODE#"self"}
+  elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
+    NCROSS_MODE="ncross"
+    CLIVER_MODE=${CLIVER_MODE#"ncross"}
+  else
+    echo "Error: invalid mode $CLIVER_MODE"
+    exit 1
+  fi
+
   declare -a training_dirs=( $TRAINING_DIR/* )
   local num_dirs=${#training_dirs[@]}
 
@@ -252,13 +262,19 @@ do_ncross_verification()
 
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
-    cliver_params+="-cliver-mode=$NCROSS_MODE "
+    cliver_params+="-cliver-mode=$CLIVER_MODE "
     cliver_params+="-client-model=$BC_MODE "
 
     for k in $indices; do
-      if [ $i != $k ]; then
-        cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
-      fi 
+      if [[ $NCROSS_MODE == "ncross" ]] ; then
+        if [ $i != $k ]; then
+          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      elif [[ $NCROSS_MODE == "self" ]] ; then
+        if [ $i == $k ]; then
+          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      fi
     done
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
@@ -395,6 +411,10 @@ main()
   start_time=$(elapsed_time)
 
   case $CLIVER_MODE in
+
+    self* )
+      do_ncross_verification
+      ;;
 
     ncross* )
       do_ncross_verification
