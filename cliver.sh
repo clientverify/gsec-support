@@ -64,12 +64,7 @@ tetrinet_parameters()
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
-  if [ "$CLIVER_MODE" == "training" ]; then
-    bc_file_opts+="-inputgenerationtype 0 "
-  else
-    bc_file_opts+="-inputgenerationtype 13 "
-    #bc_file_opts+="-inputgenerationtype 0 "
-  fi
+  bc_file_opts+="-inputgenerationtype 13 "
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -239,6 +234,8 @@ do_ncross_verification()
     echo "Error: invalid mode $CLIVER_MODE"
     exit 1
   fi
+
+  leval echo "CLIVER_MODE=$CLIVER_MODE"
 
   declare -a training_dirs=( $TRAINING_DIR/* )
   local num_dirs=${#training_dirs[@]}
