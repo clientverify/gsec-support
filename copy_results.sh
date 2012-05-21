@@ -17,11 +17,12 @@ ROOT_DIR="`pwd`"
 usage()
 {
   echo -e "$(basename $0)\n\nUSAGE:"
-  echo -e "\t-s [source]\t\t\t(source directory to be recursively searched for debug.txt files)(REQUIRED)" 
+  echo -e "\t-s [source]\t\t\t(source directory(s) to be recursively searched for debug.txt files)(REQUIRED)" 
   echo -e "\t-d [destination]\t\t(ssh://server:direcory to copy formated results)(REQUIRED)"
   echo -e "\t-h \t\t\t\t(help/usage)"
 }
 
+RESULTS_SOURCE=""
 
 main()
 {
@@ -33,7 +34,7 @@ main()
         ;;
 
       s)
-        RESULTS_SOURCE="$OPTARG"
+        RESULTS_SOURCE+=" $OPTARG"
         ;;
 
       h)
@@ -48,32 +49,37 @@ main()
   #initialize_logging $@
   #DRY_RUN=1
 
-  #BASE_NAME="debug.txt"
-  #for file in $( find $RESULTS_SOURCE -name $BASE_NAME ); do
+  OUTPUT_ROOT="./.$(basename $0)-$RANDOM"
+  echo $OUTPUT_ROOT
 
-  PATTERN="debug.txt"
-  for dir in $RESULTS_SOURCE/* ; do
-    for file in $( find -L $dir/recent -name $PATTERN ); do
-      local stats_file="./.$(basename $0)-$RANDOM.txt"
-      #echo $file
-      #echo $stats_file
-      
-      #local dest=$RESULTS_DESTINATION/$(basename $dir)/$(basename $RESULTS_SOURCE)/$(basename $(dirname $file) ).txt
-      local dest=$RESULTS_DESTINATION/$(basename $dir)/$(basename $RESULTS_SOURCE)/
+  pattern="debug.txt"
+  for source in $RESULTS_SOURCE ; do
+    for client_dir in $source/* ; do
+      local data_id=$(readlink $client_dir/recent)
+      local output_dir=$OUTPUT_ROOT/$(basename $client_dir)/data/$(basename $source)/$data_id
+      echo $output_dir
 
-      grep STATS $file > $stats_file
-      if [[ $(wc -l $stats_file | awk '{print $1}' ) -gt 0 ]]; then
-        echo "rsync -ave ssh $stats_file $dest"
-        rsync -ave ssh $stats_file $dest
-      else
-        echo "error: $file is empty"
-        rm $stats_file
-      fi
-      rm $stats_file
+      mkdir -p $output_dir
+
+      for file in $( find -L $client_dir/recent -name $pattern); do
+
+        local stats_file="$(basename $(dirname $file) ).txt"
+        local dest=$output_dir/$stats_file
+        echo "file=$file dest=$dest"
+        grep STATS $file > $dest
+
+        if [[ $(wc -l $dest | awk '{print $1}' ) -eq 0 ]]; then
+          echo "error: $file is empty"
+          rm $stats_file
+        fi
+
+      done
     done
   done
-
+  rsync -ave ssh $OUTPUT_ROOT/* $RESULTS_DESTINATION
+  rm -rf $OUTPUT_ROOT
 }
 
 # Run main
 main "$@"
+
