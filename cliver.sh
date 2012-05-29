@@ -144,7 +144,7 @@ cliver_parameters()
   cliver_params+="-debug-socket=$DEBUG_SOCKET "
   cliver_params+="-debug-searcher=$DEBUG_SEARCHER "
   #cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
-  #cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
+  cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
   #cliver_params+="-no-output=$DISABLE_OUTPUT "
   cliver_params+=" $EXTRA_CLIVER_OPTIONS "
 
@@ -422,11 +422,11 @@ main()
       do_training
       ;;
 
-    testtraining )
+    edit*)
       do_verification
       ;;
 
-    verif*)
+    naive*)
       do_verification
       ;;
 
