@@ -35,9 +35,10 @@ plotnames = c(
 )
 
 plotwidth=9
-plotheight=6
+default_plotheight=6
 
-root_dir="/home/rac/research/test.gsec/results/xpilot-ng-x11"
+#root_dir="/home/rac/research/test.gsec/results/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
 
 if (length(args) > 0) {
   root_dir = args[1]
@@ -61,47 +62,54 @@ previous_count = 2
 for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
   data_path = paste(root_dir, data_dir, data_subdir, sep="/")
   data_ids = NULL
-  for (data_id in dir(data_path, full.names=FALSE, recursive=FALSE)) {
-    data_ids = c(data_ids, data_id)
+  for (id in dir(data_path, full.names=FALSE, recursive=FALSE)) {
+    data_ids = c(data_ids, id)
   }
-  sort(data_ids, decreasing=TRUE)
+  
+  data_ids = sort(data_ids, decreasing=TRUE)
+
   for (i in seq(min(length(data_ids), previous_count))) {
-    fullpath = paste(data_path, data_id[i], sep="/")
+    fullpath = paste(data_path, data_ids[i], sep="/")
+    file_count = 0
     for (file in list.files(path=fullpath)) {
       tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=colnames), silent=TRUE)
       if (class(tmp_data) != "try-error") {
+        file_count = file_count+1
         # copy the data file
         file.copy(paste(fullpath,file,sep="/"),paste(data_save_dir,file,sep="/"),overwrite=TRUE)
         len = length(tmp_data[,1]) # length of rows, not cols
         min_size = min(min_size, len)
-        tmp_data$name=rep(substr(file,1, 10), len)
-        #tmp_data$name=rep(file, len)
-        tmp_data$mode=rep(data_subdir, len)
-        tmp_data$version=rep(data_id[i], len)
+        tmp_data$name=rep(paste("LOG", sprintf("%02d",file_count)), len)
+        #tmp_data$name=rep(substr(file,1, 10), len)
+        #tmp_data$mode=rep(data_subdir, len)
+        #tmp_data$version=rep(data_id[i], len)
+        tmp_data$mode=rep(paste(data_subdir,i,sep=","), len)
         data = rbind(data, tmp_data)
       }
     }
   }
 }
 
-#min_size = 10
-
+plotheight = length(unique(data$name))
 for (y_axis in plotnames) {
   x_axis = "Round"
   name = paste("plot","line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
   title = paste(x_axis,"vs",y_axis, sep=" ")
   p = ggplot(subset(data, Round < min_size & Round > 0), aes_string(x=x_axis, y=y_axis))
+  
   p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=1)
   p = p + scale_fill_hue("Algorithm")
   p = p + facet_grid(name ~ .)
   p = p + theme_bw()
   p = p + cbgColourPalette
-  p = p + opts(title=title)
+  p = p + opts(title=title,legend.position="bottom")
+  p = p + guides(colour = guide_legend(title=NULL), linetype = guide_legend(title=NULL))
   p;  
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
+plotheight = length(unique(data$name))
 for (y_axis in plotnames) {
   x_axis = "Round"
   name = paste("plot","line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
@@ -111,18 +119,22 @@ for (y_axis in plotnames) {
   p = p + scale_y_log10() 
   p = p + theme_bw() 
   p = p + facet_grid(name ~ .) 
-  p = p + opts(title=title)
+  p = p + opts(title=title,legend.position="bottom")
+  p = p + guides(colour = guide_legend(title=NULL), linetype = guide_legend(title=NULL))
+  p;
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
+plotheight = default_plotheight
 for (y_axis in plotnames) {
-  name =  paste("Plot","bar",y_axis,sep="_")
+  name =  paste("plot","bar",y_axis,sep="_")
   title = paste("Summary of",y_axis,"over",min_size,"rounds",sep=" ")
   p <- ggplot(subset(data, Round < min_size & Round > 0), aes_string(x="mode", y=y_axis)) 
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray") 
   p = p + theme_bw() 
-  p = opts(title=title)
+  p = p + opts(title=title, axis.title.x=theme_blank())
+  p;
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
