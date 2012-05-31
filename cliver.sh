@@ -315,7 +315,7 @@ main()
 
       m)
         MAX_MEMORY=$(($OPTARG*1000))
-        WARN_MEMORY=$(($MAX_MEMORY-2000))
+        WARN_MEMORY=$(($MAX_MEMORY-($MAX_MEMORY/8)))
         ;;
       i)
         case $OPTARG in
