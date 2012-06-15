@@ -54,10 +54,12 @@ main()
 
   pattern="debug.txt"
   for source in $RESULTS_SOURCE ; do
+    echo "source: "$source
     for client_dir in $source/* ; do
       local data_id=$(readlink $client_dir/recent)
       local output_dir=$OUTPUT_ROOT/$(basename $client_dir)/data/$(basename $source)/$data_id
-      echo $output_dir
+      echo "output_dir: "$output_dir
+      echo "client_dir: "$client_dir
 
       mkdir -p $output_dir
 
@@ -65,8 +67,9 @@ main()
 
         local stats_file="$(basename $(dirname $file) ).txt"
         local dest=$output_dir/$stats_file
-        echo "file=$file dest=$dest"
+        echo "grep STATS file=$file > dest=$dest"
         grep STATS $file > $dest
+        echo "done"
 
         if [[ $(wc -l $dest | awk '{print $1}' ) -eq 0 ]]; then
           echo "error: $file is empty"
