@@ -207,6 +207,25 @@ install_libunwind()
   necho "[Done]\n"
 }
 
+install_sparsehash()
+{
+  necho "$SPARSEHASH\t\t"
+  check_dirs $SPARSEHASH || { return 0; }
+  get_package $SPARSEHASH_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$SPARSEHASH"
+
+  mkdir -p $ROOT_DIR/build/$SPARSEHASH
+  cd $ROOT_DIR/build/$SPARSEHASH
+
+  necho "[Configuring] "
+  leval $ROOT_DIR/src/$SPARSEHASH/configure --prefix=$SPARSEHASH_ROOT 
+
+  necho "[Installing] "
+  mkdir -p $SPARSEHASH_ROOT
+  leval make -j $MAKE_THREADS install 
+
+  necho "[Done]\n"
+}
+
 install_google_perftools()
 {
   necho "$GOOGLE_PERFTOOLS\t"
@@ -795,6 +814,7 @@ main()
     fi
   
     install_libunwind
+    install_sparsehash
     install_google_perftools
     install_boost
     install_uclibc
