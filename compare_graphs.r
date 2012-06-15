@@ -118,6 +118,7 @@ for (y_axis in plotnames) {
   p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=1) 
   p = p + scale_y_log10() 
   p = p + theme_bw() 
+  p = p + cbgColourPalette
   p = p + facet_grid(name ~ .) 
   p = p + opts(title=title,legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL), linetype = guide_legend(title=NULL))
@@ -133,6 +134,7 @@ for (y_axis in plotnames) {
   p <- ggplot(subset(data, Round < min_size & Round > 0), aes_string(x="mode", y=y_axis)) 
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray") 
   p = p + theme_bw() 
+  p = p + cbgColourPalette
   p = p + opts(title=title, axis.title.x=theme_blank())
   p;
   filename = paste(name, output_filetype, sep=".")
