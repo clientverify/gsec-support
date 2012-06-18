@@ -230,6 +230,9 @@ do_ncross_verification()
   elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
     NCROSS_MODE="ncross"
     CLIVER_MODE=${CLIVER_MODE#"ncross-"}
+  elif [[ $(expr match $CLIVER_MODE "all") -gt 0 ]]; then
+    NCROSS_MODE="all"
+    CLIVER_MODE=${CLIVER_MODE#"all-"}
   else
     echo "Error: invalid mode $CLIVER_MODE"
     exit 1
@@ -272,6 +275,8 @@ do_ncross_verification()
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
         fi 
+      elif [[ $NCROSS_MODE == "all" ]] ; then
+        cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
       fi
     done
 
@@ -411,6 +416,10 @@ main()
   case $CLIVER_MODE in
 
     self* )
+      do_ncross_verification
+      ;;
+
+    all* )
       do_ncross_verification
       ;;
 
