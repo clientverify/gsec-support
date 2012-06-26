@@ -64,7 +64,7 @@ tetrinet_parameters()
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
-  bc_file_opts+="-inputgenerationtype 13 "
+  bc_file_opts+="-inputgenerationtype 64 "
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -357,9 +357,9 @@ main()
         if [[ $OPTARG -ge 0 ]]; then
           DEBUG_SEARCHER=1
           DEBUG_NETWORK_MANAGER=1
+          DEBUG_EXECUTION_TREE=1
         fi
         if [[ $OPTARG -ge 1 ]]; then
-          DEBUG_EXECUTION_TREE=1
           DEBUG_STATE_MERGER=1
           DEBUG_ADDRESS_SPACE_GRAPH=1
         fi

@@ -209,7 +209,7 @@ install_libunwind()
 
 install_sparsehash()
 {
-  necho "$SPARSEHASH\t\t"
+  necho "$SPARSEHASH\t"
   check_dirs $SPARSEHASH || { return 0; }
   get_package $SPARSEHASH_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$SPARSEHASH"
 
