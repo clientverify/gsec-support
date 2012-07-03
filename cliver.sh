@@ -118,7 +118,11 @@ initialize_cliver()
 {
   CLIVER_BIN="$KLEE_ROOT/bin/cliver"
 
-  BASE_OUTPUT_DIR=$DATA_DIR/$CLIVER_MODE/$(basename $BC_FILE .bc)
+  if test ${SPECIAL_OUTPUT_DIR+defined}; then
+    BASE_OUTPUT_DIR=$DATA_DIR/$SPECIAL_OUTPUT_DIR/$(basename $BC_FILE .bc)
+  else
+    BASE_OUTPUT_DIR=$DATA_DIR/$CLIVER_MODE/$(basename $BC_FILE .bc)
+  fi
 
   CLIVER_OUTPUT_DIR=$BASE_OUTPUT_DIR/$RUN_PREFIX
 
@@ -303,11 +307,15 @@ usage()
 
 main() 
 {
-  while getopts "t:c:x:i:p:d:r:m:nshv" opt; do
+  while getopts "t:o:c:x:i:p:d:r:m:nshv" opt; do
     case $opt in
 
       t)
         CLIVER_MODE="$OPTARG"
+        ;;
+
+      o)
+        SPECIAL_OUTPUT_DIR="$OPTARG"
         ;;
 
       c)
