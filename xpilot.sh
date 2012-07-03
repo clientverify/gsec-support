@@ -9,7 +9,7 @@ HERE="`dirname "$WRAPPER"`"
 # default config values
 ROOT_DIR="`pwd`"
 VERBOSE_OUTPUT=0
-MODE="client"
+MODE="game"
 COUNT=0
 MAX_ROUND=0
 

@@ -64,7 +64,7 @@ tetrinet_parameters()
   bc_file_opts+="-startingheight 0 "
   bc_file_opts+="-partialtype $partial_type "
   bc_file_opts+="-partialrate $partial_rate "
-  bc_file_opts+="-inputgenerationtype 13 "
+  bc_file_opts+="-inputgenerationtype 64 "
   bc_file_opts+="-seed $random_seed "
   bc_file_opts+=" $player_name $server_address "
   printf "%s" "$bc_file_opts"
@@ -231,6 +231,9 @@ do_ncross_verification()
   if [[ $(expr match $CLIVER_MODE "self") -gt 0 ]]; then
     NCROSS_MODE="self"
     CLIVER_MODE=${CLIVER_MODE#"self-"}
+  elif [[ $(expr match $CLIVER_MODE "check") -gt 0 ]]; then
+    NCROSS_MODE="check"
+    CLIVER_MODE=${CLIVER_MODE#"check-"}
   elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
     NCROSS_MODE="ncross"
     CLIVER_MODE=${CLIVER_MODE#"ncross-"}
@@ -278,6 +281,13 @@ do_ncross_verification()
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      elif [[ $NCROSS_MODE == "check" ]] ; then
+        if [ $i != $k ]; then
+          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+        if [ $i == $k ]; then
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "all" ]] ; then
         cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
@@ -365,9 +375,9 @@ main()
         if [[ $OPTARG -ge 0 ]]; then
           DEBUG_SEARCHER=1
           DEBUG_NETWORK_MANAGER=1
+          DEBUG_EXECUTION_TREE=1
         fi
         if [[ $OPTARG -ge 1 ]]; then
-          DEBUG_EXECUTION_TREE=1
           DEBUG_STATE_MERGER=1
           DEBUG_ADDRESS_SPACE_GRAPH=1
         fi
@@ -424,6 +434,10 @@ main()
   case $CLIVER_MODE in
 
     self* )
+      do_ncross_verification
+      ;;
+
+    check* )
       do_ncross_verification
       ;;
 
