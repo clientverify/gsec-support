@@ -227,6 +227,9 @@ do_ncross_verification()
   if [[ $(expr match $CLIVER_MODE "self") -gt 0 ]]; then
     NCROSS_MODE="self"
     CLIVER_MODE=${CLIVER_MODE#"self-"}
+  elif [[ $(expr match $CLIVER_MODE "check") -gt 0 ]]; then
+    NCROSS_MODE="check"
+    CLIVER_MODE=${CLIVER_MODE#"check-"}
   elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
     NCROSS_MODE="ncross"
     CLIVER_MODE=${CLIVER_MODE#"ncross-"}
@@ -274,6 +277,13 @@ do_ncross_verification()
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      elif [[ $NCROSS_MODE == "check" ]] ; then
+        if [ $i != $k ]; then
+          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+        fi 
+        if [ $i == $k ]; then
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "all" ]] ; then
         cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
@@ -416,6 +426,10 @@ main()
   case $CLIVER_MODE in
 
     self* )
+      do_ncross_verification
+      ;;
+
+    check* )
       do_ncross_verification
       ;;
 
