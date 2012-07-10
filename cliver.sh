@@ -132,7 +132,7 @@ initialize_cliver()
   CLIVER_OUTPUT_DIR=$BASE_OUTPUT_DIR/$RUN_PREFIX
 
   leval mkdir -p $CLIVER_OUTPUT_DIR
-  leval ln -sfT $RUN_PREFIX $BASE_OUTPUT_DIR/recent
+  leval ln -sfT $RUN_PREFIX $BASE_OUTPUT_DIR/$DATA_TAG
 }
 
 cliver_parameters()
