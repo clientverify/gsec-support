@@ -83,11 +83,16 @@ xpilot_parameters()
 
 initialize_bc()
 {
+  # Alternative to using recent link in KTEST_DIR and TRAINING_DIR
+  if test ! ${DATA_TAG+defined}; then
+    DATA_TAG="recent"
+  fi
+
   case $BC_MODE in
     tetri*)
-      KTEST_DIR="$DATA_DIR/network/tetrinet/recent"
+      KTEST_DIR="$DATA_DIR/network/tetrinet/$DATA_TAG"
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
-      TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/recent"
+      TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/$DATA_TAG"
       ;;
     xpilot*)
       # need to automatically set this var...
@@ -95,9 +100,9 @@ initialize_bc()
         echo "set XPILOTHOST environment variable before running xpilot"
         exit
       fi
-      KTEST_DIR="$DATA_DIR/network/xpilot-game/recent"
+      KTEST_DIR="$DATA_DIR/network/xpilot-game/$DATA_TAG"
       BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11.bc"
-      TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/recent"
+      TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/$DATA_TAG"
       ;;
   esac
 }
@@ -317,8 +322,12 @@ usage()
 
 main() 
 {
-  while getopts "t:o:c:x:i:p:d:r:m:nshv" opt; do
+  while getopts "b:t:o:c:x:i:p:d:r:m:nshv" opt; do
     case $opt in
+
+      b)
+        DATA_TAG="$OPTARG"
+        ;;
 
       t)
         CLIVER_MODE="$OPTARG"
