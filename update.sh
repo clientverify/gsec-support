@@ -121,6 +121,27 @@ install_zlib()
   necho "[Done]\n"
 }
 
+install_waffles()
+{
+  necho "$WAFFLES \t\t"
+  check_dirs $WAFFLES || { return 0; }
+  get_package $WAFFLES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$WAFFLES"
+
+  cd $ROOT_DIR/src/$WAFFLES/src
+
+  #necho "[Configuring] "
+  #leval $ROOT_DIR/src/$WAFFLES/configure --prefix=$WAFFLES_ROOT 
+
+  necho "[Compiling] "
+  leval make 
+
+  necho "[Installing] "
+  mkdir -p $WAFFLES_ROOT
+  leval make install INSTALL_PREFIX="$WAFFLES_ROOT"
+
+  necho "[Done]\n"
+}
+
 install_zlib_llvm()
 {
   necho "$ZLIB (llvm) \t"
@@ -820,6 +841,7 @@ main()
     install_uclibc
     install_ncurses
     install_zlib
+    install_waffles
     install_expat
     install_klee
     install_tetrinet
