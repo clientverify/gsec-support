@@ -304,6 +304,58 @@ do_ncross_verification()
   done
 }
 
+do_training_verification()
+{
+
+  if [[ $(expr match $CLIVER_MODE "verify") -gt 0 ]]; then
+    VERIFY_MODE="verify"
+    CLIVER_MODE=${CLIVER_MODE#"verify-"}
+  else
+    echo "Error: invalid mode $CLIVER_MODE"
+    exit 1
+  fi
+
+  leval echo "CLIVER_MODE=$CLIVER_MODE"
+
+  declare -a training_dirs=( $TRAINING_DIR/* )
+  local num_dirs=${#training_dirs[@]}
+  indices="$(seq 0 $(($num_dirs - 1)))"
+
+  declare -a ktest_dirs=( $KTEST_DIR/* )
+  local ktest_num_dirs=${#ktest_dirs[@]}
+  ktest_indices="$(seq 0 $(($ktest_num_dirs - 1)))"
+
+
+  # Check that we trained on the same bc file used for verification
+  for i in $indices; do
+    local training_bc_file="${training_dirs[$i]}/input.bc" 
+    if ! cmp $training_bc_file $BC_FILE > /dev/null; then
+      echo "Error: $training_bc_file and $BC_FILE differ."
+      exit 1
+    fi 
+  done
+
+  for i in $ktest_indices; do
+    leval echo "validating ${ktest_dirs[$i]} with $(($num_dirs -1)) training sets"
+
+    local ktest_file="${ktest_dirs[$i]}/socket_000.ktest"
+    local ktest_basename=$(basename ${ktest_dirs[$i]})
+    local cliver_params="$(cliver_parameters) "
+
+    cliver_params+="-socket-log $ktest_file "
+    cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+    cliver_params+="-cliver-mode=$CLIVER_MODE "
+    cliver_params+="-client-model=$BC_MODE "
+
+    for k in $indices; do
+      cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+    done
+
+    cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
+    run_cliver $cliver_params
+  done
+}
+
 usage()
 {
   echo -e "$0\n\nUSAGE:"
@@ -456,6 +508,10 @@ main()
 
     ncross* )
       do_ncross_verification
+      ;;
+
+    verify* )
+      do_training_verification
       ;;
 
     training )
