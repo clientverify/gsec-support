@@ -321,8 +321,8 @@ do_training_verification()
   local num_dirs=${#training_dirs[@]}
   indices="$(seq 0 $(($num_dirs - 1)))"
 
-  declare -a ktest_dirs=( $KTEST_DIR/* )
-  local ktest_num_dirs=${#ktest_dirs[@]}
+  declare -a ktest_files=( $KTEST_DIR/*.ktest )
+  local ktest_num_dirs=${#ktest_files[@]}
   ktest_indices="$(seq 0 $(($ktest_num_dirs - 1)))"
 
 
@@ -336,10 +336,14 @@ do_training_verification()
   done
 
   for i in $ktest_indices; do
-    leval echo "validating ${ktest_dirs[$i]} with $(($num_dirs -1)) training sets"
+    leval echo "validating ${ktest_files[$i]} with $(($num_dirs -1)) training sets"
 
-    local ktest_file="${ktest_dirs[$i]}/socket_000.ktest"
-    local ktest_basename=$(basename ${ktest_dirs[$i]})
+    #local ktest_file="${ktest_dirs[$i]}/socket_000.ktest"
+    #local ktest_basename=$(basename ${ktest_dirs[$i]})
+
+    local ktest_file="${ktest_files[$i]}"
+    local ktest_basename=$(basename ${ktest_files[$i]})
+    
     local cliver_params="$(cliver_parameters) "
 
     cliver_params+="-socket-log $ktest_file "
