@@ -2,7 +2,7 @@
 
 # see http://www.davidpashley.com/articles/writing-robust-shell-scripts.html
 set -u # Exit if uninitialized value is used 
-set -e # Exit on non-true value
+#set -e # Exit on non-true value
 set -o pipefail # exit on fail of any command in a pipe
 
 WRAPPER="`readlink -f "$0"`"
@@ -13,6 +13,7 @@ HERE="`dirname "$WRAPPER"`"
 
 VERBOSE_OUTPUT=1
 ROOT_DIR="`pwd`"
+DATA_TAG="recent"
 
 usage()
 {
@@ -26,8 +27,12 @@ RESULTS_SOURCE=""
 
 main()
 {
-  while getopts "s:d:h" opt; do
+  while getopts "b:s:d:h" opt; do
     case $opt in
+
+      b)
+        DATA_TAG="$OPTARG"
+        ;;
 
       d)
         RESULTS_DESTINATION="$OPTARG"
@@ -50,30 +55,30 @@ main()
   #DRY_RUN=1
 
   OUTPUT_ROOT="./.$(basename $0)-$RANDOM"
-  echo $OUTPUT_ROOT
+  #echo $OUTPUT_ROOT
 
   pattern="debug.txt"
   for source in $RESULTS_SOURCE ; do
-    echo "source: "$source
+    #echo "source: "$source
     for client_dir in $source/* ; do
-      local data_id=$(readlink $client_dir/recent)
+      local data_id=$(readlink $client_dir/$DATA_TAG)
       local output_dir=$OUTPUT_ROOT/$(basename $client_dir)/data/$(basename $source)/$data_id
-      echo "output_dir: "$output_dir
-      echo "client_dir: "$client_dir
+      #echo "output_dir: "$output_dir
+      #echo "client_dir: "$client_dir
 
       mkdir -p $output_dir
 
-      for file in $( find -L $client_dir/recent -name $pattern); do
+      for file in $( find -L $client_dir/$DATA_TAG -name $pattern); do
 
         local stats_file="$(basename $(dirname $file) ).txt"
         local dest=$output_dir/$stats_file
-        echo "grep STATS file=$file > dest=$dest"
+        #echo "grep STATS file=$file > dest=$dest"
         grep STATS $file > $dest
-        echo "done"
+        #echo "done"
 
         if [[ $(wc -l $dest | awk '{print $1}' ) -eq 0 ]]; then
           echo "error: $file is empty"
-          rm $stats_file
+          rm $dest
         fi
 
       done
