@@ -439,6 +439,10 @@ install_llvm()
   necho "[Cloning] "
   leval git clone $LLVM_GIT 
 
+  cd $ROOT_DIR"/src/$LLVM"
+
+  leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH 
+
   necho "[Configuring] "
   config_llvm 
 
