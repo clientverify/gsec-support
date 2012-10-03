@@ -23,7 +23,7 @@ XPILOT_NATIVE_PREFIX="x86-"
 
 # Repository Branches
 LLVM_BRANCH="cliver_27"
-KLEE_BRANCH="radixtree"
+KLEE_BRANCH="oakland"
 TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
