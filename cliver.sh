@@ -144,7 +144,7 @@ cliver_parameters()
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
-  cliver_params+="-state-trees-memory-limit=$WARN_MEMORY "
+  # depreciated cliver_params+="-state-trees-memory-limit=$WARN_MEMORY "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
@@ -219,6 +219,7 @@ do_verification()
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
+    cliver_params+="-randomize-fork=true "
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
@@ -269,6 +270,8 @@ do_ncross_verification()
   for i in $indices; do
     leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
 
+    echo "$i Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
+
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
@@ -301,6 +304,10 @@ do_ncross_verification()
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
     run_cliver $cliver_params
+
+    #if [ $i == 8 ]; then
+    #  run_cliver $cliver_params
+    #fi
   done
 }
 
