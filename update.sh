@@ -190,7 +190,8 @@ install_boost()
 
   check_dirs $BOOST || { return 0; }
 
-  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST"
+  #get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST"
+  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/"
 
   cd $ROOT_DIR/src/$BOOST
 
