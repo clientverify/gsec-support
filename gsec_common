@@ -52,6 +52,7 @@ EXPAT_PACKAGE="$EXPAT.tar.gz"
 # Other
 RUN_PREFIX=$(date +%F.%T)
 LSF_QUEUE="day"
+#LSF_QUEUE="debug"
 XLIB_DIR="gsec-support/Xlibs"
 
 initialize_root_directories() 
