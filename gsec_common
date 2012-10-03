@@ -1,7 +1,7 @@
 # This file contains common variables and routines for the gsec scripts *- sh -*
 
 # Packages
-LLVM="llvm-2.7"
+LLVM="llvm"
 LLVMGCC="llvm-gcc-4.2-2.7"
 LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
 KLEE="klee"
@@ -12,6 +12,7 @@ UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.0.1"
 SPARSEHASH="sparsehash-2.0.2"
 NCURSES="ncurses-5.7"
+STP="stp"
 TETRINET="tetrinet"
 WAFFLES="waffles-2011-12-6"
 ZLIB="zlib-1.2.5"
@@ -21,7 +22,8 @@ XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 
 # Repository Branches
-KLEE_BRANCH="radixtree"
+LLVM_BRANCH="cliver_27"
+KLEE_BRANCH="oakland"
 TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
