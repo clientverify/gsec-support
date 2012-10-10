@@ -377,7 +377,8 @@ build_llvm ()
   if [ $BUILD_DEBUG -eq 1 ]; then
     LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
   else
-    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+    #LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
   fi
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
@@ -490,7 +491,7 @@ build_klee()
   if [ $BUILD_DEBUG -eq 1 ]; then
     KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
   else
-    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
   fi
 
   ### HACK ### need to remove libraries from install location so that
