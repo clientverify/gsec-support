@@ -88,7 +88,7 @@ plotnames = c(
 #  "ExecutionTreeTime", 
 #  "TrainingTime", 
 #  "ExecTime", 
-#  "TimeMinus",
+  "TimeMinus",
 #  "TimeWOSolver",
   "CummulativeStates",
   "CurrentStates",
@@ -97,7 +97,7 @@ plotnames = c(
 
 plotwidth=9
 plotwidth=6*0.8
-default_plotheight=6
+default_plotheight=9
 
 root_dir="/home/rac/research/test.gsec/results/xpilot-ng-x11"
 #root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
@@ -141,7 +141,7 @@ if (1) {
   cat(d,'\n')
   
 }
-
+#data$DTime = data$Time - data$SelfPathEditDistance
 
 for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
   data_path = paste(root_dir, data_dir, data_subdir, sep="/")
@@ -200,14 +200,25 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 #           tmp_data$Round = tmp_data$Round + 1
 #         }
         
-        v = c(tmp_data$Time[1])
+        
+        #tmp_data$DTime = tmp_data$Time - tmp_data$SelfPathEditDistance 
+        if (tmp_data$name != "NDSS") {
+          #tmp_data$DTime = tmp_data$Time - tmp_data$ExecutionTreeTime - tmp_data$EditDistanceBuildTime
+          #tmp_data$DTime = tmp_data$Time - tmp_data$EditDistanceBuildTime
+          
+          tmp_data$DTime = tmp_data$Time
+        } else {
+          tmp_data$DTime = tmp_data$Time
+        }
+        #v = c(tmp_data$DTime[1])
+        v = c(0)
         
         for (j in seq(2,len)) {
           res = 0
           if (tsavg[j] < v[j-1]) {
-            res = v[j-1] + tmp_data$Time[j]
+            res = v[j-1] + tmp_data$DTime[j]
           } else {
-            res = tsavg[j] + tmp_data$Time[j]
+            res = tsavg[j] + tmp_data$DTime[j]
           }
           v = append(v,res)
         }
@@ -240,14 +251,19 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 # Compute the time not spent in ExecutionTree
 #data$ExecTime = data$Time - data$ExecutionTreeTime
 
-#data$TimeMinus = data$Time - data$TrainingTime - data$ExecutionTreeTime
+data$TimeMinus = data$Time - data$TrainingTime - data$ExecutionTreeTime
 
 data$SendInstructionsExecuted = data$InstructionsExecuted - data$RecvInstructionsExecuted
 
-data$TimeMinus = data$Time - (data$EditDistanceComputeTime)*0.25
+#data$TimeMinus = data$Time - (data$EditDistanceComputeTime)*0.25
+#data$ExecTime = data$Time - data$ExecutionTreeTime
+data$TimeMinus = data$Time - data$ExecutionTreeTime - data$EditDistanceBuildTime
 
 
 data$TimeWOSolver = data$Time - data$SolverTime
+
+#data$Time = data$Time - data$SelfPathEditDistance
+
 
 ###temp
 #data = subset(data, name != "LOG 07" & name != "LOG 09" & name != "LOG 04")
@@ -255,7 +271,7 @@ data$TimeWOSolver = data$Time - data$SolverTime
 #data = subset(data, name != "21")
 #data = subset(data, mode != "nc-ed-row,1" & mode != "self-edit-dist-row,1")
 #data = subset(data, name == "LOG 04" | name == "LOG 07")
-
+#data = subset(data, name != "01" & name != "10" & name != "07")
 #min_size = min_size - 10
 start_round = 2
 
@@ -267,27 +283,33 @@ cat("start round: ",start_round,", min_size: ",min_size,"\n")
 
 data = subset(data, (Round < min_size) & (Round > start_round))
 
-plotheight = length(unique(data$name))*0.6
+#plotheight = length(unique(data$name))*0.6
+plotheight = 10
+plotwidth = 10
+heightscalefactor = 2.0
 
 if (1) {
+  
+plotheight = length(unique(data$name))*heightscalefactor
 for (y_axis in plotnames) {
- x_axis = "Message"
+ x_axis = "Round"
  cat("plotting: ",x_axis," vs ",y_axis,"\n")
  name = paste("plot","line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
  title = paste(x_axis,"vs",y_axis, sep=" ")
  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
  
- #p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
- p = p + geom_line(size=0.5)
+ p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
+ #p = p + geom_line(size=0.5)
  #p = p + scale_fill_hue("Algorithm")
  p = p + facet_grid(name ~ .)
  p = p + theme_bw()
  p = p + ylab(paste(y_axis,"(s)"))
  #p = p + scale_y_continuous(breaks=c(200,600,1000))
  p = p + scale_y_continuous(breaks=c(500,1000,1500))
+ #p = p + scale_y_continuous()
  #p = p + cbgColourPalette
- #p = p + opts(title=title,legend.position="bottom")
- #p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+ p = p + opts(title=title,legend.position="bottom")
+ p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
  p;  
  filename = paste(name, output_filetype, sep=".")
  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
@@ -295,7 +317,9 @@ for (y_axis in plotnames) {
 }
  
 if (1) {
-plotheight = length(unique(data$name))
+  
+plotheight = length(unique(data$name))*heightscalefactor
+
 for (y_axis in plotnames) {
  x_axis = "Round"
  cat("plotting (log scale): ",x_axis," vs ",y_axis,"\n")
@@ -316,7 +340,7 @@ for (y_axis in plotnames) {
 }
 }
 if (0) {
-plotheight = length(unique(data$name))
+plotheight = length(unique(data$name))*heightscalefactor
 for (y_axis in plotnames) {
   x_axis = "Round"
   cat("plotting (log scale): ",x_axis," vs ",y_axis,"\n")
