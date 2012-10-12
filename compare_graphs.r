@@ -10,96 +10,25 @@ library(quantreg)
 # cbgColourPalette <- scale_colour_manual(values=c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
 cbgColourPalette <- scale_colour_manual(values=c("#0072B2", "#56B4E9", "#E69F00", "#009E73", "#F0E442", "#999999", "#D55E00", "#CC79A7"))
 
-old_colnames = c(
-"STATS","round","activestates","erases","prunes",
-"time","timeuser","prunetime","mergetime",
-"searchertime","solvertime","forktime", "roundinsts",
-"totalstates", "mem"
-)
-
-oldoldcolnames = c(
-"STATS","Round","ActiveStates",
-"Time","TimeUser","PruneTime","MergeTime",
-"SearcherTime","RebuildTime", "InstructionsExecuted",
-"CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
-"ExecutionTreeTime", "ExecutionTreeExtendTime", 
-"EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTreeSize",
-"EditDistanceFinalK", "EditDistanceMinScore","StageCount","SelfPathEditDistance"
-)
-
 colnames = c(
-  "STATS","Round","ActiveStates","MergedStates","PrunedConstraints",
-  "Time","TimeUser","PruneTime","MergeTime",
-  "SearcherTime","SolverTime", "ForkTime", "RebuildTime", "InstructionsExecuted",
-  "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
-  "ExecutionTreeTime", "ExecutionTreeExtendTime", 
-  "EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTreeSize",
-  "EditDistanceFinalK", "EditDistanceMinScore","StageCount","SelfPathEditDistance", "TrainingTime",
-  "RecvInstructionsExecuted"
-  )
-
-prev2_colnames = c(
-  "STATS","Round","ActiveStates","MergedStates","PrunedConstraints",
-  "Time","TimeUser","PruneTime","MergeTime",
-  "SearcherTime","SolverTime", "ForkTime", "RebuildTime", "InstructionsExecuted",
-  "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
-  "ExecutionTreeTime", "ExecutionTreeExtendTime", 
-  "EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTreeSize",
-  "EditDistanceFinalK", "EditDistanceMinScore","StageCount","SelfPathEditDistance", "TrainingTime"
-  )
-prev_colnames = c(
-  "STATS","Round","ActiveStates","MergedStates","PrunedConstraints",
-  "Time","TimeUser","PruneTime","MergeTime",
-  "SearcherTime","SolverTime", "ForkTime", "RebuildTime", "InstructionsExecuted",
-  "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
-  "ExecutionTreeTime", "ExecutionTreeExtendTime", 
-  "EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTreeSize",
-  "EditDistanceFinalK", "EditDistanceMinScore","StageCount","SelfPathEditDistance"
-  )
-
-oldcolnames = c(
-  "STATS","Round","ActiveStates",
-  "Time","TimeUser","PruneTime","MergeTime",
-  "SearcherTime","RebuildTime", "InstructionsExecuted",
-  "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound",
-  "ExecutionTreeTime", "ExecutionTreeExtendTime", 
-  "EditDistanceComputeTime", "EditDistanceBuildTime", "EditDistanceTreeSize",
-  "EditDistanceFinalK", "EditDistanceMinScore","StageCount"
-  )
-# colnames = c(
-# "STATS","Round","ActiveStates",
-# "Time","TimeUser","PruneTime","MergeTime",
-# "SearcherTime","RebuildTime", "InstructionsExecuted",
-# "CurrentStates", "CummulativeStates", "AllocatedMemoryAtEndOfRound"
-# )
-
-#plotnames = c(
-#"Time","InstructionsExecuted","CummulativeStates", "EditDistanceTreeSize", "EditDistanceMinScore", "StageCount", "EditDistanceFinalK", "AllocatedMemoryAtEndOfRound", "ExecutionTreeTime"
-#)
+  "STATS","Round","Time","TimeReal","TimeSys",
+  "SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime",
+  "Instructions","RecvInstructions",
+  "StageCount","MergedStates","StateCount","TotalStates","Memory"
+)
 
 plotnames = c(
   "Time",
-  "InstructionsExecuted", 
-#  "SendInstructionsExecuted", 
-#  "EditDistanceTreeSize", 
-#  "StageCount", 
-#  "EditDistanceFinalK", 
-  "AllocatedMemoryAtEndOfRound", 
-#  "ExecutionTreeTime", 
-#  "TrainingTime", 
-#  "ExecTime", 
-  "TimeMinus",
-#  "TimeWOSolver",
-  "CummulativeStates",
-  "CurrentStates",
+  "Instructions", 
+  "Memory", 
   "Delay"
-  )
+)
 
-plotwidth=9
-plotwidth=6*0.8
-default_plotheight=9
+default_plotwidth=5
+default_plotheight=5
+heightscalefactor = 2.0
 
-root_dir="/home/rac/research/test.gsec/results/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results.test/xpilot-ng-x11"
 #root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
 
 if (length(args) > 0) {
@@ -112,9 +41,7 @@ output_filetype="eps"
 
 #create output dirs
 save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
-#data_save_dir = paste(save_dir,"data_used",sep="/")
 dir.create(save_dir, recursive=TRUE)
-#dir.create(data_save_dir, recursive=TRUE)
 
 min_size=.Machine$integer.max
 data = NULL
@@ -125,7 +52,6 @@ binwidth=20
 if (1) {
   ts0 = read.table(paste(paste(root_dir,data_dir,sep="/"),"timestamps_0.csv",sep="/"),col.names=c('timestamp'))
   ts1 = read.table(paste(paste(root_dir,data_dir,sep="/"),"timestamps_1.csv",sep="/"),col.names=c('timestamp'))
-  #ts2 = read.table(paste(paste(root_dir,data_dir,sep="/"),"timestamps_3.csv",sep="/"),col.names=c('timestamp'))
   ts0$timestamp = ts0$timestamp - rep(ts0$timestamp[1],length(ts0[,1]))
   ts1$timestamp = ts1$timestamp - rep(ts1$timestamp[1],length(ts1[,1]))
   ts_len = min(length(ts0[,1]),length(ts1[,1]))
@@ -136,12 +62,10 @@ if (1) {
   tsdur = c(0)
   tsdur = append(tsdur,tsavg)
   tsc = tsavg - tsdur[seq(ts_len)]
-  #tsavg = ts2$timestamp[seq(ts_len)]
   d = mean(tsc)
   cat(d,'\n')
   
 }
-#data$DTime = data$Time - data$SelfPathEditDistance
 
 for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
   data_path = paste(root_dir, data_dir, data_subdir, sep="/")
@@ -157,22 +81,24 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
     fullpath = paste(data_path, data_ids[i], sep="/")
     file_count = 0
     for (file in list.files(path=fullpath)) {
-      if (file_count < 10) {
       tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=colnames), silent=TRUE)
+      #if (class(tmp_data) == "try-error") {
+      #  tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev_colnames), silent=TRUE)
+      #  if (class(tmp_data) != "try-error") {
+      #    len = length(tmp_data[,1])
+      #    #tmp_data$SelfPathEditDistance = rep(0,len)
+      #    tmp_data$RecvInstructionsExecuted = rep(0,len)
+      #  }
+      #}
+      #if (class(tmp_data) == "try-error") {
+      #  tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev2_colnames), silent=TRUE)
+      #  len = length(tmp_data[,1])
+      #  #tmp_data$SelfPathEditDistance = rep(0,len)
+      #  tmp_data$TrainingTime = rep(0,len)
+      #  tmp_data$RecvInstructionsExecuted = rep(0,len)
+      #}
       if (class(tmp_data) == "try-error") {
-        tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev_colnames), silent=TRUE)
-        if (class(tmp_data) != "try-error") {
-          len = length(tmp_data[,1])
-          #tmp_data$SelfPathEditDistance = rep(0,len)
-          tmp_data$RecvInstructionsExecuted = rep(0,len)
-        }
-      }
-      if (class(tmp_data) == "try-error") {
-        tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev2_colnames), silent=TRUE)
-        len = length(tmp_data[,1])
-        #tmp_data$SelfPathEditDistance = rep(0,len)
-        tmp_data$TrainingTime = rep(0,len)
-        tmp_data$RecvInstructionsExecuted = rep(0,len)
+        cat("try-error reading file\n")
       }
 
          
@@ -239,31 +165,24 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
       } else {
         cat("Error: ", data_subdir,'\t',i,'\n')
       }
-      }
 
     }
   }
 }
 
+time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime")
 
-
+data$OtherTime = data$TimeReal - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime
 
 # Compute the time not spent in ExecutionTree
 #data$ExecTime = data$Time - data$ExecutionTreeTime
-
-data$TimeMinus = data$Time - data$TrainingTime - data$ExecutionTreeTime
-
-data$SendInstructionsExecuted = data$InstructionsExecuted - data$RecvInstructionsExecuted
-
+#data$TimeMinus = data$Time - data$TrainingTime - data$ExecutionTreeTime
+#data$SendInstructionsExecuted = data$InstructionsExecuted - data$RecvInstructionsExecuted
 #data$TimeMinus = data$Time - (data$EditDistanceComputeTime)*0.25
 #data$ExecTime = data$Time - data$ExecutionTreeTime
-data$TimeMinus = data$Time - data$ExecutionTreeTime - data$EditDistanceBuildTime
-
-
+#data$TimeMinus = data$Time - data$ExecutionTreeTime - data$EditDistanceBuildTime
 data$TimeWOSolver = data$Time - data$SolverTime
-
 #data$Time = data$Time - data$SelfPathEditDistance
-
 
 ###temp
 #data = subset(data, name != "LOG 07" & name != "LOG 09" & name != "LOG 04")
@@ -283,30 +202,23 @@ cat("start round: ",start_round,", min_size: ",min_size,"\n")
 
 data = subset(data, (Round < min_size) & (Round > start_round))
 
-#plotheight = length(unique(data$name))*0.6
-plotheight = 10
-plotwidth = 10
-heightscalefactor = 2.0
-
-if (1) {
-  
+plotwidth = default_plotwidth
 plotheight = length(unique(data$name))*heightscalefactor
 for (y_axis in plotnames) {
  x_axis = "Round"
- cat("plotting: ",x_axis," vs ",y_axis,"\n")
+ cat("plotting: (line), ",x_axis," vs ",y_axis,"\n")
  name = paste("plot","line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
  title = paste(x_axis,"vs",y_axis, sep=" ")
  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
  
  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
- #p = p + geom_line(size=0.5)
  #p = p + scale_fill_hue("Algorithm")
  p = p + facet_grid(name ~ .)
  p = p + theme_bw()
  p = p + ylab(paste(y_axis,"(s)"))
  #p = p + scale_y_continuous(breaks=c(200,600,1000))
- p = p + scale_y_continuous(breaks=c(500,1000,1500))
- #p = p + scale_y_continuous()
+ #p = p + scale_y_continuous(breaks=c(500,1000,1500))
+ p = p + scale_y_continuous()
  #p = p + cbgColourPalette
  p = p + opts(title=title,legend.position="bottom")
  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
@@ -314,15 +226,12 @@ for (y_axis in plotnames) {
  filename = paste(name, output_filetype, sep=".")
  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
-}
  
-if (1) {
-  
+plotwidth = default_plotwidth
 plotheight = length(unique(data$name))*heightscalefactor
-
 for (y_axis in plotnames) {
  x_axis = "Round"
- cat("plotting (log scale): ",x_axis," vs ",y_axis,"\n")
+ cat("plotting (line, log scale): ",x_axis," vs ",y_axis,"\n")
  name = paste("plot","line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
  title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
@@ -338,12 +247,13 @@ for (y_axis in plotnames) {
  filename = paste(name, output_filetype, sep=".")
  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
-}
+
 if (0) {
+plotwidth = default_plotwidth
 plotheight = length(unique(data$name))*heightscalefactor
 for (y_axis in plotnames) {
   x_axis = "Round"
-  cat("plotting (log scale): ",x_axis," vs ",y_axis,"\n")
+  cat("plotting (histogram, log scale): ",x_axis," vs ",y_axis,"\n")
   name = paste("plot","histogram","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
   title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
   p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=y_axis))
@@ -360,7 +270,7 @@ for (y_axis in plotnames) {
 }
 }
 
-if (1) {
+plotwidth = default_plotwidth
 plotheight = default_plotheight*2
 for (y_axis in plotnames) {
   x_axis = "Round"
@@ -381,6 +291,7 @@ for (y_axis in plotnames) {
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
+plotwidth = default_plotwidth
 plotheight = default_plotheight*2
 for (y_axis in plotnames) {
   x_axis = "Round"
@@ -399,8 +310,30 @@ for (y_axis in plotnames) {
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
-}
-if(1) {
+
+plotwidth = default_plotwidth
+plotheight = default_plotheight
+#for (y_axis in plotnames) {
+  x_axis = "Round"
+  name =  "time_summary"
+  cat("plotting Time summary\n")
+  title = paste("Time Summary")
+  mdata <- melt(subset(data, Round < min_size & Round > start_round), id=c("STATS","Round","name","mode"),measure=time_vars)
+  p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
+  p = p + geom_bar(stat="identity", colour="white")
+  p = p + theme_bw()
+  #p = p + facet_grid(name ~ .)
+  #p = p + cbgColourPalette
+  p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
+  #p = p + opts(title=title,legend.position="bottom")
+  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
+  p;
+  filename = paste(name, output_filetype, sep=".")
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+#}
+
+if (0) {
+plotwidth = default_plotwidth
 plotheight = default_plotheight 
 for (y_axis in plotnames) {
   x_axis = "Round"
@@ -445,7 +378,6 @@ for (y_axis in plotnames) {
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotwidth)
 }
-}
 
 plotheight = default_plotheight 
 special_plotnames = c("Delay")
@@ -482,4 +414,5 @@ for (y_axis in special_plotnames) {
   
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotwidth)
+}
 }
