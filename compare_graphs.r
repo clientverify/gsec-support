@@ -28,7 +28,7 @@ default_plotwidth=5
 default_plotheight=5
 heightscalefactor = 2.0
 
-root_dir="/home/rac/research/test.gsec/results.test/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results.oakall/xpilot-ng-x11"
 #root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
 
 if (length(args) > 0) {
@@ -172,8 +172,9 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 
 time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime")
 
-data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime
-data$OtherTime = ifelse(data$OtherTime < 0, 0, data$OtherTime)
+#data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime
+data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime
+#data$OtherTime = ifelse(data$OtherTime < 0, 0, data$OtherTime)
 
 # Compute the time not spent in ExecutionTree
 #data$ExecTime = data$Time - data$ExecutionTreeTime
@@ -215,14 +216,16 @@ for (y_axis in plotnames) {
  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
  #p = p + scale_fill_hue("Algorithm")
  p = p + facet_grid(name ~ .)
- #p = p + theme_bw()
+ p = p + theme_bw()
  p = p + ylab(paste(y_axis,"(s)"))
  #p = p + scale_y_continuous(breaks=c(200,600,1000))
  #p = p + scale_y_continuous(breaks=c(500,1000,1500))
  p = p + scale_y_continuous()
  #p = p + cbgColourPalette
- p = p + theme(title=title,legend.position="bottom")
+ p = p + ggtitle(title)
+ p = p + theme(legend.position="bottom")
  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+ 
  p;  
  filename = paste(name, output_filetype, sep=".")
  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
@@ -236,13 +239,14 @@ for (y_axis in plotnames) {
  name = paste("plot","line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
  title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
- p = p + geom_point(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
+ p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
  #p = p + stat_quantile(aes(colour=factor(mode),quantiles = 0.95))
  p = p + scale_y_log10() 
  p = p + theme_bw() 
  #p = p + cbgColourPalette
  p = p + facet_grid(name ~ .) 
- p = p + theme(title=title,legend.position="bottom")
+ p = p + ggtitle(title)
+ p = p + theme(legend.position="bottom")
  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
  p;
  filename = paste(name, output_filetype, sep=".")
@@ -263,7 +267,8 @@ for (y_axis in plotnames) {
   p = p + theme_bw() 
   #p = p + cbgColourPalette
   p = p + facet_grid(name ~ .) 
-  p = p + theme(title=title,legend.position="bottom")
+  p = p + ggtitle(title)
+  p = p + theme(legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
   p;
   filename = paste(name, output_filetype, sep=".")
@@ -279,12 +284,12 @@ for (y_axis in plotnames) {
   cat("plotting (summary): ",x_axis," vs ",y_axis,"\n")
   title = paste("Summary of",y_axis,"over",min_size,"rounds",sep=" ")
   p <- ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x="mode", y=y_axis)) 
-
   p = p + theme_bw() 
   p = p + facet_grid(name ~ .)
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray")
-  #p = p + cbgColourPalette
-  p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + cbgColourPalette 
+  p = p + ggtitle(title)
+  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
   #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   p;
@@ -304,7 +309,8 @@ for (y_axis in plotnames) {
   p = p + theme_bw()
   p = p + facet_grid(name ~ .)
   #p = p + cbgColourPalette
-  p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  p = p + ggtitle(title)
+  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
   #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   p;
@@ -321,7 +327,7 @@ plotheight = default_plotheight
   title = paste("Time Summary")
   mdata <- melt(subset(data, Round < min_size & Round > start_round), id=c("STATS","Round","name","mode"),measure=time_vars)
   p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
-  p = p + geom_bar(stat="identity", colour="white")
+  p = p + geom_bar(stat="identity")
   p = p + theme_bw()
   #p = p + facet_grid(name ~ .)
   #p = p + cbgColourPalette
