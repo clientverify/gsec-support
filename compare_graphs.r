@@ -172,7 +172,8 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 
 time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime")
 
-data$OtherTime = data$TimeReal - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime
+data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime
+data$OtherTime = ifelse(data$OtherTime < 0, 0, data$OtherTime)
 
 # Compute the time not spent in ExecutionTree
 #data$ExecTime = data$Time - data$ExecutionTreeTime
@@ -214,13 +215,13 @@ for (y_axis in plotnames) {
  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
  #p = p + scale_fill_hue("Algorithm")
  p = p + facet_grid(name ~ .)
- p = p + theme_bw()
+ #p = p + theme_bw()
  p = p + ylab(paste(y_axis,"(s)"))
  #p = p + scale_y_continuous(breaks=c(200,600,1000))
  #p = p + scale_y_continuous(breaks=c(500,1000,1500))
  p = p + scale_y_continuous()
  #p = p + cbgColourPalette
- p = p + opts(title=title,legend.position="bottom")
+ p = p + theme(title=title,legend.position="bottom")
  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
  p;  
  filename = paste(name, output_filetype, sep=".")
@@ -241,7 +242,7 @@ for (y_axis in plotnames) {
  p = p + theme_bw() 
  #p = p + cbgColourPalette
  p = p + facet_grid(name ~ .) 
- p = p + opts(title=title,legend.position="bottom")
+ p = p + theme(title=title,legend.position="bottom")
  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
  p;
  filename = paste(name, output_filetype, sep=".")
@@ -262,7 +263,7 @@ for (y_axis in plotnames) {
   p = p + theme_bw() 
   #p = p + cbgColourPalette
   p = p + facet_grid(name ~ .) 
-  p = p + opts(title=title,legend.position="bottom")
+  p = p + theme(title=title,legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
   p;
   filename = paste(name, output_filetype, sep=".")
@@ -283,8 +284,8 @@ for (y_axis in plotnames) {
   p = p + facet_grid(name ~ .)
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray")
   #p = p + cbgColourPalette
-  p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
-  #p = p + opts(title=title,legend.position="bottom")
+  p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   p;
   filename = paste(name, output_filetype, sep=".")
@@ -303,15 +304,15 @@ for (y_axis in plotnames) {
   p = p + theme_bw()
   p = p + facet_grid(name ~ .)
   #p = p + cbgColourPalette
-  p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
-  #p = p + opts(title=title,legend.position="bottom")
+  p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   p;
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
-plotwidth = default_plotwidth
+plotwidth = default_plotwidth*2
 plotheight = default_plotheight
 #for (y_axis in plotnames) {
   x_axis = "Round"
@@ -324,8 +325,9 @@ plotheight = default_plotheight
   p = p + theme_bw()
   #p = p + facet_grid(name ~ .)
   #p = p + cbgColourPalette
-  p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
-  #p = p + opts(title=title,legend.position="bottom")
+  p = p + ggtitle(title)
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   p;
   filename = paste(name, output_filetype, sep=".")
@@ -363,16 +365,16 @@ for (y_axis in plotnames) {
   #p = p + theme_bw()
   
   #p = p + facet_grid(. ~ name)
-  #p = p + opts(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + opts(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
+  #p = p + theme(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
+  #p = p + theme(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
  
   #p = p + ylab("Time (s)")
   #p = p + xlab("Trace")
-  #p = p + opts(legend.position="none", axis.text.x=theme_text(angle=45))
+  #p = p + theme(legend.position="none", axis.text.x=element_text(angle=45))
   
   #p = p + cbgColourPalette
-  #p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
-  #p = p + opts(title=title,legend.position="bottom")
+  #p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   
   filename = paste(name, output_filetype, sep=".")
@@ -402,14 +404,14 @@ for (y_axis in special_plotnames) {
   #                      labels = trans_format("log10", math_format(10^.x)))
   p = p + theme_bw()
   #p = p + facet_grid(. ~ name)
-  #p = p + opts(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + opts(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + opts(ylab("Time (s)")
-  p = p + opts(legend.position="none")+ ylab("Delay (s)")
+  #p = p + theme(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
+  #p = p + theme(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
+  #p = p + theme(ylab("Time (s)")
+  p = p + theme(legend.position="none")+ ylab("Delay (s)")
 
   #p = p + cbgColourPalette
-  #p = p + opts(title=title, axis.title.x=theme_blank(), axis.text.x=theme_text(angle=-90))
-  #p = p + opts(title=title,legend.position="bottom")
+  #p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
   
   filename = paste(name, output_filetype, sep=".")
