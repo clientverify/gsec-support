@@ -31,6 +31,8 @@ XPILOT_BRANCH="nuklear-support"
 GIT_HOST="rac@kudzoo.cs.unc.edu"
 GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
+STP_REV=940
+STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
@@ -65,6 +67,7 @@ initialize_root_directories()
   fi
 
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
+  STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
   LLVM_ROOT="$ROOT_DIR/local"
   BOOST_ROOT="$ROOT_DIR/local"

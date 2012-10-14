@@ -123,7 +123,7 @@ install_zlib()
 
 install_waffles()
 {
-  necho "$WAFFLES \t\t"
+  necho "$WAFFLES\t"
   check_dirs $WAFFLES || { return 0; }
   get_package $WAFFLES_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$WAFFLES"
 
@@ -458,11 +458,38 @@ install_llvm()
   necho "[Done]\n"
 }
 
+install_stp()
+{
+  necho "$STP\t\t\t"
+  check_dirs $STP || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval svn co -r $STP_REV $STP_SVN $STP
+
+  cd $ROOT_DIR/src/$STP 
+
+  necho "[Configuring] "
+  local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"
+  leval ./scripts/configure $STP_CONFIG_FLAGS
+
+  local STP_MAKE_FLAGS="OPTIMIZE=-O2 CFLAGS_M32= "
+
+  necho "[Compiling] "
+  leval make $STP_MAKE_FLAGS
+
+  necho "[Installing] "
+  leval make $STP_MAKE_FLAGS install
+  
+  necho "[Done]\n"
+}
+
 config_klee()
 {
   cd $ROOT_DIR/src/$KLEE
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM --with-llvmobj=$ROOT_DIR/build/$LLVM "
+  KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
   KLEE_CONFIG_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib\" "
@@ -849,6 +876,7 @@ main()
     install_zlib
     install_waffles
     install_expat
+    install_stp
     install_klee
     install_tetrinet
     install_xpilot llvm
