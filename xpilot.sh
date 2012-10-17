@@ -138,6 +138,10 @@ case "$MODE" in
       pkill $SERVER_BIN
       sleep 1
 
+      mv $KTEST_DIR/net_server.log "$KTEST_DIR"/"xpilot_"$i"_server.log" ;
+      mv $KTEST_DIR/net_client.log "$KTEST_DIR"/"xpilot_"$i"_client.log" ;
+      mv $KTEST_DIR/interleave "$KTEST_DIR"/"interleave_$i.log" ;
+
     done
     ;;
   server)
