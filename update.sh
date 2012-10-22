@@ -466,11 +466,13 @@ install_stp()
 
   necho "[Cloning] "
   leval svn co -r $STP_REV $STP_SVN $STP
+  #leval svn co $STP_SVN $STP
 
   cd $ROOT_DIR/src/$STP 
 
   necho "[Configuring] "
   local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"
+  #local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT "
   leval ./scripts/configure $STP_CONFIG_FLAGS
 
   local STP_MAKE_FLAGS="OPTIMIZE=-O2 CFLAGS_M32= "
@@ -518,7 +520,8 @@ build_klee()
   if [ $BUILD_DEBUG -eq 1 ]; then
     KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
   else
-    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 RUNTIME_DISABLE_ASSERTIONS=1 "
+    #KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 RUNTIME_DISABLE_ASSERTIONS=1 "
+    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
   fi
 
   ### HACK ### need to remove libraries from install location so that
