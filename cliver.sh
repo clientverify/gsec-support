@@ -305,9 +305,6 @@ do_ncross_verification()
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
     run_cliver $cliver_params
 
-    #if [ $i == 8 ]; then
-    #  run_cliver $cliver_params
-    #fi
   done
 }
 
