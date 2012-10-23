@@ -140,6 +140,10 @@ case "$MODE" in
 
       mv $KTEST_DIR/net_server.log "$KTEST_DIR"/"xpilot_"$i"_server.log" ;
       mv $KTEST_DIR/net_client.log "$KTEST_DIR"/"xpilot_"$i"_client.log" ;
+
+      grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_server.log" > "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" ;
+      grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_client.log" > "$KTEST_DIR"/"xpilot_"$i"_client_socket.log" ;
+
       mv $KTEST_DIR/interleave "$KTEST_DIR"/"interleave_$i.log" ;
 
     done
