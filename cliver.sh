@@ -27,7 +27,7 @@ BC_MODE="tetrinet"
 CLIVER_MODE="training"
 CLIVER_LIBC="uclibc"
 OUTPUT_LLVM_ASSEMBLY=0
-OUTPUT_LLVM_BITCODE=0
+OUTPUT_LLVM_BITCODE=1
 PRINT_INSTRUCTIONS=0
 MAX_MEMORY=8000
 WARN_MEMORY=6000
@@ -138,13 +138,13 @@ initialize_cliver()
 cliver_parameters()
 {
   local cliver_params="-posix-runtime -pc-single-line -emit-all-errors -debug-stderr "
+  cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
-  # depreciated cliver_params+="-state-trees-memory-limit=$WARN_MEMORY "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
@@ -195,7 +195,6 @@ run_cliver()
 do_training()
 {
   for i in $KTEST_DIR/*ktest; do
-
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
@@ -208,7 +207,41 @@ do_training()
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
     run_cliver $cliver_params
+  done
+}
 
+check_equiv_training_bc()
+{
+  declare -a training_dirs=( $TRAINING_DIR/* )
+  local num_dirs=${#training_dirs[@]}
+
+  indices="$(seq 0 $(($num_dirs - 1)))"
+
+  local in_fn="input.bc"
+  local opt_fn="final.bc"
+
+  # Check that we trained on the same bc file used for verification
+  for i in $indices; do
+    local dir_i="${training_dirs[$i]}" 
+
+    if ! cmp $dir_i/$in_fn $BC_FILE > /dev/null; then
+      echo "Warning: $BC_FILE has changed since training"
+    fi 
+
+    for j in $indices; do
+
+      local dir_j="${training_dirs[$j]}" 
+
+      if ! cmp $dir_i/$in_fn $dir_j/$in_fn > /dev/null; then
+        echo "Error: $dir_i/$in_fn and $dir_j/$in_fn differ."
+        exit 1
+      fi 
+      if ! cmp $dir_i/$opt_fn $dir_j/$opt_fn > /dev/null; then
+        echo "Error: $dir_i/$opt_fn and $dir_j/$opt_fn differ."
+        exit 1
+      fi 
+
+    done
   done
 }
 
@@ -259,13 +292,7 @@ do_ncross_verification()
   indices="$(seq 0 $(($num_dirs - 1)))"
 
   # Check that we trained on the same bc file used for verification
-  for i in $indices; do
-    local training_bc_file="${training_dirs[$i]}/input.bc" 
-    if ! cmp $training_bc_file $BC_FILE > /dev/null; then
-      echo "Error: $training_bc_file and $BC_FILE differ."
-      exit 1
-    fi 
-  done
+  check_equiv_training_bc
 
   for i in $indices; do
     leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
