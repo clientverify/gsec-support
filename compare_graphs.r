@@ -14,21 +14,30 @@ colnames = c(
   "STATS","Round","Time","TimeReal","TimeSys",
   "SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime",
   "Instructions","RecvInstructions",
-  "StageCount","MergedStates","StateCount","TotalStates","Memory"
+  "StageCount","MergedStates","StateCount","TotalStates","Memory",
+  "EditDist","EditDistK","EditDistMedoidCount","EditDistClosestMedoid",
+  "SocketEventSize", "ValidPathInstructions"
 )
+
+timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
 
 plotnames = c(
   "Time",
   "Instructions", 
   "Memory", 
-  "Delay"
+  "Delay",
+  "EditDist",
+  "EditDistK",
+  "EditDistMedoidCount",
+  "EditDistClosestMedoid"
 )
 
 default_plotwidth=5
 default_plotheight=5
 heightscalefactor = 2.0
 
-root_dir="/home/rac/research/test.gsec/results.oakall/xpilot-ng-x11"
+#root_dir="/home/rac/research/gsec/results.oakall/xpilot-ng-x11"
+root_dir="/home/rac/research/gsec/results/new_stp/xpilot-ng-x11"
 #root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
 
 if (length(args) > 0) {
@@ -36,8 +45,9 @@ if (length(args) > 0) {
 }
 
 data_dir="data"
+timestamp_dir="/home/rac/research/gsec/timestamps"
 output_dir="plots"
-output_filetype="eps"
+output_filetype="png"
 
 #create output dirs
 save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
@@ -168,6 +178,24 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 
     }
   }
+}
+
+timestamp_pattern = "*_client_socket.log"
+timestamps = NULL
+
+for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
+  #x = unlist(strsplit(file,timestamp_pattern)[1])
+  #cat(x,"\n")
+  id = unlist(unlist(strsplit(file,"_"))[2])
+  #cat(id,"\n")
+  tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
+  if (class(tmp_timestamps) == "try-error") {
+    cat("try-error reading timestamp file\n")
+  }
+  len = length(tmp_timestamps[,1]) # length of rows, not cols
+  tmp_timestamps$name=rep(sprintf("%02d",as.integer(id)), len)
+  timestamps = rbind(timestamps, tmp_timestamps)
+  
 }
 
 time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime")
