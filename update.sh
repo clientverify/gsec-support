@@ -466,7 +466,11 @@ install_stp()
 
   necho "[Cloning] "
   leval svn co -r $STP_REV $STP_SVN $STP
-  #leval svn co $STP_SVN $STP
+
+  #### HACK to fix compilation with old version of flex on redhat, only needed for rev 940, fixed in rev 1139 ####
+  cd $ROOT_DIR"/src/$STP/src/parser"
+  leval sed -i \'s/flex -Cfe/flex -Ce/g\' Makefile
+  cd $ROOT_DIR"/src"
 
   cd $ROOT_DIR/src/$STP 
 
