@@ -25,27 +25,28 @@ plotnames = c(
   "Time",
   "Instructions", 
   "Memory", 
-  "Delay",
   "EditDist",
   "EditDistK",
-  "EditDistMedoidCount",
-  "EditDistClosestMedoid"
+  "Delay",
+  "ExtraInstructions",
+  "SendInstructions"
 )
 
 default_plotwidth=5
 default_plotheight=5
-heightscalefactor = 2.0
+heightscalefactor = 1.0
 
 #root_dir="/home/rac/research/gsec/results.oakall/xpilot-ng-x11"
-root_dir="/home/rac/research/gsec/results/new_stp/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results/cr/xpilot-ng-x11"
 #root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
+
+timestamp_dir="/home/rac/research/test.gsec/data/network/xpilot-game/recent"
 
 if (length(args) > 0) {
   root_dir = args[1]
 }
 
 data_dir="data"
-timestamp_dir="/home/rac/research/gsec/timestamps"
 output_dir="plots"
 output_filetype="png"
 
@@ -59,23 +60,6 @@ data = NULL
 previous_count = 1
 binwidth=20
 
-if (1) {
-  ts0 = read.table(paste(paste(root_dir,data_dir,sep="/"),"timestamps_0.csv",sep="/"),col.names=c('timestamp'))
-  ts1 = read.table(paste(paste(root_dir,data_dir,sep="/"),"timestamps_1.csv",sep="/"),col.names=c('timestamp'))
-  ts0$timestamp = ts0$timestamp - rep(ts0$timestamp[1],length(ts0[,1]))
-  ts1$timestamp = ts1$timestamp - rep(ts1$timestamp[1],length(ts1[,1]))
-  ts_len = min(length(ts0[,1]),length(ts1[,1]))
-  cat(ts_len,'\n')
-  tsavg = (ts0$timestamp[seq(ts_len)] + ts1$timestamp[seq(ts_len)]) / rep(2,ts_len)
-  cat(length(ts0[,1]),'\n')
-  ts = ts1
-  tsdur = c(0)
-  tsdur = append(tsdur,tsavg)
-  tsc = tsavg - tsdur[seq(ts_len)]
-  d = mean(tsc)
-  cat(d,'\n')
-  
-}
 
 for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
   data_path = paste(root_dir, data_dir, data_subdir, sep="/")
@@ -85,97 +69,50 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
   }
   
   data_ids = sort(data_ids, decreasing=TRUE)
-
+  
   for (i in seq(min(length(data_ids), previous_count))) {
     
     fullpath = paste(data_path, data_ids[i], sep="/")
     file_count = 0
     for (file in list.files(path=fullpath)) {
       tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=colnames), silent=TRUE)
-      #if (class(tmp_data) == "try-error") {
-      #  tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev_colnames), silent=TRUE)
-      #  if (class(tmp_data) != "try-error") {
-      #    len = length(tmp_data[,1])
-      #    #tmp_data$SelfPathEditDistance = rep(0,len)
-      #    tmp_data$RecvInstructionsExecuted = rep(0,len)
-      #  }
-      #}
-      #if (class(tmp_data) == "try-error") {
-      #  tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=prev2_colnames), silent=TRUE)
-      #  len = length(tmp_data[,1])
-      #  #tmp_data$SelfPathEditDistance = rep(0,len)
-      #  tmp_data$TrainingTime = rep(0,len)
-      #  tmp_data$RecvInstructionsExecuted = rep(0,len)
-      #}
+
       if (class(tmp_data) == "try-error") {
         cat("try-error reading file\n")
       }
-
-         
+      
       if (class(tmp_data) != "try-error") {
         file_count = file_count+1
-
-        ## copy the data file
-        #file.copy(paste(fullpath,file,sep="/"),paste(data_save_dir,file,sep="/"),overwrite=TRUE)
+        
         len = length(tmp_data[,1]) # length of rows, not cols
         min_size = min(min_size, len)
         cat(data_subdir,'\t',i,'\t',len,'\t',data_ids[i],'\t',file,'\n')
-        #tmp_data$name=rep(paste("Trace", sprintf("%02d",file_count)), len)
+        
         tmp_data$name=rep(sprintf("%02d",file_count), len)
         
-        #tmp_data$name=rep(substr(file,8, 9), len)
+        tmp_data$Game=rep(0, len)
+        tmp_data$Delay=rep(0, len)
         
-        #tmp_data$mode=rep(data_subdir, len)
-        #tmp_data$version=rep(data_id[i], len)
+        # Set mode description based on parent dir
         if (previous_count > 1) {
           tmp_data$mode=rep(paste(data_subdir,i,sep=","), len)
         } else {
           tmp_data$mode=rep(data_subdir, len)
         }
-#         if (data_subdir == "naive") {
-#           tmp_data$Round = tmp_data$Round + 1
-#         }
         
-        
-        #tmp_data$DTime = tmp_data$Time - tmp_data$SelfPathEditDistance 
-        if (tmp_data$name != "NDSS") {
-          #tmp_data$DTime = tmp_data$Time - tmp_data$ExecutionTreeTime - tmp_data$EditDistanceBuildTime
-          #tmp_data$DTime = tmp_data$Time - tmp_data$EditDistanceBuildTime
-          
-          tmp_data$DTime = tmp_data$Time
-        } else {
-          tmp_data$DTime = tmp_data$Time
-        }
-        #v = c(tmp_data$DTime[1])
-        v = c(0)
-        
-        for (j in seq(2,len)) {
-          res = 0
-          if (tsavg[j] < v[j-1]) {
-            res = v[j-1] + tmp_data$DTime[j]
-          } else {
-            res = tsavg[j] + tmp_data$DTime[j]
-          }
-          v = append(v,res)
-        }
-        v = v - tsavg[seq(len)]
-        tmp_data$Delay = v
-        tmp_data$Game = tsavg[seq(len)]
-        
+        # Set bin number
         g = c()
         for (j in seq(len)) {
           g = append(g,floor(j/binwidth))
         }
         tmp_data$Bin = g
         
-        #tmp_data = subset(tmp_data, Round < (len - 2))
         data = rbind(data, tmp_data)
-        
         
       } else {
         cat("Error: ", data_subdir,'\t',i,'\n')
       }
-
+      
     }
   }
 }
@@ -192,11 +129,64 @@ for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
   if (class(tmp_timestamps) == "try-error") {
     cat("try-error reading timestamp file\n")
   }
-  len = length(tmp_timestamps[,1]) # length of rows, not cols
-  tmp_timestamps$name=rep(sprintf("%02d",as.integer(id)), len)
-  timestamps = rbind(timestamps, tmp_timestamps)
   
+  # Remove first row
+  tmp_timestamps = tmp_timestamps[c(-1),]
+  
+  len = length(tmp_timestamps[,1]) # length of rows, not cols
+  tname = sprintf("%02d",as.integer(id))
+  tmp_timestamps$name=rep(tname, len)
+  tmp_timestamps$Round = seq(0,len-1)
+  tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
+  tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000 # convert to microseconds
+  
+  for (tmode in unique(factor(data$mode))) {
+    sdata = subset(data, name == tname & mode == tmode)
+    
+    # Remove sdata from data
+    data = subset(data, !(name == tname & mode == tmode))
+    
+    sdata = subset(sdata, Round < 2000)
+    
+    tlen = length(sdata[,1]) # length of rows, not cols
+   
+    if (len > tlen & tlen > 0) {
+      v = c(0)
+  
+       for (j in seq(2,tlen)) {
+         res = 0
+         if (tmp_timestamps$Timestamp[j] < v[j-1]) {
+           res = v[j-1] + (sdata$Time[j] - sdata$SolverTime[j])
+         } else {
+           res = tmp_timestamps$Timestamp[j] + (sdata$Time[j] - sdata$SolverTime[j])
+         }
+         v = append(v,res)
+       }
+      v = v - tmp_timestamps$Timestamp[seq(tlen)]
+      sdata$Delay = v
+      sdata$Game = tmp_timestamps$Timestamp[seq(tlen)]
+      
+      data = rbind(data,sdata)
+      
+    } else {
+      cat("Tlen is less than len ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
+    }
+    
+  }
+  
+  timestamps = rbind(timestamps, tmp_timestamps)
 }
+
+for (n in unique(factor(data$name))) {
+  count = length(unique(factor(data$mode)))
+  tmp = subset(data, name == n)
+  for (m in unique(factor(data$mode))) {
+    if (length(subset(tmp,mode == m)) > 0) {
+      count = count - 1
+    }
+  }
+}
+
 
 time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime")
 
@@ -204,22 +194,11 @@ time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime",
 data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime
 #data$OtherTime = ifelse(data$OtherTime < 0, 0, data$OtherTime)
 
-# Compute the time not spent in ExecutionTree
-#data$ExecTime = data$Time - data$ExecutionTreeTime
-#data$TimeMinus = data$Time - data$TrainingTime - data$ExecutionTreeTime
-#data$SendInstructionsExecuted = data$InstructionsExecuted - data$RecvInstructionsExecuted
-#data$TimeMinus = data$Time - (data$EditDistanceComputeTime)*0.25
-#data$ExecTime = data$Time - data$ExecutionTreeTime
-#data$TimeMinus = data$Time - data$ExecutionTreeTime - data$EditDistanceBuildTime
-data$TimeWOSolver = data$Time - data$SolverTime
-#data$Time = data$Time - data$SelfPathEditDistance
+data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
+
+data$SendInstructions = data$Instructions - data$RecvInstructions
 
 ###temp
-#data = subset(data, name != "LOG 07" & name != "LOG 09" & name != "LOG 04")
-#data = subset(data, name != "LOG 19" & name != "LOG 18")
-#data = subset(data, name != "21")
-#data = subset(data, mode != "nc-ed-row,1" & mode != "self-edit-dist-row,1")
-#data = subset(data, name == "LOG 04" | name == "LOG 07")
 #data = subset(data, name != "01" & name != "10" & name != "07")
 #min_size = min_size - 10
 start_round = 2
@@ -345,6 +324,28 @@ for (y_axis in plotnames) {
   filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
+
+plotwidth = default_plotwidth
+plotheight = default_plotheight*2
+  x_axis = "Round"
+  y_axis = "Delay"
+  tdata = data
+  tdata$Delay = tdata$Delay / (1000000*60)
+  name =  paste("plot","max",y_axis,sep="_")
+  cat("plotting (mean of): ",x_axis," vs ",y_axis,"\n")
+  title = paste("Max of",y_axis,"over",min_size,"rounds",sep=" ")
+  p <- ggplot(subset(tdata, Round < min_size & Round > start_round), aes_string(x="mode", y=y_axis)) 
+  p = p + stat_summary(fun.y="max", geom="bar", fill="white", colour="gray") 
+  p = p + theme_bw()
+  p = p + facet_grid(name ~ .)
+  #p = p + cbgColourPalette
+  p = p + ggtitle(title)
+  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(title=title,legend.position="bottom")
+  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
+  p;
+  filename = paste(name, output_filetype, sep=".")
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 
 plotwidth = default_plotwidth*2
 plotheight = default_plotheight
