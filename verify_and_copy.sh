@@ -39,7 +39,7 @@ main()
         ;;
 
       s)
-        RESULTS_SOURCE+="$OPTARG"
+        RESULTS_SOURCE+="$OPTARG "
         ;;
 
       v)
