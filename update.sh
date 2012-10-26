@@ -377,8 +377,7 @@ build_llvm ()
   if [ $BUILD_DEBUG -eq 1 ]; then
     LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
   else
-    #LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
+    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
   fi
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
@@ -421,7 +420,8 @@ update_llvm()
     fi
 
     necho "[Compiling] "
-    build_llvm
+    build_llvm "DISABLE_ASSERTIONS=1 "
+    build_llvm 
 
     necho "[Installing] "
     mkdir -p $LLVM_ROOT
@@ -449,7 +449,8 @@ install_llvm()
   config_llvm 
 
   necho "[Compiling] "
-  build_llvm
+  build_llvm "DISABLE_ASSERTIONS=1 "
+  build_llvm 
 
   necho "[Installing] "
   mkdir -p $LLVM_ROOT
