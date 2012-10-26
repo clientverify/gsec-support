@@ -26,6 +26,23 @@ VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
 
+get_file()
+{
+  # usage: get_file [file] [remote-path] [local-dest]
+  if [[ $# -lt 3 ]]; then
+    echo "[Error getting file] "
+    exit
+  fi
+
+  local FILE=$1
+  local REMOTE_PATH=$2
+  local LOCAL_DEST=$3
+
+  mkdir -p $LOCAL_DEST
+
+  leval scp $REMOTE_PATH/$FILE $LOCAL_DEST/ 
+}
+
 get_package()
 {
   necho "[Extracting] "
@@ -468,19 +485,21 @@ install_stp()
   necho "[Cloning] "
   leval svn co -r $STP_REV $STP_SVN $STP
 
-  #### HACK to fix compilation with old version of flex on redhat, only needed for rev 940, fixed in rev 1139 ####
-  cd $ROOT_DIR"/src/$STP/src/parser"
-  leval sed -i \'s/flex -Cfe/flex -Ce/g\' Makefile
-  cd $ROOT_DIR"/src"
-
   cd $ROOT_DIR/src/$STP 
+
+  #### HACK to fix compilation with old version of flex on redhat, only needed for rev 940, fixed in rev 1139 ####
+  local OLD_FLEX=$(flex --version | awk -F '[ .]' '{ print ($$(NF-2) < 2 || $$(NF-2) == 2 && ($$(NF-1) < 5 || $$(NF-1) == 5 && $$NF < 20)) }')
+  if [ $OLD_FLEX -eq 0 ]; then
+    necho "[Patching] "
+    get_file $STP_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$STP
+    leval patch -p0 < $STP_PATCH_FILE
+  fi
 
   necho "[Configuring] "
   local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"
-  #local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT "
   leval ./scripts/configure $STP_CONFIG_FLAGS
 
-  local STP_MAKE_FLAGS="OPTIMIZE=-O2 CFLAGS_M32= "
+  local STP_MAKE_FLAGS="-j $MAKE_THREADS OPTIMIZE=-O2 CFLAGS_M32= "
 
   necho "[Compiling] "
   leval make $STP_MAKE_FLAGS
