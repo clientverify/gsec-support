@@ -129,20 +129,25 @@ case "$MODE" in
         echo "starting server in background..."
         echo "$SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &"
         eval $SERVER_COMMAND $SERVER_OPTIONS &> /dev/null &
-        sleep 3
+        sleep 5
       done
 
       echo "starting client..."
       eval $CLIENT_COMMAND $CLIENT_OPTIONS $SERVER_ADDRESS
-      sleep 1
-      pkill $SERVER_BIN
-      sleep 1
+      sleep 5
 
       mv $KTEST_DIR/net_server.log "$KTEST_DIR"/"xpilot_"$i"_server.log" ;
       mv $KTEST_DIR/net_client.log "$KTEST_DIR"/"xpilot_"$i"_client.log" ;
 
       grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_server.log" > "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" ;
       grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_client.log" > "$KTEST_DIR"/"xpilot_"$i"_client_socket.log" ;
+
+      # check socket log is correct length
+      LEN=$(wc -l "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" | awk '{print $1}')
+      if [[ $LEN -lt $MAX_ROUND ]]; then
+        echo "ERROR: $KTEST_DIR/xpilot_$i_server_socket.log has only $LEN entries"
+        exit
+      fi
 
       mv $KTEST_DIR/interleave "$KTEST_DIR"/"interleave_$i.log" ;
 
