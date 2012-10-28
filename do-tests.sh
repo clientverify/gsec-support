@@ -1,8 +1,8 @@
 #!/bin/bash
 
 LSF_MEMORY_GB=32
-#CLIENT_TYPES="xpilot tetrinet"
-CLIENT_TYPES="xpilot"
+CLIENT_TYPES="xpilot tetrinet"
+#CLIENT_TYPES="xpilot"
 #CLIENT_TYPES="tetrinet"
 EDIT_DIST_TYPES="edit-dist-row edit-dist-kprefix-row edit-dist-kprefix-hash"
 #KPREFIX_TYPES="edit-dist-kprefix-row edit-dist-kprefix-hash"
@@ -10,20 +10,41 @@ KPREFIX_TYPES="edit-dist-kprefix-row"
 #KPREFIX_TYPES="edit-dist-kprefix-hash"
 #KPREFIX_LENGTHS="256 16384"
 #KPREFIX_LENGTHS="256 512 1024"
-KPREFIX_LENGTHS="256 "
+#KPREFIX_LENGTHS="256 "
 #KPREFIX_LENGTHS="512 "
 #KPREFIX_LENGTHS="64 512 "
 #KPREFIX_LENGTHS="48 64 "
-KPREFIX_LENGTHS="16384"
+#KPREFIX_LENGTHS="16384"
+KPREFIX_LENGTHS="2048"
 #CLUSTER_SIZES="8 16 32 64 256 512 1024"
 #CLUSTER_SIZES="0008 0016 032 0256 0512 1024"
-CLUSTER_SIZES="16 256 4096"
+CLUSTER_SIZES="64 256 4096"
 #CLUSTER_SIZES="8096"
 
 DATA_TAG="large"
 
+#=======================================================================
+
+sleep_until_jobs_finish()
+{
+  STATUS=$( { bjobs; } 2>&1 )
+  while [ "$STATUS" != "No unfinished job found" ]; do
+    STATUS=$( { bjobs; } 2>&1 )
+    sleep 60
+  done
+}
+
+#=======================================================================
+
 for client in $CLIENT_TYPES; do
-  echo "Client: $client"
+  echo "Training -- Client: $client"
+  ./gsec-support/cliver.sh -t training -c $client -i lsf -m $LSF_MEMORY_GB -b $DATA_TAG
+done
+
+sleep_until_jobs_finish
+
+for client in $CLIENT_TYPES; do
+  echo "Verification: -- Client: $client"
 
   #./gsec-support/cliver.sh -t training -c $client -i lsf -m $LSF_MEMORY_GB -b $DATA_TAG
 
