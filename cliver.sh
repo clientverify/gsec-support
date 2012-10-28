@@ -44,7 +44,7 @@ DEBUG_SEARCHER=0
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
 
-parse_tetrinet_ktest_filename()
+parse_ktest_filename()
 {
   eval "basename $1 .ktest | awk -F_ '{ printf \$$2 }'"
 }
@@ -52,13 +52,13 @@ parse_tetrinet_ktest_filename()
 tetrinet_parameters()
 {
   # FORMAT: $MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
-  local random_seed=$(parse_tetrinet_ktest_filename $1 2)
-  local starting_height=$(parse_tetrinet_ktest_filename $1 2)
-  local input_gen_type=$(parse_tetrinet_ktest_filename $1 3)
-  local partial_type=$(parse_tetrinet_ktest_filename $1 4)
-  local partial_rate=$(parse_tetrinet_ktest_filename $1 5)
-  local player_name="$(parse_tetrinet_ktest_filename $1 7)"
-  local server_address="$(parse_tetrinet_ktest_filename $1 8)"
+  local random_seed=$(parse_ktest_filename $1 2)
+  local starting_height=$(parse_ktest_filename $1 2)
+  local input_gen_type=$(parse_ktest_filename $1 3)
+  local partial_type=$(parse_ktest_filename $1 4)
+  local partial_rate=$(parse_ktest_filename $1 5)
+  local player_name="$(parse_ktest_filename $1 7)"
+  local server_address="$(parse_ktest_filename $1 8)"
 
   local bc_file_opts="-autostart "
   bc_file_opts+="-startingheight 0 "
@@ -74,6 +74,7 @@ xpilot_parameters()
 {
   local GEOMETRY="800x600+100+100"
   local bc_file_opts=""
+
   bc_file_opts+=" -join -texturedWalls no -texturedDecor no -texturedObjects no "
   bc_file_opts+=" -fullColor no -geometry $GEOMETRY "
   bc_file_opts+=" -keyTurnLeft a -keyTurnRight d -keyThrust w localhost "
@@ -145,6 +146,8 @@ cliver_parameters()
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
+  cliver_params+="-use-call-paths=0 "
+  cliver_params+="-use-cex-cache=1 "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
