@@ -12,6 +12,8 @@ VERBOSE_OUTPUT=0
 MODE="game"
 COUNT=0
 MAX_ROUND=0
+DATA_TAG="recent"
+FPS=50
 
 #=============================================================================
 # need to automatically set this var...
@@ -21,7 +23,7 @@ if test ! ${XPILOTHOST+defined}; then
 fi
 #=============================================================================
 
-while getopts ":vr:j:t:c:m:x:" opt; do
+while getopts ":vr:j:t:c:m:x:o:f:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -39,6 +41,14 @@ while getopts ":vr:j:t:c:m:x:" opt; do
       COUNT=$OPTARG
       ;;
 
+    f)
+      FPS=$OPTARG
+      ;;
+ 
+    o)
+      DATA_TAG="$OPTARG"
+      ;;
+ 
     r)
       echo "Setting root dir to $OPTARG"
       ROOT_DIR="$OPTARG"
@@ -68,7 +78,6 @@ start_time=$(elapsed_time)
 SERVER_ADDRESS="localhost"
 PLAYER_NAME="p1"
 KTEST_SUFFIX="ktest"
-RECENT_LINK="recent"
 GEOMETRY="800x600+100+100"
 RECORD_FILE="input.rec"
 
@@ -76,7 +85,6 @@ RECORD_FILE="input.rec"
 # game client and server paths
 #=============================================================================
 SERVER_BIN="xpilot-ng-server-x86"
-SERVER_OPT=" "
 SERVER_COMMAND="$XPILOT_ROOT/bin/$SERVER_BIN $SERVER_OPT "
 
 CLIENT_BIN="xpilot-ng-x11-x86"
@@ -104,6 +112,7 @@ fi
 
 SERVER_OPTIONS=""
 SERVER_OPTIONS+="-ktestFileName \"$KTEST_DIR/xpilot.ktest\" "
+SERVER_OPTIONS+="-FPS $FPS "
 
 #=============================================================================
 # Xpilot execution
@@ -112,8 +121,8 @@ SERVER_OPTIONS+="-ktestFileName \"$KTEST_DIR/xpilot.ktest\" "
 make_xpilot_dirs()
 {
   mkdir -p $KTEST_DIR 
-  rm $DATA_DIR/$RECENT_LINK
-  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  rm $DATA_DIR/$DATA_TAG
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$DATA_TAG
   cd $KTEST_DIR
 }
 
@@ -124,6 +133,7 @@ case "$MODE" in
 
       SERVER_OPTIONS=""
       SERVER_OPTIONS+=" -ktestFileName \"$KTEST_DIR/xpilot_$i.ktest\" "
+      SERVER_OPTIONS+="-FPS $FPS "
       while ! [[ `pgrep -f $SERVER_BIN` ]] 
       do
         echo "starting server in background..."
@@ -167,7 +177,7 @@ case "$MODE" in
     leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
     ;;
   playback)
-    CLIENT_OPTIONS+=" -playInputFile $RECORD_DIR/$RECENT_LINK/$RECORD_FILE "
+    CLIENT_OPTIONS+=" -playInputFile $RECORD_DIR/$DATA_TAG/$RECORD_FILE "
     leval $CLIENT_COMMAND -join $CLIENT_OPTIONS $SERVER_ADDRESS
     ;;
 esac

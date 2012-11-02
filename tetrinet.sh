@@ -18,8 +18,9 @@ ROOT_DIR="`pwd`"
 MODE="enumerate"
 COUNT=0
 MAX_ROUND=50
+DATA_TAG="recent"
 
-while getopts ":vr:j:t:c:m:x:" opt; do
+while getopts ":vr:j:t:c:m:x:o:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -27,6 +28,10 @@ while getopts ":vr:j:t:c:m:x:" opt; do
 
     m)
       MODE="$OPTARG"
+      ;;
+
+    o)
+      DATA_TAG="$OPTARG"
       ;;
 
     x)
@@ -67,7 +72,6 @@ start_time=$(elapsed_time)
 SERVER_ADDRESS="localhost"
 PLAYER_NAME="p1"
 KTEST_SUFFIX="ktest"
-RECENT_LINK="recent"
 
 #PTYPE_VALUES=`seq 1 6`
 PTYPE_VALUES=`seq 1`
@@ -118,8 +122,8 @@ then
 
   mkdir -p $LOG_DIR $KTEST_DIR 
 
-  rm $DATA_DIR/$RECENT_LINK
-  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  rm $DATA_DIR/$DATA_TAG
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$DATA_TAG
 
   INPUT_GEN_TYPE=2
 
@@ -179,8 +183,8 @@ then
 
   mkdir -p $LOG_DIR $KTEST_DIR 
 
-  rm $DATA_DIR/$RECENT_LINK
-  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  rm $DATA_DIR/$DATA_TAG
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$DATA_TAG
 
   for ptype in $PTYPE_VALUES
   do
@@ -237,8 +241,8 @@ then
 
   mkdir -p $LOG_DIR $KTEST_DIR 
 
-  rm $DATA_DIR/$RECENT_LINK
-  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$RECENT_LINK
+  rm $DATA_DIR/$DATA_TAG
+  ln -sfT $DATA_DIR/$RUN_PREFIX $DATA_DIR/$DATA_TAG
 
   for ptype in $PTYPE_VALUES
   do
@@ -295,13 +299,13 @@ fi
 #  echo "running test"
 #
 #  if [[ $MODE != "all" ]] ; then
-#    KTEST_DIR=$DATA_DIR/$RECENT_LINK/ktest
+#    KTEST_DIR=$DATA_DIR/$DATA_TAG/ktest
 #  fi
 #
 #  mkdir -p $OUT_DIR
 #
-#  rm $RESULTS_DIR/$RECENT_LINK
-#  ln -sf $OUT_DIR $RESULTS_DIR/$RECENT_LINK
+#  rm $RESULTS_DIR/$DATA_TAG
+#  ln -sf $OUT_DIR $RESULTS_DIR/$DATA_TAG
 #
 #  for ptype in $PTYPE_VALUES
 #  do
