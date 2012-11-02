@@ -210,7 +210,7 @@ then
           OPTS=""
           OPTS+="-inputgenerationtype $INPUT_GEN_TYPE "
           OPTS+="-maxround $MAX_ROUND "
-          OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
+          OPTS+="-log $LOG_DIR/$DESC_client_socket.log -ktest $KTEST_FILE "
           OPTS+="-random -seed $i "
           OPTS+="-autostart -partialtype $ptype -partialrate $rate "
           OPTS+="$PLAYER_NAME $SERVER_ADDRESS "
