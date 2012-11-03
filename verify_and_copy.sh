@@ -60,9 +60,23 @@ main()
 
   OUTPUT_ROOT="./.$(basename $0)-$RANDOM"
   #echo $OUTPUT_ROOT
+  NETWORK_DATA_ROOT="./data/network"
+
+  echo "== Copying socket log files in $NETWORK_DATA_ROOT"
+  for client_dir in $NETWORK_DATA_ROOT/* ; do
+    local data_id=$(readlink $client_dir/$DATA_TAG)
+    #local output_dir=$OUTPUT_ROOT/$(basename $client_dir)/socketlogs/$data_id-$DATA_TAG
+    local output_dir=$OUTPUT_ROOT/$(basename $client_dir)/socketlogs/
+    mkdir -p $output_dir
+    local pattern="*client_socket.log"
+    for file in $( find -L $client_dir/$DATA_TAG -name $pattern); do
+      cp $file $output_dir/
+      echo $file
+    done
+  done
 
   echo "== Reading files in $RESULTS_SOURCE"
-  pattern="debug.txt"
+  local pattern="debug.txt"
   for source in $RESULTS_SOURCE ; do
     #echo "source: "$source
     for client_dir in $source/* ; do
