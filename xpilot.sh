@@ -65,7 +65,8 @@ done
 initialize_root_directories
 initialize_logging $@
 
-BASE_DIR="$DATA_DIR/network/xpilot-$MODE"
+#BASE_DIR="$DATA_DIR/network/xpilot-$MODE"
+BASE_DIR="$DATA_DIR/network/xpilot-ng-x11"
 
 RECORD_DIR="$DATA_DIR/network/xpilot-record"
 
