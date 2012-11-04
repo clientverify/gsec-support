@@ -15,7 +15,7 @@ HERE="`dirname "$WRAPPER"`"
 ROOT_DIR="`pwd`"
 
 # default config values
-MODE="enumerate"
+MODE="game"
 COUNT=0
 MAX_ROUND=50
 DATA_TAG="recent"
@@ -61,7 +61,7 @@ done
 
 initialize_root_directories
 
-BASE_DIR="$DATA_DIR/network/tetrinet"
+BASE_DIR="$DATA_DIR/network/tetrinet-klee"
 
 # record start time
 start_time=$(elapsed_time)
@@ -197,6 +197,7 @@ then
         zpad_i=`printf "%02d" $i`
         #DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
         DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
+        LOG_FILE=$DESC"_client_socket.log"
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -214,7 +215,7 @@ then
           OPTS=""
           OPTS+="-inputgenerationtype $INPUT_GEN_TYPE "
           OPTS+="-maxround $MAX_ROUND "
-          OPTS+="-log $LOG_DIR/$DESC_client_socket.log -ktest $KTEST_FILE "
+          OPTS+="-log $LOG_DIR/$LOG_FILE -ktest $KTEST_FILE "
           OPTS+="-random -seed $i "
           OPTS+="-autostart -partialtype $ptype -partialrate $rate "
           OPTS+="$PLAYER_NAME $SERVER_ADDRESS "
