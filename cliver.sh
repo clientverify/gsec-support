@@ -91,7 +91,7 @@ initialize_bc()
 
   case $BC_MODE in
     tetri*)
-      KTEST_DIR="$DATA_DIR/network/tetrinet/$DATA_TAG"
+      KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/$DATA_TAG"
       ;;
@@ -101,7 +101,7 @@ initialize_bc()
         echo "set XPILOTHOST environment variable before running xpilot"
         exit
       fi
-      KTEST_DIR="$DATA_DIR/network/xpilot-game/$DATA_TAG"
+      KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
       BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11.bc"
       TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/$DATA_TAG"
       ;;
@@ -139,7 +139,7 @@ initialize_cliver()
 cliver_parameters()
 {
   local cliver_params="-posix-runtime -pc-single-line -emit-all-errors -debug-stderr "
-  cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
+  #cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
@@ -319,6 +319,7 @@ do_ncross_verification()
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "check" ]] ; then
         if [ $i != $k ]; then
