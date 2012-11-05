@@ -139,7 +139,7 @@ initialize_cliver()
 cliver_parameters()
 {
   local cliver_params="-posix-runtime -pc-single-line -emit-all-errors -debug-stderr "
-  #cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
+  cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
