@@ -316,6 +316,9 @@ do_ncross_verification()
         if [ $i != $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
         fi 
+        if [ $i == $k ]; then
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        fi 
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
