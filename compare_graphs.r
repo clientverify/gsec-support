@@ -1,19 +1,24 @@
 #!/usr/bin/Rscript
 
+
+## TODO: remove QueryConstructTime
+
 args=commandArgs(trailingOnly=TRUE)
 
 library(ggplot2)
 library(reshape)
 library(scales)
 library(quantreg)
+library(multicore)
 
-# cbgColourPalette <- scale_colour_manual(values=c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
-cbgColourPalette <- scale_colour_manual(values=c("#0072B2", "#56B4E9", "#E69F00", "#009E73", "#F0E442", "#999999", "#D55E00", "#CC79A7"))
+###############################################################################
+### Configuration
+###############################################################################
 
 colnames = c(
   "STATS","Round",
   "Time","TimeReal","TimeSys",
-  "SolverTime","SearcherTime","QueryTime","CEXTime","QueryConstructTime","ResolveTime",
+  "SolverTime","SearcherTime","STPTime","CEXTime","QueryConstructTime","ResolveTime",
   "ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime",
   "Instructions","RecvInstructions",
   "StageCount","MergedStates","StateCount","TotalStates","Memory",
@@ -25,23 +30,14 @@ colnames = c(
 
 timeStats = c(
   "Time","TimeReal","TimeSys",
-  "SolverTime","SearcherTime","QueryTime","CEXTime","QueryConstructTime","ResolveTime",
+  "SolverTime","SearcherTime","STPTime","CEXTime","QueryConstructTime","ResolveTime",
   "ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime"
 )
 
 timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
 
 plotnames = c(
-  "Time",
-  "Instructions", 
-  "Memory", 
-  "EditDist",
-  "EditDistK",
-  "Delay",
-  "ExtraInstructions",
-  "SendInstructions"
-)
-plotnames = c(
+  "AdjustedTime",
   "Delay",
   "ExtraInstructions",
   "SendInstructions"
@@ -52,14 +48,9 @@ default_plotwidth=5
 default_plotheight=5
 heightscalefactor = 1.0
 
-#root_dir="/home/rac/research/gsec/results.oakall/xpilot-ng-x11"
-#root_dir="/home/rac/research/test.gsec/results/cr/xpilot-ng-x11"
-#root_dir="/home/rac/research/test.gsec/results/tetrinet-klee"
+root_dir="/home/rac/research/test.gsec/results/cr.2/xpilot-ng-x11"
 
-root_dir="/home/rac/research/test.gsec/results/meeting/xpilot-ng-x11"
-
-timestamp_dir="/home/rac/research/test.gsec/data/network/xpilot-game/large-fps25"
-
+# Read data file location from commandline or use hardcoded value
 if (length(args) > 0) {
   root_dir = args[1]
 }
@@ -68,7 +59,7 @@ data_dir="data"
 output_dir="plots"
 output_filetype="png"
 
-#create output dirs
+# Create output dirs
 save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
 dir.create(save_dir, recursive=TRUE)
 
@@ -78,6 +69,9 @@ data = NULL
 previous_count = 1
 binwidth=20
 
+###############################################################################
+### Read data files
+###############################################################################
 
 for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
   data_path = paste(root_dir, data_dir, data_subdir, sep="/")
@@ -135,71 +129,80 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
   }
 }
 
-#Adjust time stats
+# Compute additional stats
+data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
+data$SendInstructions = data$Instructions - data$RecvInstructions
+data$AdjustedTime = data$Time - data$EdDistBuildTime
+
+###############################################################################
+### Read Timestamp data
+###############################################################################
+
+# Scale time stats from microsecnds to seconds
 for (tstat in timeStats) {
  data[tstat] = data[tstat] / 1000000
 }
 
-
+### 
 timestamp_pattern = "*_client_socket.log"
 timestamps = NULL
+timestamp_dir = paste(root_dir,"socketlogs",sep="/")
 
 for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
-  #x = unlist(strsplit(file,timestamp_pattern)[1])
-  #cat(x,"\n")
+  # Read id number of timestamp file, format is str_#_...._client_socket.log
   id = unlist(unlist(strsplit(file,"_"))[2])
-  #cat(id,"\n")
   tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
+
   if (class(tmp_timestamps) == "try-error") {
     cat("try-error reading timestamp file\n")
-  }
-  
-  # Remove first row
-  tmp_timestamps = tmp_timestamps[c(-1),]
-  
-  len = length(tmp_timestamps[,1]) # length of rows, not cols
-  tname = sprintf("%02d",as.integer(id))
-  tmp_timestamps$name=rep(tname, len)
-  tmp_timestamps$Round = seq(0,len-1)
-  tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
-  #tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000 # convert to microseconds
-  
-  for (tmode in unique(factor(data$mode))) {
-    sdata = subset(data, name == tname & mode == tmode)
+  } else {
     
-    # Remove sdata from data
-    data = subset(data, !(name == tname & mode == tmode))
+    # Remove first row
+    tmp_timestamps = tmp_timestamps[c(-1),]
     
-    sdata = subset(sdata, Round < 2000)
+    len = length(tmp_timestamps[,1]) # length of rows, not cols
+    tname = sprintf("%02d",as.integer(id))
+    tmp_timestamps$name=rep(tname, len)
+    tmp_timestamps$Round = seq(0,len-1)
+    tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
     
-    tlen = length(sdata[,1]) # length of rows, not cols
-   
-    cat("Computing Timestamps for: ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
-    if (len > tlen & tlen > 0) {
-      v = c(0)
-  
-       for (j in seq(2,tlen)) {
-         res = 0
-         if (tmp_timestamps$Timestamp[j] < v[j-1]) {
-           res = v[j-1] + (sdata$Time[j] - sdata$EdDistBuildTime[j])
-         } else {
-           res = tmp_timestamps$Timestamp[j] + (sdata$Time[j] - sdata$EdDistBuildTime[j])
-         }
-         v = append(v,res)
-       }
-      v = v - tmp_timestamps$Timestamp[seq(tlen)]
-      sdata$Delay = v
-      sdata$Game = tmp_timestamps$Timestamp[seq(tlen)]
+    for (tmode in unique(factor(data$mode))) {
+      sdata = subset(data, name == tname & mode == tmode)
       
-      data = rbind(data,sdata)
+      # Remove sdata from data
+      data = subset(data, !(name == tname & mode == tmode))
       
-    } else {
-      cat("ERROR Tlen is less than len ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
+      sdata = subset(sdata, Round < 2000)
+      
+      tlen = length(sdata[,1]) # length of rows, not cols
+    
+      cat("Computing Timestamps for: ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
+      if (len > tlen & tlen > 0) {
+        v = c(0)
+    
+        for (j in seq(2,tlen)) {
+          res = 0
+          if (tmp_timestamps$Timestamp[j] < v[j-1]) {
+            res = v[j-1] + sdata$AdjustedTime[j]
+          } else {
+            res = tmp_timestamps$Timestamp[j] + sdata$AdjustedTime[j]
+          }
+          v = append(v,res)
+        }
+        v = v - tmp_timestamps$Timestamp[seq(tlen)]
+        sdata$Delay = v
+        sdata$Game = tmp_timestamps$Timestamp[seq(tlen)]
+        
+        data = rbind(data,sdata)
+        
+      } else {
+        cat("ERROR Tlen is less than len ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
+      }
+      
     }
     
+    timestamps = rbind(timestamps, tmp_timestamps)
   }
-  
-  timestamps = rbind(timestamps, tmp_timestamps)
 }
 
 for (n in unique(factor(data$name))) {
@@ -212,192 +215,238 @@ for (n in unique(factor(data$name))) {
   }
 }
 
-#data$SolverTime = data$SolverTime - data$QueryTime - data$CEXTime - data$QueryConstructTime
+###############################################################################
+### Reformat data 
+###############################################################################
 
-time_vars=c("OtherTime","SolverTime","SearcherTime","ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime","QueryTime","CEXTime","QueryConstructTime","ResolveTime")
+data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
 
-data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime - data$RebuildTime - data$QueryTime - data$CEXTime - data$QueryConstructTime - data$ResolveTime
-#data$OtherTime = data$Time - data$SolverTime - data$ExecTreeTime - data$SearcherTime - data$MergeTime - data$EdDistTime - data$EdDistBuildTime
-#data$OtherTime = ifelse(data$OtherTime < 0, 0, data$OtherTime)
+# Remove round times
+graphTimeStats = timeStats[c(-1,-2,-3)]
 
-data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
+### Compute OtherTime
+otherTime = data$TimeReal + data$TimeSys
+for (t in graphTimeStats) {
+  otherTime = otherTime - data[t]
+}
+data$OtherTime = otherTime
 
-data$SendInstructions = data$Instructions - data$RecvInstructions
+# Add other time list of time variables
+timeStats = c(timeStats, "OtherTime")
 
-###temp
-#data = subset(data, name != "01" & name != "10" & name != "07")
-#min_size = min_size - 10
+# Plotting parameters
 start_round = 2
-
-#min_size = max(data$Round)
-#min_size = min_size - 5
 legend_rows = ceiling(length(unique(factor(data$mode)))/3)
 
-cat("start round: ",start_round,", min_size: ",min_size,"\n")
+# Trim data by start and min rounds 
+data = subset(data, Round < min_size & Round > start_round)
 
-data = subset(data, (Round < min_size) & (Round > start_round))
+###############################################################################
+### Plot Functions 
+###############################################################################
 
-plotwidth = default_plotwidth
-plotheight = length(unique(data$name))*heightscalefactor
-for (y_axis in plotnames) {
-  x_axis = "Round"
+### Jittered point plot of data
+do_point_plot = function(y_axis) {
   cat("plotting: (point), ",x_axis," vs ",y_axis,"\n")
+ 
+  # vars
   name = paste("plot","point",paste(x_axis,"vs",y_axis,sep=""),sep="_")
   title = paste(x_axis,"vs",y_axis, sep=" ")
-  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
-  
-  p = p + geom_point(aes(colour=factor(mode),shape=factor(mode)))
-  #p = p + scale_fill_hue("Algorithm")
-  p = p + facet_grid(name ~ .)
-  p = p + theme_bw()
-  p = p + ylab(paste(y_axis,"(s)"))
-  #p = p + scale_y_continuous(breaks=c(200,600,1000))
-  #p = p + scale_y_continuous(breaks=c(500,1000,1500))
+  filename = paste(name, output_filetype, sep=".")
+ 
+  # construct plot
+  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
+  p = p + geom_jitter(aes(colour=factor(mode),linetype=factor(mode)),size=0.25)
+  p = p + facet_grid(name ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
   p = p + scale_y_continuous()
-  #p = p + cbgColourPalette
-  p = p + ggtitle(title)
-  p = p + theme(legend.position="bottom")
+  p = p + ggtitle(title) + theme(legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
   
   p;  
-  filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
-plotwidth = default_plotwidth
-plotheight = length(unique(data$name))*heightscalefactor
-for (y_axis in plotnames) {
- x_axis = "Round"
- cat("plotting: (line), ",x_axis," vs ",y_axis,"\n")
- name = paste("plot","line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
- title = paste(x_axis,"vs",y_axis, sep=" ")
- p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
  
- p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
- #p = p + scale_fill_hue("Algorithm")
- p = p + facet_grid(name ~ .)
- p = p + theme_bw()
- p = p + ylab(paste(y_axis,"(s)"))
- #p = p + scale_y_continuous(breaks=c(200,600,1000))
- #p = p + scale_y_continuous(breaks=c(500,1000,1500))
- p = p + scale_y_continuous()
- #p = p + cbgColourPalette
- p = p + ggtitle(title)
- p = p + theme(legend.position="bottom")
- p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+### Line plot of data
+do_line_plot = function(y_axis) {
+  cat("plotting: (line), ",x_axis," vs ",y_axis,"\n")
  
- p;  
- filename = paste(name, output_filetype, sep=".")
- ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+  # vars
+  name = paste("plot","line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  title = paste(x_axis,"vs",y_axis, sep=" ")
+  filename = paste(name, output_filetype, sep=".")
+ 
+  # construct plot
+  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
+  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5) 
+  p = p + facet_grid(name ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
+  #p = p + scale_y_continuous(breaks=c(200,600,1000))
+  #p = p + scale_y_continuous(breaks=c(500,1000,1500))
+  p = p + scale_y_continuous()
+  p = p + ggtitle(title) + theme(legend.position="bottom")
+  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+  
+  p;  
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
+
+### Logscale line plot of data
+do_logscale_line_plot = function(y_axis) {
+  cat("plotting (line, log scale): ",x_axis," vs ",y_axis,"\n")
  
-if (0) {
-plotwidth = default_plotwidth
-plotheight = length(unique(data$name))*heightscalefactor
-for (y_axis in plotnames) {
-  x_axis = "Round"
+  # vars
+  name = paste("plot","line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
+  filename = paste(name, output_filetype, sep=".")
+ 
+  # construct plot
+  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
+  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5) 
+  p = p + facet_grid(name ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
+  p = p + scale_y_log10() 
+  p = p + ggtitle(title) + theme(legend.position="bottom")
+  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+  
+  p;  
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+}
+
+### Histogram of data
+do_histogram_plot = function(y_axis) {
   cat("plotting (histogram, log scale): ",x_axis," vs ",y_axis,"\n")
+
+  # vars
   name = paste("plot","histogram","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
   title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
-  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=y_axis))
+  filename = paste(name, output_filetype, sep=".")
+
+  # construct plot
+  p = ggplot(data, aes_string(x=y_axis))
   p = p + geom_histogram() 
-  p = p + scale_y_log10() 
-  p = p + theme_bw() 
-  #p = p + cbgColourPalette
-  p = p + facet_grid(name ~ .) 
-  p = p + ggtitle(title)
-  p = p + theme(legend.position="bottom")
+  p = p + scale_y_log10() + theme_bw() + facet_grid(name ~ .) 
+  p = p + ggtitle(title) + theme(legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+
   p;
-  filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
-}
 
-plotwidth = default_plotwidth
-plotheight = default_plotheight*2
-for (y_axis in plotnames) {
-  x_axis = "Round"
-  name =  paste("plot","bar",y_axis,sep="_")
+### Summary of data in bar plot
+do_summary_plot = function(y_axis) {
   cat("plotting (summary): ",x_axis," vs ",y_axis,"\n")
+
+  # vars
+  name =  paste("plot","bar",y_axis,sep="_")
   title = paste("Summary of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x="mode", y=y_axis)) 
-  p = p + theme_bw() 
-  p = p + facet_grid(name ~ .)
+  filename = paste(name, output_filetype, sep=".")
+
+  # construct plot
+  p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
+  p = p + facet_grid(name ~ .) + theme_bw()
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray")
-  #p = p + cbgColourPalette 
-  p = p + ggtitle(title)
-  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
+  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
   p;
-  filename = paste(name, output_filetype, sep=".")
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
-plotwidth = default_plotwidth
-plotheight = default_plotheight*2
-for (y_axis in plotnames) {
-  x_axis = "Round"
+### Mean summary plot
+do_mean_plot = function(y_axis) {
+  cat("plotting (mean of): ",x_axis," vs ",y_axis,"\n")
+
   name =  paste("plot","mean_bar",y_axis,sep="_")
-  cat("plotting (mean of): ",x_axis," vs ",y_axis,"\n")
   title = paste("Mean of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x="mode", y=y_axis)) 
-  p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray") 
-  p = p + theme_bw()
-  p = p + facet_grid(name ~ .)
-  #p = p + cbgColourPalette
-  p = p + ggtitle(title)
-  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
-  p;
   filename = paste(name, output_filetype, sep=".")
+
+  p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
+  p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray") 
+  p = p + facet_grid(name ~ .) + theme_bw()
+  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p;
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
 }
 
-plotwidth = default_plotwidth
-plotheight = default_plotheight*2
-  x_axis = "Round"
-  y_axis = "Delay"
-  tdata = data
-  tdata$Delay = tdata$Delay / (1000000*60)
-  name =  paste("plot","max",y_axis,sep="_")
-  cat("plotting (mean of): ",x_axis," vs ",y_axis,"\n")
-  title = paste("Max of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(subset(tdata, Round < min_size & Round > start_round), aes_string(x="mode", y=y_axis)) 
-  p = p + stat_summary(fun.y="max", geom="bar", fill="white", colour="gray") 
-  p = p + theme_bw()
-  p = p + facet_grid(name ~ .)
-  #p = p + cbgColourPalette
-  p = p + ggtitle(title)
-  p = p + theme(axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
-  p;
-  filename = paste(name, output_filetype, sep=".")
-  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+### Max summary plot
+do_max_plot = function(y_axis) {
+  cat("plotting (max of): ",x_axis," vs ",y_axis,"\n")
 
-plotwidth = default_plotwidth*2
-plotheight = default_plotheight
-#for (y_axis in plotnames) {
-  x_axis = "Round"
-  name =  "time_summary"
-  cat("plotting Time summary\n")
-  title = paste("Time Summary")
-  mdata <- melt(subset(data, Round < min_size & Round > start_round), id=c("STATS","Round","name","mode"),measure=time_vars)
-  p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
-  p = p + geom_bar(stat="identity")
-  p = p + theme_bw()
-  #p = p + facet_grid(name ~ .)
-  #p = p + cbgColourPalette
-  p = p + ggtitle(title)
-  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
-  p;
+  name =  paste("plot","max_bar",y_axis,sep="_")
+  title = paste("max of",y_axis,"over",min_size,"rounds",sep=" ")
   filename = paste(name, output_filetype, sep=".")
+
+  p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
+  p = p + stat_summary(fun.y="max", geom="bar", fill="white", colour="gray") 
+  p = p + facet_grid(name ~ .) + theme_bw()
+  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p;
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
-#}
+}
+
+### Time summary plot
+do_time_summary_plot = function() {
+  cat("plotting Time summary\n")
+
+  name =  "time_summary"
+  title = paste("Time Summary")
+  filename = paste(name, output_filetype, sep=".")
+
+  # reformat data
+  mdata <- melt(data, id=c("STATS","Round","name","mode"),measure=graphTimeStats)
+
+  # construct plot
+  p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
+  p = p + geom_bar(stat="identity") + theme_bw()
+  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+
+  p;
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+}
+
+### Boxplot
+do_box_plot = function(y_axis) {
+  cat("plotting (boxplot of): ",x_axis," vs ",y_axis,"\n")
+
+  # vars
+  name =  paste("plot","boxplot_bar",y_axis,sep="_")
+  title = paste("Boxplot of",y_axis,"over",min_size,"rounds",sep=" ")
+  filename = paste(name, output_filetype, sep=".")
+
+  # construct plot
+  p <- ggplot(data, aes_string(x="name", y=y_axis)) 
+  p = p + scale_y_log10()
+  p = p + geom_boxplot(aes(colour=factor(mode),linetype=factor(mode)))
+  p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
+  
+  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotwidth)
+}
+
+###############################################################################
+
+x_axis = "Round"
+
+plotwidth = default_plotwidth
+plotheight = default_plotheight
+
+do_time_summary_plot()
+
+plotheight = length(unique(data$name))*heightscalefactor
+
+mclapply(plotnames, do_line_plot)
+#mclapply(plotnames, do_logscale_line_plot)
+mclapply(plotnames, do_point_plot)
+
+plotheight = default_plotheight*2
+
+#mclapply(plotnames, do_histogram_plot)
+#mclapply(plotnames, do_summary_plot)
+mclapply(plotnames, do_mean_plot)
+mclapply(c("Delay"), do_max_plot)
+
+plotheight = default_plotheight*2
+
+mclapply(plotnames, do_box_plot)
+
+exit
+
+###############################################################################
 
 if (0) {
 plotwidth = default_plotwidth
@@ -407,8 +456,8 @@ for (y_axis in plotnames) {
   name =  paste("plot","boxplot_bar",y_axis,sep="_")
   cat("plotting (boxplot of): ",x_axis," vs ",y_axis,"\n")
   title = paste("Boxplot of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x="name", y=y_axis)) 
-  #p <- ggplot(subset(data, Round < min_size & Round > start_round), aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
+  p <- ggplot(data, aes_string(x="name", y=y_axis)) 
+  #p <- ggplot(data, aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
   #p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray")
   
   p = p + scale_y_log10()
@@ -453,8 +502,8 @@ for (y_axis in special_plotnames) {
   name =  paste("plot","special_boxplot_bar",y_axis,sep="_")
   cat("plotting (special boxplot of): ",x_axis," vs ",y_axis,"\n")
   title = paste("Boxplot of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(subset(data, Round < min_size & Round > start_round), aes(x=factor(Bin), y=Delay)) 
-  #p <- ggplot(subset(data, Round < min_size & Round > start_round), aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
+  p <- ggplot(data, aes(x=factor(Bin), y=Delay)) 
+  #p <- ggplot(data, aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
   #p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray")
   #p = p + geom_boxplot(aes(colour=factor(mode),linetype=factor(mode)))
   p = p + geom_boxplot()
@@ -484,24 +533,3 @@ for (y_axis in special_plotnames) {
 }
 }
 
-plotwidth = default_plotwidth
-plotheight = length(unique(data$name))*heightscalefactor
-for (y_axis in plotnames) {
-  x_axis = "Round"
-  cat("plotting (line, log scale): ",x_axis," vs ",y_axis,"\n")
-  name = paste("plot","line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
-  title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
-  p = ggplot(subset(data, Round < min_size & Round > start_round), aes_string(x=x_axis, y=y_axis))
-  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
-  #p = p + stat_quantile(aes(colour=factor(mode),quantiles = 0.95))
-  p = p + scale_y_log10() 
-  p = p + theme_bw() 
-  #p = p + cbgColourPalette
-  p = p + facet_grid(name ~ .) 
-  p = p + ggtitle(title)
-  p = p + theme(legend.position="bottom")
-  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
-  p;
-  filename = paste(name, output_filetype, sep=".")
-  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
-}
