@@ -24,6 +24,7 @@ ROOT_DIR="`pwd`"
 BC_MODE="tetrinet"
 
 # Default cliver options
+CLIVER_BIN_FILE="cliver"
 CLIVER_MODE="training"
 CLIVER_LIBC="uclibc"
 OUTPUT_LLVM_ASSEMBLY=0
@@ -124,7 +125,7 @@ bc_parameters()
 
 initialize_cliver()
 {
-  CLIVER_BIN="$KLEE_ROOT/bin/cliver"
+  CLIVER_BIN="$KLEE_ROOT/bin/$CLIVER_BIN_FILE"
 
   if test ${SPECIAL_OUTPUT_DIR+defined}; then
     BASE_OUTPUT_DIR=$DATA_DIR/$SPECIAL_OUTPUT_DIR/$(basename $BC_FILE .bc)
@@ -418,11 +419,15 @@ usage()
 
 main() 
 {
-  while getopts "b:t:o:c:x:i:p:d:r:m:nshv" opt; do
+  while getopts "b:t:o:c:x:i:p:d:r:m:nshvf" opt; do
     case $opt in
 
       b)
         DATA_TAG="$OPTARG"
+        ;;
+
+      f)
+        CLIVER_BIN_FILE="cliver-opt"
         ;;
 
       t)

@@ -574,15 +574,16 @@ build_klee()
   local release_tag=""
 
   local debug_build_options="ENABLE_OPTIMIZED=0 "
-  local debug_tag="-debug"
+  local debug_tag=""
 
   local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
+  build_klee_helper "$optimized_build_options" "$optimized_tag"
+
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
   else
-    build_klee_helper "$optimized_build_options" "$optimized_tag"
     build_klee_helper "$release_build_options" "$release_tag"
   fi
 }
