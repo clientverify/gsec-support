@@ -267,7 +267,7 @@ install_sparsehash()
 
 install_google_perftools()
 {
-  necho "$GOOGLE_PERFTOOLS\t"
+  necho "$GOOGLE_PERFTOOLS\t\t"
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
   get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
 
@@ -451,7 +451,7 @@ update_llvm()
 
 install_llvm()
 {
-  necho "$LLVM\t\t"
+  necho "$LLVM\t\t\t"
   check_dirs $LLVM || { return 0; }
   cd $ROOT_DIR"/src"
 
@@ -480,10 +480,10 @@ install_stp()
 {
   necho "$STP\t\t\t"
   check_dirs $STP || { return 0; }
-  cd $ROOT_DIR"/src"
+  get_package $STP_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$STP"
 
-  necho "[Cloning] "
-  leval svn co -r $STP_REV $STP_SVN $STP
+  #necho "[Cloning] "
+  #leval svn co -r $STP_REV $STP_SVN $STP
 
   cd $ROOT_DIR/src/$STP 
 
