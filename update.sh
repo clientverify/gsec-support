@@ -554,6 +554,11 @@ build_klee_helper()
   local options=$1
   local tag=$2
 
+  if [ $FORCE_CLEAN -eq 1 ]; then 
+    necho "[Cleaning$tag] "
+    make_klee "$options clean"
+  fi
+
   necho "[Compiling$tag] "
   make_klee $options
 
@@ -640,11 +645,6 @@ update_klee()
     if [ $FORCE_CONFIGURE -eq 1 ]; then 
       necho "[Configuring] "
       config_klee
-    fi
-
-    if [ $FORCE_CLEAN -eq 1 ]; then 
-      necho "[Cleaning] "
-      build_klee clean
     fi
 
     build_klee
