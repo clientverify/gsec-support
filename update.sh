@@ -529,7 +529,7 @@ config_klee()
   leval $ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS 
 }
 
-build_klee()
+make_klee()
 {
   local TARGET=""
   if [[ $# -ge 1 ]]; then TARGET=$1; fi
@@ -541,18 +541,50 @@ build_klee()
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
-  if [ $BUILD_DEBUG -eq 1 ]; then
-    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-  else
-    #KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 RUNTIME_DISABLE_ASSERTIONS=1 "
-    KLEE_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
-  fi
-
   ### HACK ### need to remove libraries from install location so that
   # old klee/cliver libs are not used before recently compiled libs
   leval make $KLEE_MAKE_OPTIONS uninstall
 
   leval make $KLEE_MAKE_OPTIONS $TARGET 
+}
+
+build_klee_helper()
+{
+  local klee="cliver"
+  local options=$1
+  local tag=$2
+
+  necho "[Compiling$tag] "
+  make_klee $options
+
+  necho "[Installing$tag] "
+  make_klee "$options install"
+
+  if [ ${#tag} -gt 0 ]; then
+    leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
+    leval cp "$KLEE_ROOT/bin/$klee-bin" "$KLEE_ROOT/bin/$klee$tag-bin"
+  fi
+}
+
+build_klee()
+{
+  mkdir -p $KLEE_ROOT
+
+  local release_build_options="ENABLE_OPTIMIZED=1 "
+  local release_tag=""
+
+  local debug_build_options="ENABLE_OPTIMIZED=0 "
+  local debug_tag="-debug"
+
+  local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
+  local optimized_tag="-opt"
+
+  if [ $BUILD_DEBUG -eq 1 ]; then
+    build_klee_helper "$debug_build_options" "$debug_tag"
+  else
+    build_klee_helper "$optimized_build_options" "$optimized_tag"
+    build_klee_helper "$release_build_options" "$release_tag"
+  fi
 }
 
 install_klee()
@@ -573,12 +605,7 @@ install_klee()
   necho "[Configuring] "
   config_klee
 
-  necho "[Compiling] "
   build_klee
-
-  necho "[Installing] "
-  mkdir -p $KLEE_ROOT
-  build_klee install
 
   necho "[Done]\n"
 }
@@ -619,12 +646,8 @@ update_klee()
       build_klee clean
     fi
 
-    necho "[Compiling] "
     build_klee
 
-    necho "[Installing] "
-    mkdir -p $KLEE_ROOT
-    build_klee install
   fi
 
   necho "[Done]\n"
