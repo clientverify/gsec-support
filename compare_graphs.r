@@ -29,7 +29,7 @@ colnames = c(
 )
 
 timeStats = c(
-  "Time","TimeReal","TimeSys",
+  "Time","TimeReal","TimeSys","AdjustedTime",
   "SolverTime","SearcherTime","STPTime","CEXTime","QueryConstructTime","ResolveTime",
   "ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime"
 )
@@ -48,7 +48,8 @@ default_plotwidth=5
 default_plotheight=5
 heightscalefactor = 1.0
 
-root_dir="/home/rac/research/test.gsec/results/cr.2/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results/cr.3/xpilot-ng-x11"
+root_dir="/home/rac/research/test.gsec/results/cr.3/tetrinet-klee"
 
 # Read data file location from commandline or use hardcoded value
 if (length(args) > 0) {
@@ -104,6 +105,7 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
         
         tmp_data$Game=rep(0, len)
         tmp_data$Delay=rep(0, len)
+        tmp_data$Direction=rep(0, len)
         
         # Set mode description based on parent dir
         if (previous_count > 1) {
@@ -132,7 +134,7 @@ for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recu
 # Compute additional stats
 data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
 data$SendInstructions = data$Instructions - data$RecvInstructions
-data$AdjustedTime = data$Time - data$EdDistBuildTime
+data$AdjustedTime = data$TimeReal - data$EdDistBuildTime
 
 ###############################################################################
 ### Read Timestamp data
@@ -150,7 +152,9 @@ timestamp_dir = paste(root_dir,"socketlogs",sep="/")
 
 for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
   # Read id number of timestamp file, format is str_#_...._client_socket.log
-  id = unlist(unlist(strsplit(file,"_"))[2])
+  #id = unlist(unlist(strsplit(file,"_"))[2])
+  id_int = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
+  id = as.character(id_int+1)
   tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
 
   if (class(tmp_timestamps) == "try-error") {
@@ -177,7 +181,14 @@ for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
       tlen = length(sdata[,1]) # length of rows, not cols
     
       cat("Computing Timestamps for: ",tname," ",tmode," tlen=",tlen,", len=",len,"\n")
-      if (len > tlen & tlen > 0) {
+      
+      if (abs(len - tlen) < 4) {
+        cat("Skipping last ", abs(len-tlen), " elements\n")
+        tlen = min(tlen, len)
+        sdata = subset(sdata, Round < tlen)
+      }
+      
+      if (len >= tlen & tlen > 0) {
         v = c(0)
     
         for (j in seq(2,tlen)) {
@@ -192,7 +203,7 @@ for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
         v = v - tmp_timestamps$Timestamp[seq(tlen)]
         sdata$Delay = v
         sdata$Game = tmp_timestamps$Timestamp[seq(tlen)]
-        
+        sdata$Direction = tmp_timestamps$Direction[seq(tlen)]
         data = rbind(data,sdata)
         
       } else {
@@ -222,7 +233,7 @@ for (n in unique(factor(data$name))) {
 data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
 
 # Remove round times
-graphTimeStats = timeStats[c(-1,-2,-3)]
+graphTimeStats = timeStats[c(-1,-2,-3,-4)]
 
 ### Compute OtherTime
 otherTime = data$TimeReal + data$TimeSys
@@ -421,6 +432,10 @@ do_box_plot = function(y_axis) {
 ###############################################################################
 
 x_axis = "Round"
+num_threads=2
+
+#data = subset(data, name != "13" & name != "04" & name != "11")
+#data = subset(data, name != "10")
 
 plotwidth = default_plotwidth
 plotheight = default_plotheight
@@ -429,20 +444,20 @@ do_time_summary_plot()
 
 plotheight = length(unique(data$name))*heightscalefactor
 
-mclapply(plotnames, do_line_plot)
+mclapply(plotnames, do_line_plot, mc.cores=num_threads)
 #mclapply(plotnames, do_logscale_line_plot)
-mclapply(plotnames, do_point_plot)
+mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 
 plotheight = default_plotheight*2
 
 #mclapply(plotnames, do_histogram_plot)
 #mclapply(plotnames, do_summary_plot)
-mclapply(plotnames, do_mean_plot)
-mclapply(c("Delay"), do_max_plot)
+mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
+mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
 
 plotheight = default_plotheight*2
 
-mclapply(plotnames, do_box_plot)
+mclapply(plotnames, do_box_plot, mc.cores=num_threads)
 
 exit
 
