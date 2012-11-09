@@ -402,7 +402,7 @@ build_llvm ()
 
 update_llvm()
 {
-  necho "$LLVM\t\t"
+  necho "$LLVM\t\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
