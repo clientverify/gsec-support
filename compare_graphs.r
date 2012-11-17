@@ -6,6 +6,7 @@
 args=commandArgs(trailingOnly=TRUE)
 
 library(ggplot2)
+library(plyr)
 library(reshape)
 library(scales)
 library(quantreg)
@@ -43,18 +44,16 @@ timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
 
 plotnames = c(
   "AdjustedTime",
-  "Delay",
   "ExtraInstructions",
-  "SendInstructions"
+  "SendInstructions",
+  "Delay",
+  colnames[c(-1)]
 )
-plotnames=c(plotnames, colnames[c(-1)])
 
-default_plotwidth=5
-default_plotheight=5
-heightscalefactor = 0.75
+data_frame_col_names = c(colnames, "name", "mode", "Direction", "Delay")
 
 root_dir="/home/rac/research/test.gsec/results/full/xpilot-ng-x11"
-#root_dir="/home/rac/research/test.gsec/results/full/tetrinet-klee"
+root_dir="/home/rac/research/test.gsec/results/full/tetrinet-klee"
 
 # Read data file location from commandline or use hardcoded value
 if (length(args) > 0) {
@@ -64,208 +63,201 @@ if (length(args) > 0) {
 data_dir="data"
 output_dir="plots"
 output_filetype="png"
+timestamp_pattern = "*_client_socket.log"
+timestamp_dir = paste(root_dir,"socketlogs",sep="/")
 
 # Create output dirs
 save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
 dir.create(save_dir, recursive=TRUE)
 
+# Plotting parameters
 min_size=.Machine$integer.max
-data = NULL
-
-previous_count = 1
+start_round = 2
 binwidth=20
+default_plotwidth=5
+default_plotheight=5
+heightscalefactor = 0.75
 
-###############################################################################
-### Read data files
-###############################################################################
-
-for (data_subdir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
-  data_path = paste(root_dir, data_dir, data_subdir, sep="/")
-  data_ids = NULL
-  for (id in dir(data_path, full.names=FALSE, recursive=FALSE)) {
-    data_ids = c(data_ids, id)
-  }
-  
-  data_ids = sort(data_ids, decreasing=TRUE)
-  
-  for (i in seq(min(length(data_ids), previous_count))) {
-    
-    fullpath = paste(data_path, data_ids[i], sep="/")
-    
-    for (file in list.files(path=fullpath)) {
-      #tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=colnames), silent=TRUE)
-      #tmp_data = scan(paste(fullpath,file,sep="/"), skip=1)
-      tmp_data = try(read.table(paste(fullpath,file,sep="/"), col.names=colnames), silent=TRUE)
-      
-      if (class(tmp_data) != "try-error") {
-        
-        len = length(tmp_data[,1]) # length of rows, not cols
-        min_size = min(min_size, len)
-        id_int = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2])) # extract file id
-        
-        cat(data_subdir,'\t',i,'\t',len,'\t',data_ids[i],'\t',file,'\t',id_int,'\n')
-
-        tmp_data$name=rep(sprintf("%02d",id_int), len)
-        
-        tmp_data$Game=rep(0, len)
-        tmp_data$Delay=rep(0, len)
-        tmp_data$DelayAlt=rep(0, len)
-        tmp_data$Direction=rep(0, len)
-        
-        # Set mode description based on parent dir
-        if (previous_count > 1) {
-          tmp_data$mode=rep(paste(data_subdir,i,sep=","), len)
-        } else {
-          tmp_data$mode=rep(data_subdir, len)
-        }
-        
-        # Set bin number
-        g = c()
-        for (j in seq(len)) {
-          g = append(g,floor(j/binwidth))
-        }
-        tmp_data$Bin = g
-        
-        data = rbind(data, tmp_data)
-        
-      } else {
-        cat("Error: ", data_subdir,'\t',i,'\n')
-      }
-      
-    }
-  }
-}
-
-# Compute additional stats
-data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
-data$SendInstructions = data$Instructions - data$RecvInstructions
-data$AdjustedTime = data$TimeReal - data$EdDistBuildTime
+### Global Vars
+timestamps <- NULL
+all_data <- list()
+modes <- list()
+selected_modes = list()
+data <- NULL
 
 ###############################################################################
 ### Read Timestamp data
 ###############################################################################
 
-# Scale time stats from microsecnds to seconds
-for (tstat in timeStats) {
- data[tstat] = data[tstat] / 1000000.0
+read_timestamps = function() {
+  for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
+    # Read id number of timestamp file, format is str_#_...._client_socket.log
+    
+    name = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
+    
+    tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
+    cat("Reading ",file,"\n")
+    
+    if (class(tmp_timestamps) == "try-error") {
+      cat("try-error reading timestamp file\n")
+    } else {
+      
+      # Remove first row
+      tmp_timestamps = tmp_timestamps[c(-1),]
+      
+      len = length(tmp_timestamps[,1]) # length of rows, not cols
+      tmp_timestamps$name=rep(name, len)
+      tmp_timestamps$Round = seq(0,len-1)
+      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
+      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000
+      
+      # Add timestamps to global var
+      timestamps <<- rbind(timestamps, tmp_timestamps)
+    }
+  }
 }
 
-### 
-timestamp_pattern = "*_client_socket.log"
-timestamps = NULL
-timestamp_dir = paste(root_dir,"socketlogs",sep="/")
+adjusted_time = function(df, i) {
+  #return(df$TimeReal[i] - df$EdDistBuildTime[i] - df$STPTime[i])
+  #return(df$TimeReal[i] - df$EdDistBuildTime[i] - df$SolverTime[i])
+  return(df$TimeReal[i] - df$EdDistBuildTime[i])
+}
 
-for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
-  # Read id number of timestamp file, format is str_#_...._client_socket.log
+compute_delays = function(m, name_id) {
   
-  id_int = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
-  id = as.character(id_int)
+  df = as.data.frame(m)
+  colnames(df) = data_frame_col_names
   
-  tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
+  ts = subset(timestamps, name == name_id)
+  
+  df_len = length(df[,1])
+  ts_len = length(ts[,1])
+  
+  len = min(df_len, ts_len)
+  
+  v = vector("numeric",len)
+  v[1] = 0
+  
+  for (j in seq(2,len)) {
+    #if (ts$Bytes[j] != df$SocketEventSize[j]) {
+    #  cat("Bytes mismatch ",ts$Bytes[j]," ",df$SocketEventSize[j],"\n")
+    #}
+    
+    if (ts$Timestamp[j] < v[j-1]) {
+      v[j] = v[j-1] + adjusted_time(df,j)
+    } else {
+      v[j] = ts$Timestamp[j] + adjusted_time(df,j)
+    }
+    
+    #delta = v[j] - v[j-1]
+    #if (delta > 500) {
+    #  cat("Large delta ",delta," at round ", j,"\n")
+    #}
+  }
+  v = v - ts$Timestamp[seq(len)]
 
-  if (class(tmp_timestamps) == "try-error") {
-    cat("try-error reading timestamp file\n")
-  } else {
-    
-    # Remove first row
-    tmp_timestamps = tmp_timestamps[c(-1),]
-    
-    len = length(tmp_timestamps[,1]) # length of rows, not cols
-    tname = sprintf("%02d",as.integer(id))
-    tmp_timestamps$name=rep(tname, len)
-    tmp_timestamps$Round = seq(0,len-1)
-    tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
-    
-    #tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000
-    for (tmode in unique(factor(data$mode))) {
-      sdata = subset(data, name == tname & mode == tmode)
-      
-      # Remove sdata from data
-      data = subset(data, !(name == tname & mode == tmode))
-      
-      sdata = subset(sdata, Round < 2000)
-      
-      tlen = length(sdata[,1]) # length of rows, not cols
-    
-      curr_name = sprintf("%s log=%s data_len=%d, log_len=%d",tmode,tname,tlen,len)
-      cat("Computing Timestamps for ", curr_name, "\n")
-      
-      if (abs(len - tlen) < 4) {
-        cat("Skipping last ", abs(len-tlen), " elements\n")
-        tlen = min(tlen, len)
-        sdata = subset(sdata, Round < tlen)
+  rm(df)
+  rm(ts)
+
+  return(v)
+}
+
+###############################################################################
+### Read data files
+###############################################################################
+
+get_mode_id = function(mode_str) {  
+  if(length(modes) > 0) {
+    for (id in seq(length(modes))) {
+      if (modes[[id]] == mode_str) {
+        return (id)
       }
-      
-      if (len >= tlen & tlen > 0) {
-        v = c(0)
+    }
+  }
+  modes[[length(modes) + 1]] <<- mode_str
+  return(length(modes))
+}
+
+read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
+
+  data_path = paste(root_dir, data_dir, data_mode_dir, data_date_dir, sep="/")
+  
+  for (file in list.files(path=data_path)) {
+    file_name = paste(data_path,file,sep="/")
     
-        for (j in seq(2,tlen)) {
-          if (tmp_timestamps$Bytes[j] != sdata$SocketEventSize[j]) {
-            cat("Bytes mismatch ",tmp_timestamps$Bytes[j]," ",sdata$SocketEventSize[j])
-          }
-          
-          res = 0
-          if (tmp_timestamps$Timestamp[j] < v[j-1]) {
-            res = v[j-1] + sdata$AdjustedTime[j]
-          } else {
-            res = tmp_timestamps$Timestamp[j] + sdata$AdjustedTime[j]
-          }
-          v = append(v,res)
-          delta = v[j] - v[j-1]
-          if (delta > 500) {
-            cat("Large delta ",delta," at round ", j, " in ", curr_name,"\n")
-          }
-        }
-        v = v - tmp_timestamps$Timestamp[seq(tlen)]
-        sdata$Delay = v
-        sdata$Game = tmp_timestamps$Timestamp[seq(tlen)]
-        sdata$Direction = tmp_timestamps$Direction[seq(tlen)]
-        data = rbind(data,sdata)
+    # Read number of lines in file
+    nrows = as.integer(unlist(unlist(strsplit(system(paste("wc -l ", file_name, sep=""), intern=T)," "))[1]))
+    ncols = length(colnames)
+    
+    # Read file
+    #tmp_data = try(read.table(file_name, col.names=colnames, nrows=nrows,sep=" ",colClasses="numeric",comment.char=""), silent=TRUE)
+    tmp_data = try(matrix(scan(file_name,what=integer(),nmax=nrows*ncols,quiet=TRUE),nrow=nrows,ncol=ncols,byrow=TRUE), silent=TRUE)
+    
+    if (class(tmp_data) != "try-error") {
+      
+      # length of rows, not cols
+      len = length(tmp_data[,1]) 
+      
+      # extract file id
+      id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
+      
+      cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
+      
+      # Add Name id 
+      tmp_data = cbind(tmp_data, rep(id, len))
+      
+      # Add Mode id
+      tmp_data = cbind(tmp_data, rep(mode_id, len))
+              
+      tmp_data = cbind(tmp_data, rep(0, len))
+      tmp_data = cbind(tmp_data, rep(0, len))
+      #tmp_data = cbind(tmp_data, rep(0, len))
+      
+      # Compute delay values
+      if (length(subset(timestamps, name == id)[,1]) > 0) {
+        delays = compute_delays(tmp_data, id)
+        delays_len = length(delays)
+        tmp_data = tmp_data[seq(delays_len), ]
+        cols = length(tmp_data[1,])
+        tmp_data[,cols] = delays
         
+        tmp_data = cbind(tmp_data, delays)
       } else {
-        cat("ERROR Tlen is less than len ",curr_name,"\n")
+        cat("not computing delays\n")
+        tmp_data = cbind(tmp_data, rep(0, len))
       }
+
+      # Set bin number
+      #g = c()
+      #for (j in seq(len)) { g = append(g,floor(j/binwidth)) }
+      #tmp_data$Bin = g
+            
+      all_data[[length(all_data) + 1]] <<- tmp_data
       
+    } else {
+      cat("Error: ", file_name,'\n')
     }
+  }
+}
+
+read_all_data = function() {
+  
+  for (data_mode_dir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
     
-    timestamps = rbind(timestamps, tmp_timestamps)
-  }
-}
-
-for (n in unique(factor(data$name))) {
-  count = length(unique(factor(data$mode)))
-  tmp = subset(data, name == n)
-  for (m in unique(factor(data$mode))) {
-    if (length(subset(tmp,mode == m)) > 0) {
-      count = count - 1
+    data_path = paste(root_dir, data_dir, data_mode_dir, sep="/")
+    
+    data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
+    
+    if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
+      for (data_date_dir in data_date_dirs[seq(1)]) {
+        mode_id = get_mode_id(data_mode_dir)
+        read_data_subdir(data_mode_dir, data_date_dir, mode_id)
+      }
     }
   }
 }
 
-###############################################################################
-### Reformat data 
-###############################################################################
 
-data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
-
-# Remove round times
-graphTimeStats = timeStats[c(-1,-2,-3,-4)]
-
-### Compute OtherTime
-otherTime = data$TimeReal + data$TimeSys
-for (t in graphTimeStats) {
-  otherTime = otherTime - data[t]
-}
-data$OtherTime = otherTime
-
-# Add other time list of time variables
-timeStats = c(timeStats, "OtherTime")
-
-# Plotting parameters
-start_round = 2
-
-# Trim data by start and min rounds 
-data = subset(data, Round < min_size & Round > start_round)
 
 ###############################################################################
 ### Plot Functions 
@@ -432,15 +424,19 @@ do_time_summary_plot = function() {
   filename = paste(name, output_filetype, sep=".")
 
   # reformat data
-  mdata <- melt(data, id=c("Round","name","mode"),measure=graphTimeStats)
+  cat("Reformatting data\n")
+  #mdata <- melt(data, id=c("Round","name","mode"),measure=graphTimeStats)
+  mdata <- melt(data, id=c("mode"),measure=graphTimeStats)
 
   # construct plot
+  cat("Constructing plot\n")
   p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
   p = p + geom_bar(stat="identity") + theme_bw()
   p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
 
   p;
   ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotheight)
+  rm(mdata)
 }
 
 ### Boxplot
@@ -474,131 +470,100 @@ print_round = function(mdata,round) {
 }
 
 ###############################################################################
+###############################################################################
+
+client_type = rev(strsplit(root_dir,"/")[[1]])[1]
+num_threads=4
+
+if (client_type == "tetrinet-klee") {
+  selected_modes = c("nc-4096-64-8", "ch-4096-64", "self", "nc-4096-64-8-t","ch-4096-64-t","self-t")
+  num_threads=4
+} else if (client_type == "xpilot-ng-x11") {
+  selected_modes = c("nc-4096-128-16", "ch-4096-128", "self", "nc-4096-128-16-t","ch-4096-128-t","self-t")
+  num_threads=2
+}
+
+# Read the timestamp data
+read_timestamps()
+
+# Read cliver logs
+read_all_data()
+
+# Convert list of data matrices to a single data frame
+data = as.data.frame(do.call(rbind, all_data))
+rm(all_data)
+colnames(data) = data_frame_col_names
+# Rename integer factors to string names
+for (i in seq(length(modes))) {
+  data$mode[data$mode == i] <- modes[[i]]
+}
+
+# Compute additional stats
+data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
+data$SendInstructions = data$Instructions - data$RecvInstructions
+data$AdjustedTime = data$TimeReal - data$EdDistBuildTime
+data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
+
+# Remove round times from list of time stats to graph
+graphTimeStats = timeStats[c(-1,-2,-3,-4)]
+
+### Compute OtherTime
+otherTime = data$TimeReal + data$TimeSys
+for (t in graphTimeStats) {
+  otherTime = otherTime - data[t]
+}
+data$OtherTime = otherTime
+
+# Add other time list of time variables
+timeStats = c(timeStats, "OtherTime")
+
+# Scale time stats from microsecnds to seconds
+for (tstat in c(timeStats,"Delay")) {
+  data[tstat] = data[tstat] / 1000000.0
+}
+
+# Trim data by start and min rounds 
+data = subset(data, Round > start_round)
+
+###############################################################################
 
 x_axis = "Round"
-num_threads=1
-
-#data = subset(data, name != "13" & name != "04" & name != "11")
-#data = subset(data, mode == "nc-4096-128-16" | mode == "ch-4096-128" | mode == "self")
 
 #data = subset(data, mode == "nc-4096-64-8" | mode == "ch-4096-64" | mode == "self")
-
 #data = subset(data, name != "09" & name != "10")
+#data = subset(data, name != 9 & name != 10)
+#data = subset(data, name != 0 & name != 7)
 
 plotwidth = default_plotwidth
 plotheight = default_plotheight
 
 legend_rows = ceiling(length(unique(factor(data$mode)))/3)
 
+#invisible(gc(reset=TRUE))
+
+# Remove empty stats from plot list
+new_plotnames = NULL
+for (p in plotnames) {
+  if (max(data[[p]]) != 0 | min(data[[p]]) != 0) {
+    new_plotnames = c(new_plotnames, p)
+  }
+}
+plotnames = new_plotnames
+
 do_time_summary_plot()
 
 plotheight = length(unique(data$name))*heightscalefactor
 
-#lapply(plotnames, do_line_plot)
-mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-#mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
-#mclapply(plotnames, do_point_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 
 plotheight = default_plotheight*2
 
-mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
-mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
-mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
-mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
-
-plotheight = length(unique(data$name))*heightscalefactor
-mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
-
-plotheight = default_plotheight*2
-
-mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-
-exit
+results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
 
 ###############################################################################
-
-if (0) {
-plotwidth = default_plotwidth
-plotheight = default_plotheight 
-for (y_axis in plotnames) {
-  x_axis = "Round"
-  name =  paste("plot","boxplot_bar",y_axis,sep="_")
-  cat("plotting (boxplot of): ",x_axis," vs ",y_axis,"\n")
-  title = paste("Boxplot of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(data, aes_string(x="name", y=y_axis)) 
-  #p <- ggplot(data, aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
-  #p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray")
-  
-  p = p + scale_y_log10()
-  #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-  #                      labels = trans_format("log10", math_format(10^.x)))
-  p = p + geom_boxplot(aes(colour=factor(mode),linetype=factor(mode)))
-  
-  #p = p + geom_boxplot(aes(colour=factor(mode),linetype=factor(mode)),outlier.size=1.0) + scale_fill_brewer(palette="OrRd")
-  
-  #p = p + scale_y_log10()
-  #p = p + scale_x_discrete()
-  #p = p + scale_y_continuous(trans = log_trans(10))
-  
-  #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-  #                      labels = trans_format("log10", math_format(10^.x)))
-  
-  p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
-  
-  #p = p + theme_bw()
-  
-  #p = p + facet_grid(. ~ name)
-  #p = p + theme(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + theme(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
- 
-  #p = p + ylab("Time (s)")
-  #p = p + xlab("Trace")
-  #p = p + theme(legend.position="none", axis.text.x=element_text(angle=45))
-  
-  #p = p + cbgColourPalette
-  #p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
-  
-  filename = paste(name, output_filetype, sep=".")
-  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotwidth)
-}
-
-plotheight = default_plotheight 
-special_plotnames = c("Delay")
-for (y_axis in special_plotnames) {
-  x_axis = "Bin"
-  name =  paste("plot","special_boxplot_bar",y_axis,sep="_")
-  cat("plotting (special boxplot of): ",x_axis," vs ",y_axis,"\n")
-  title = paste("Boxplot of",y_axis,"over",min_size,"rounds",sep=" ")
-  p <- ggplot(data, aes(x=factor(Bin), y=Delay)) 
-  #p <- ggplot(data, aes(x=mode, y=Time, ymin = `0%`, lower = `25%`, middle = `50%`, upper = `75%`, ymax = `100%`)) 
-  #p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray")
-  #p = p + geom_boxplot(aes(colour=factor(mode),linetype=factor(mode)))
-  p = p + geom_boxplot()
-  #p = p + geom_boxplot(outlier.size=1.0) #+ scale_fill_brewer(palette="OrRd")
-  #p = p + stat_bin( geom="boxplot")
-  #p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=2)
-  #p = 
-  #p = p + scale_y_log10()
-  p = p + scale_x_discrete()
-  #p = p + scale_y_continuous(trans = log_trans(10))
-  #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-  #                      labels = trans_format("log10", math_format(10^.x)))
-  p = p + theme_bw()
-  #p = p + facet_grid(. ~ name)
-  #p = p + theme(legend.background = theme_rect(), legend.justification=c(0,1), legend.position=c(0,1), legend.title=theme_blank(), axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + theme(axis.title.x = theme_blank(), axis.text.x = theme_blank(), axis.ticks.x = theme_blank()) + ylab("Time (s)")
-  #p = p + theme(ylab("Time (s)")
-  p = p + theme(legend.position="none")+ ylab("Delay (s)")
-
-  #p = p + cbgColourPalette
-  #p = p + theme(title=title, axis.title.x=theme_blank(), axis.text.x=element_text(angle=-90))
-  #p = p + theme(title=title,legend.position="bottom")
-  #p = p + guides(colour = guide_legend(title=NULL, nrow = 2), linetype = guide_legend(title=NULL, nrow = 2))
-  
-  filename = paste(name, output_filetype, sep=".")
-  ggsave(paste(save_dir, filename, sep="/"), width=plotwidth, height=plotwidth)
-}
-}
-
