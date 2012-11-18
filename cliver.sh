@@ -40,7 +40,7 @@ DEBUG_EXECUTION_TREE=0
 DEBUG_ADDRESS_SPACE_GRAPH=0
 DEBUG_STATE_MERGER=0
 DEBUG_NETWORK_MANAGER=0
-DEBUG_SOCKET=0
+DEBUG_SOCKET=1
 DEBUG_SEARCHER=0
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
@@ -150,7 +150,7 @@ cliver_parameters()
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
   cliver_params+="-use-call-paths=0 "
-  cliver_params+="-use-cex-cache=1 "
+  #cliver_params+="-use-cex-cache=1 "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
@@ -184,6 +184,7 @@ run_cliver()
     lbsub $CLIVER_BIN $@
   elif [ $USE_INTERACTIVE_LSF -eq 1 ]; then
     ibsub $CLIVER_BIN $@
+    #gibsub $CLIVER_BIN-bin $@
   elif [ $USE_GDB -eq 1 ]; then
     geval $CLIVER_BIN-bin $@
     exit
@@ -324,7 +325,7 @@ do_ncross_verification()
         fi 
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
-          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+          #cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
           cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "check" ]] ; then

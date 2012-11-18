@@ -273,3 +273,13 @@ ibsub()
   fi
 }
 
+# Interactive gdb bsub function, stdout/stderr not logged
+gibsub()
+{
+  local bsub_command="bsub -C 1MB -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip "
+  eval "echo 'EXEC ($(pwd -P))\$ $bsub_command $@' $LOGGER"
+  if test ! ${DRY_RUN+defined}; then
+    bsub -C 1 -M $(($MAX_MEMORY/1000)) -q $LSF_QUEUE -Ip gdb -ex run --args $@
+  fi
+}
+

@@ -104,6 +104,7 @@ main()
           local tmp_dir="$(basename $(dirname $file) )"
           local training_bc_file="$VERIFY_BC_DIR/$client_base_dir/$DATA_TAG/$tmp_dir/final.bc" 
           local verify_bc_file="$client_dir/$DATA_TAG/$tmp_dir/final.bc"
+          echo "comparing $verify_bc_file and $training_bc_file"
           if ! cmp $training_bc_file $verify_bc_file > /dev/null; then
             echo "cmp failed on $verify_bc_file and $training_bc_file"
             rm $dest
