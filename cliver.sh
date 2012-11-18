@@ -151,6 +151,7 @@ cliver_parameters()
   cliver_params+="-max-memory=$MAX_MEMORY "
   cliver_params+="-use-call-paths=0 "
   #cliver_params+="-use-cex-cache=1 "
+  cliver_params+="-use-canonicalization=1 "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
