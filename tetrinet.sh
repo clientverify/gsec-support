@@ -17,10 +17,11 @@ ROOT_DIR="`pwd`"
 # default config values
 MODE="game"
 COUNT=0
+COUNT_START=0
 MAX_ROUND=50
 DATA_TAG="recent"
 
-while getopts ":vr:j:t:c:m:x:o:" opt; do
+while getopts ":vr:j:t:c:m:x:o:s:" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -40,6 +41,10 @@ while getopts ":vr:j:t:c:m:x:o:" opt; do
 
     c)
       COUNT=$OPTARG
+      ;;
+
+    s)
+      COUNT_START=$OPTARG
       ;;
 
     r)
@@ -131,7 +136,7 @@ then
   do
     for rate in $RATE_VALUES
     do 
-      for i in `seq 0 $COUNT`
+      for i in `seq $COUNT_START $COUNT`
       do
         zpad_ptype=`printf "%02d" $ptype`
         zpad_rate=`printf "%02d" $rate`
@@ -190,7 +195,7 @@ then
   do
     for rate in $RATE_VALUES
     do 
-      for i in `seq 0 $COUNT`
+      for i in `seq $COUNT_START $COUNT`
       do
         zpad_ptype=`printf "%02d" $ptype`
         zpad_rate=`printf "%02d" $rate`
@@ -249,13 +254,14 @@ then
   do
     for rate in $RATE_VALUES
     do 
-      for i in `seq 0 $COUNT`
+      for i in `seq $COUNT_START $COUNT`
       do
         zpad_ptype=`printf "%02d" $ptype`
         zpad_rate=`printf "%02d" $rate`
         zpad_i=`printf "%02d" $i`
         #DESC="tetrinet_"$zpad_i"_type-"$ptype"_rate-"$zpad_rate
         DESC=$MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
+        LOG_FILE=$DESC"_client_socket.log"
         KTEST_FILE=$KTEST_DIR/$DESC"."$KTEST_SUFFIX
 
         while ! [ -e $KTEST_FILE ] 
@@ -272,7 +278,7 @@ then
 
           OPTS=" -inputgenerationtype $INPUT_GEN_TYPE "
           OPTS+="-maxround $MAX_ROUND "
-          OPTS+="-log $LOG_DIR/$DESC.log -ktest $KTEST_FILE "
+          OPTS+="-log $LOG_DIR/$LOG_FILE -ktest $KTEST_FILE "
           #OPTS+="-random -seed $i -slowmode"
           OPTS+=" -autostart -partialtype $ptype -partialrate $rate"
           OPTS+=" $PLAYER_NAME $SERVER_ADDRESS "
