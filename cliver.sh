@@ -15,6 +15,7 @@ HERE="`dirname "$WRAPPER"`"
 VERBOSE_OUTPUT=1
 MAKE_THREADS=4
 USE_LSF=0
+USE_LSF_THREADED=0
 USE_INTERACTIVE_LSF=0
 USE_GDB=0
 USE_HEAP_PROFILER=0
@@ -182,7 +183,11 @@ cliver_parameters()
 run_cliver()
 {
   if [ $USE_LSF -eq 1 ]; then
-    lbsub $CLIVER_BIN $@
+    if [ $USE_LSF_THREADED -eq 1 ]; then
+      ltbsub $CLIVER_BIN $@
+    else
+      lbsub $CLIVER_BIN $@
+    fi
   elif [ $USE_INTERACTIVE_LSF -eq 1 ]; then
     ibsub $CLIVER_BIN $@
     #gibsub $CLIVER_BIN-bin $@
@@ -304,8 +309,6 @@ do_ncross_verification()
 
   for i in $indices; do
     leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
-
-    echo "$i Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
@@ -457,12 +460,20 @@ main()
           interactive*)
             USE_INTERACTIVE_LSF=1
             ;;
+          interactive*)
+            USE_INTERACTIVE_LSF=1
+            ;;
           gdb*)
             DISABLE_OUTPUT=1
             USE_GDB=1
             ;;
           lsf*)
             USE_LSF=1
+            VERBOSE_OUTPUT=0
+            ;;
+          threaded-lsf*)
+            USE_LSF=1
+            USE_LSF_THREADED=1
             VERBOSE_OUTPUT=0
             ;;
         esac
@@ -529,7 +540,8 @@ main()
     esac
   done
 
-  echo "[cliver mode: $CLIVER_MODE]"
+  #echo "[cliver mode: $CLIVER_MODE]"
+  echo "Params: $@"
 
   initialize_root_directories
   initialize_logging $@
@@ -578,7 +590,10 @@ main()
       ;;
 
   esac
-  echo "[elapsed time: $(elapsed_time $start_time)]"
+
+  if [ $USE_LSF -eq 0 ]; then
+    echo "[elapsed time: $(elapsed_time $start_time)]"
+  fi
 }
 
 # Run main
