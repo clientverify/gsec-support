@@ -462,6 +462,11 @@ install_llvm()
 
   leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH 
 
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout checkout $GIT_TAG
+  fi
+
   necho "[Configuring] "
   config_llvm 
 
@@ -608,6 +613,11 @@ install_klee()
 
   leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
 
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout checkout $GIT_TAG
+  fi
+
   necho "[Configuring] "
   config_klee
 
@@ -724,6 +734,11 @@ install_tetrinet()
 
   leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
 
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout checkout $GIT_TAG
+  fi
+
   build_tetrinet
 
   necho "[Done]\n"
@@ -818,6 +833,11 @@ install_xpilot()
 
   leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
 
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout checkout $GIT_TAG
+  fi
+
   config_and_build_xpilot $1
 
   necho "[Done]\n"
@@ -825,7 +845,7 @@ install_xpilot()
 
 main() 
 {
-  while getopts ":afkcivs:br:j:dl" opt; do
+  while getopts ":afkcivs:br:j:dlt:" opt; do
     case $opt in
       a)
         lecho "Forcing alternative gcc"
@@ -888,7 +908,12 @@ main()
         lecho "Using $OPTARG threads"
         MAKE_THREADS=$OPTARG
         ;;
-  
+   
+      t)
+        lecho "Installing versions tagged with $OPTARG"
+        GIT_TAG="$OPTARG"
+        ;;
+
       :)
         echo "Option -$OPTARG requires an argument"
         exit
