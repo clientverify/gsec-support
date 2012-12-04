@@ -1,5 +1,11 @@
 #!/usr/bin/Rscript
 
+###############################################################################
+### README
+# 1. make sure that root_dir is properly defined if running within R{Studio}
+# 2. time_summary_all_plot will require xpilot_data and tetrinet_data to be
+# defined manually in an R interpreter
+###############################################################################
 args=commandArgs(trailingOnly=TRUE)
 
 library(ggplot2)
@@ -35,7 +41,8 @@ colnames = c(
 timeStats = c(
   "TimeFull","TimeReal","TimeSys","Time",
   "SolverTime","SearcherTime","STPTime","CEXTime","QueryConstructTime","ResolveTime",
-  "ExecTreeTime","EdDistTime","EdDistBuildTime","MergeTime","RebuildTime"
+  "ExecTreeTime","EdDistTime","EdDistBuildTime",
+  "EdDistHintTime", "EdDistStatTime","MergeTime","RebuildTime"
 )
 
 timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
@@ -43,7 +50,7 @@ timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
 plotnames = c(
   #colnames[c(-1)],
   "Time",
-  "EditDistMedoidCount",
+  #"EditDistMedoidCount",
   #"ExtraInstructions",
   #"SendInstructions",
   "Delay"
@@ -51,8 +58,8 @@ plotnames = c(
 
 data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
 
-#root_dir="/home/rac/research/test.gsec/results/fast.2/xpilot-ng-x11"
-root_dir="/home/rac/research/test.gsec/results/fast.2/tetrinet-klee"
+root_dir="/home/rac/research/test.gsec/results/fast.2/xpilot-ng-x11"
+#root_dir="/home/rac/research/test.gsec/results/fast.2/tetrinet-klee"
 
 # Read data file location from commandline or use hardcoded value
 if (length(args) > 0) {
@@ -93,17 +100,23 @@ data <- NULL
 ###############################################################################
 
 read_timestamps = function() {
+  trace_count = 0
+  trace_total_time = 0
   for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
     # Read id number of timestamp file, format is str_#_...._client_socket.log
     
     trace = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
     
     tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
-    cat("Reading ",file,", trace: ",trace, "\n")
-    
+    #cat("Reading ",file,", trace: ",trace, "\n")
+
     if (class(tmp_timestamps) == "try-error") {
       cat("try-error reading timestamp file\n")
     } else {
+      trace_total_time = trace_total_time + (tmp_timestamps$Timestamp[length(tmp_timestamps[,1])] - tmp_timestamps$Timestamp[1])
+      trace_count = trace_count + 1
+      
+      cat("Reading ",file,", trace: ",trace, ", time(s): ",trace_total_time,"\n")
       
       # Remove first row
       tmp_timestamps = tmp_timestamps[c(-1),]
@@ -114,10 +127,24 @@ read_timestamps = function() {
       tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
       tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000
 
-     # Add timestamps to global var
+      # Add timestamps to global var
       timestamps <<- rbind(timestamps, tmp_timestamps)
     }
   }
+  trace_total_time
+  cat("Avg Game Length: ",(trace_total_time/trace_count)/60,"(min)\n")
+  total_c2s_bytes = sum(subset(timestamps,Direction == "c2s")[["Bytes"]])
+  total_c2s_count = length(subset(timestamps,Direction == "c2s")[,1]) + 1
+  total_s2c_bytes = sum(subset(timestamps,Direction == "s2c")[["Bytes"]])
+  total_s2c_count = length(subset(timestamps,Direction == "s2c")[,1])
+  message_delay = trace_total_time/(total_c2s_count + total_s2c_count)
+  message_rate = (total_c2s_count + total_s2c_count)/trace_total_time
+  cat("Avg. Intermessage Delay: ",message_delay,"\n")
+  cat("Message Rate: ",message_rate,"\n")
+  cat("8 bit BW increase: ",(total_c2s_count*8)/(total_c2s_bytes*8),"\n")
+  cat("9 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
+  cat("11 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
+  cat("16 bit BW increase: ",(total_c2s_count*16)/(total_c2s_bytes*8),"\n")
 }
 
 adjusted_time = function(df, i) {
@@ -282,8 +309,6 @@ read_all_data = function() {
     }
   }
 }
-
-
 
 ###############################################################################
 ### Plot Functions 
@@ -462,28 +487,84 @@ do_max_plot = function(y_axis) {
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
-
 ### Time summary plot
 do_time_summary_plot = function() {
-  cat("plotting Time summary\n")
-
-  trace =  "time_summary"
+  cat("plotting (time_summary)\n")
+  trace =  paste(client_type,"time_summary",sep="_")
   title = paste("Time Summary")
   file_name = paste(trace, output_filetype, sep=".")
-
+  
   # reformat data
-  cat("Reformatting data\n")
   mdata <- melt(data, id=c("mode"),measure=graphTimeStats)
-
+  cdata <- cast(mdata, mode~variable, sum, margins="grand_col")
+  
+  for (statstr in graphTimeStats) {
+    cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
+  }
+  
   # construct plot
-  cat("Constructing plot\n")
-  p <- ggplot(melt(cast(mdata, mode~variable, sum)),aes(x=mode,y=value,fill=factor(variable)))
-  p = p + geom_bar(stat="identity") + theme_bw()
-  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
-
+  p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
+  p = p + geom_bar(stat="identity", width=.5)
+  
+  p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
+  
+  p = p + theme_bw()
+  
+  p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(axis.title.x=element_blank())
+  p = p + ylab("Verification Time")
+  p = p + guides(fill = guide_legend(title=NULL,reverse=TRUE))
+  
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
   rm(mdata)
+  rm(cdata)
+}
+### Time summary plot
+do_time_summary_all_plot = function() {
+  cat("plotting (time_summary_all)\n")
+  trace =  paste("time_summary",sep="_")
+
+  file_name = paste(trace, output_filetype, sep=".")
+  
+  # reformat data  
+  mdata1 <- melt(xpilot_data, id=c("mode"),measure=graphTimeStats)
+  cdata1 <- cast(mdata1, mode~variable, sum, margins="grand_col")
+  
+  mdata2 <- melt(tetrinet_data, id=c("mode"),measure=graphTimeStats)
+  cdata2 <- cast(mdata2, mode~variable, sum, margins="grand_col")
+  
+  cdata <- rbind(cdata2, cdata1)
+  
+  for (statstr in graphTimeStats) {
+    cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
+  }
+  
+  # remove summary column 
+  cdata[["(all)"]] <- NULL
+
+  # remove SMT column 
+  cdata[["SMT"]] <- NULL
+
+  # construct plot
+  p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
+  p = p + geom_bar(stat="identity", width=.5)
+  
+  p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
+  
+  p = p + theme_bw()
+  
+  p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
+  p = p + scale_x_discrete(labels=c("Tetrinet\nDefault","Tetrinet\nHint","XPilot\nDefault","Xpilot\nHint"))
+
+  p = p + theme(axis.title.x=element_blank())
+  p = p + ylab("Verification Time")
+  p = p + guides(fill = guide_legend(title=NULL,reverse=TRUE))
+
+  p;
+  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
+
 }
 
 ### Boxplot
@@ -596,6 +677,62 @@ do_box_alt_log_plot = function(params) {
   rm(mdata)
 }
 
+## Boxplot
+do_last_message_box_plot = function(y_axis) { 
+  #p_mode = params[[1]]
+  #y_axis = params[[2]]
+  cat("plotting (last message boxplot of): ",x_axis," vs ",y_axis,"\n")
+  
+  ldata = data
+  #last_round_data = list() 
+  for (m in unique(factor(data$mode))) {
+    for (t in unique(factor(data$trace))) {
+      tmp_data = subset(data, mode == m & trace == t)
+      last_message = max(tmp_data$Message)
+      #cat("Last message: ",last_message," in mode: ",m," and trace ",t,"\n")
+      #last_round_data[length(last_round_data)] = subset(tmp_data, Message == last_message)
+      ldata = subset(ldata, (mode != m) | (mode == m & trace != t) | (mode == m & trace == t & Message == last_message))
+    }
+    tmp_data = subset(ldata, mode == m)
+    cat(m,"- mean: ",mean(tmp_data[[y_axis]]),"\n")
+    
+    cat(m,"- median: ",median(tmp_data[[y_axis]]),"\n")
+    
+    cat(m,"- max: ",max(tmp_data[[y_axis]]),"\n")
+    
+    cat(m,"- min: ",min(tmp_data[[y_axis]]),"\n")
+    
+  }
+  cat("Length: ", length(ldata[,1]),"\n")
+  cat(unique(factor(ldata$mode)),"\n")
+  cat(unique(factor(ldata$trace)),"\n")
+  #mdata = as.data.frame(do.call(rbind, last_round_data))
+  
+  # vars
+  trace =  paste(client_type,"boxplot_bar_last_round",y_axis,sep="_")
+  title = paste("Boxplot of last round",y_axis,"over",min_size,"Messages",sep=" ")
+  file_name = paste(trace, output_filetype, sep=".")
+  
+  # construct plot
+  p <- ggplot(ldata, aes_string(x="mode", y=y_axis))
+  p = p + geom_boxplot()
+  p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
+  
+  #min_y = as.integer(floor(min(data[[y_axis]])))
+  #max_y = as.integer(ceiling(max(data[[y_axis]])))
+  #limits_y = c(min_y, max_y)
+  #breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
+  
+  #cat(y_axis," min: ", min(data[[y_axis]])," ", min_y, "\n")
+  #cat(y_axis," max: ", max(data[[y_axis]])," ", max_y, "\n")
+  #p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+  p = p + scale_y_continuous()
+  #p = p + facet_grid(mode ~ .)
+  p = p + theme_bw()
+  p;
+  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
+  rm(mdata)
+}
 
 print_Message = function(mdata,Message) {
   rdata = mdata[match.fun("==")(mdata[["Message"]], Message), ]
@@ -617,23 +754,20 @@ client_type = strsplit(client_type,"-")[[1]][1]
 num_threads=1
 
 if (client_type == "tetrinet") {
-  #selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg+hint-65536-64-8", "self",
-  #                   "self-t", "hint-65536-64-t", "msg+hint-65536-64-8-t")
-  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg+hint-65536-64-8", "self")
-  #selected_modes = c("msg-65536-64-16", "hint-65536-64", "msg+hint-65536-64-16", "self")
-  selected_modes_alt_names = c("Default", "Hint", "Default+Hint", "Self")
-  #selected_modes_alt_names = c("Default", "Hint", "Default+Hint", "Self",
-  #                            "Self-T","Hint-T","Default+Hint-T")
-  num_threads=4
+  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg-256-64-8", "hint-256-64")
+  selected_modes_alt_names = c("Default", "Hint", "Default-Coarse", "Hint-Coarse")
+
+  #selected_modes = c("msg-65536-64-8-t", "hint-65536-64-t")
+  #selected_modes_alt_names = c("Tetrinet Default", "Tetrinet Hint")
+  
   binwidth=10
 } else if (client_type == "xpilot") {
-  #selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg+hint-65536-64-8", "self")
-  #selected_modes_alt_names = c("Default", "Hint", "Default+Hint", "Self")
-  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg+hint-65536-64-8",
-                     "msg-256-64-8", "hint-256-64", "msg+hint-256-64-8")
-  selected_modes_alt_names = c("Default", "Hint", "Default+Hint",
-                               "Default-Coarse", "Hint-Coarse", "Default+Hint-Coarse")
-  #num_threads=2
+  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg-256-64-8", "hint-256-64")
+  selected_modes_alt_names = c("Default", "Hint", "Default-Coarse", "Hint-Coarse")
+  
+  #selected_modes = c("msg-65536-64-8-t", "hint-65536-64-t")
+  #selected_modes_alt_names = c("Xpilot Default", "Xpilot Hint")
+  
   binwidth=100
 }
 cat("Client Type: ",client_type,"\n")
@@ -673,20 +807,28 @@ data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
 data$EdDistBuildTime = data$EdDistBuildTime - data$EdDistHintTime
 data$EdDistTime = data$EdDistTime - data$EdDistStatTime
 
-# Add other time list of time variables
-timeStats = c(timeStats, "OtherTime")
-graphTimeStats = c(graphTimeStats,"OtherTime")
-
 # Scale time stats from microsecnds to seconds
 for (tstat in c(timeStats,"Delay")) {
   data[tstat] = data[tstat] / 1000000.0
 }
 
+# Grouped Time stats
+
+data$ConstraintOpt = data$SolverTime + data$CEXTime
+data$SMT = data$STPTime
+data$EditDistance = data$EdDistTime + data$EdDistBuildTime + data$ExecTreeTime
+data$PathSelection = data$SearcherTime
+data$EquivalentStateDetection = data$MergeTime
+data$KLEE = data$TimeReal + data$TimeSys - data$ConstraintOpt - data$SMT - data$EditDistance - data$PathSelection - data$EdDistStatTime- data$EdDistHintTime - data$EquivalentStateDetection
+
+graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
+graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
+
 # Trim data by start and min Messages 
-data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
+#data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
 
 # Remove erronous traces
-data = subset(data, trace != 19 )
+data = subset(data, trace != 19)
 
 # Remove empty stats from plot list
 new_plotnames = NULL
@@ -714,6 +856,7 @@ if (length(selected_modes) != 0) {
    params[[length(params)+1]] = c(mode_params[[m]], y_params[[y]])
   }
  }
+ plotwidth = default_plotwidth
  plotheight = default_plotheight/2
  results = mclapply(params, do_box_alt_log_plot, mc.cores=num_threads)
  results = mclapply(params, do_box_alt_plot, mc.cores=num_threads)
@@ -721,23 +864,23 @@ if (length(selected_modes) != 0) {
 
 plotwidth = default_plotwidth
 plotheight = default_plotheight*2
-#results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
-
-plotheight = default_plotheight
-do_time_summary_plot()
+results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
+results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
+results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
 
 plotheight = length(unique(data$trace))*heightscalefactor
-#results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
 results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
 results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
+results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 
-plotheight = default_plotheight*2
-#results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
+plotheight = default_plotheight/2
+plotwidth = default_plotwidth*0.75
+do_time_summary_plot()
 
 ###############################################################################
