@@ -464,7 +464,7 @@ install_llvm()
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
-    leval git checkout checkout $GIT_TAG
+    leval git checkout $GIT_TAG
   fi
 
   necho "[Configuring] "
@@ -615,7 +615,7 @@ install_klee()
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
-    leval git checkout checkout $GIT_TAG
+    leval git checkout $GIT_TAG
   fi
 
   necho "[Configuring] "
@@ -736,7 +736,7 @@ install_tetrinet()
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
-    leval git checkout checkout $GIT_TAG
+    leval git checkout $GIT_TAG
   fi
 
   build_tetrinet
@@ -835,7 +835,7 @@ install_xpilot()
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
-    leval git checkout checkout $GIT_TAG
+    leval git checkout $GIT_TAG
   fi
 
   config_and_build_xpilot $1
