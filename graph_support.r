@@ -1,12 +1,8 @@
 #!/usr/bin/Rscript
 
 ###############################################################################
-### README
-# 1. make sure that root_dir is properly defined if running within R{Studio}
-# 2. time_summary_all_plot will require xpilot_data and tetrinet_data to be
-# defined manually in an R interpreter
+# Required Libraries
 ###############################################################################
-args=commandArgs(trailingOnly=TRUE)
 
 library(ggplot2)
 library(plyr)
@@ -38,6 +34,8 @@ colnames = c(
   "QueryCacheHits","QueryCacheMisses","QueryCounstructCount"
 )
 
+data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
+
 timeStats = c(
   "TimeFull","TimeReal","TimeSys","Time",
   "SolverTime","SearcherTime","STPTime","CEXTime","QueryConstructTime","ResolveTime",
@@ -47,37 +45,7 @@ timeStats = c(
 
 timestamp_colnames = c("MSGINFO","Timestamp","Direction","Bytes","SubBytes")
 
-plotnames = c(
-  #colnames[c(-1)],
-  "Time",
-  #"EditDistMedoidCount",
-  #"ExtraInstructions",
-  #"SendInstructions",
-  "Delay"
-)
-
-data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
-
-root_dir="/home/rac/research/test.gsec/results/fast.2/xpilot-ng-x11"
-#root_dir="/home/rac/research/test.gsec/results/fast.2/tetrinet-klee"
-
-# Read data file location from commandline or use hardcoded value
-if (length(args) > 0) {
-  root_dir = args[1]
-}
-cat("Rootdir: ", root_dir, "\n")
-
-data_dir="data"
-output_dir="plots"
-output_filetype="eps"
-timestamp_pattern = "*_client_socket.log"
-timestamp_dir = paste(root_dir,"socketlogs",sep="/")
-
-# Create output dirs
-save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
-dir.create(save_dir, recursive=TRUE)
-
-# Plotting parameters
+# Default parameters
 min_size=.Machine$integer.max
 start_Message = 2
 binwidth=20
@@ -87,6 +55,11 @@ heightscalefactor = 0.75
 heightscalefactor = 0.5
 plotwidth = default_plotwidth
 plotheight = default_plotheight
+x_axis = "Message"
+num_threads=1
+output_filetype="eps"
+timestamp_pattern = "*_client_socket.log"
+data_dir="data"
 
 ### Global Vars
 timestamps <- NULL
@@ -96,12 +69,13 @@ selected_modes = list()
 data <- NULL
 
 ###############################################################################
-### Read Timestamp data
+### Function: Read Timestamp data
 ###############################################################################
 
 read_timestamps = function() {
   trace_count = 0
   trace_total_time = 0
+  timestamp_dir = paste(root_dir,"socketlogs",sep="/")
   for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
     # Read id number of timestamp file, format is str_#_...._client_socket.log
     
@@ -521,51 +495,6 @@ do_time_summary_plot = function() {
   rm(mdata)
   rm(cdata)
 }
-### Time summary plot
-do_time_summary_all_plot = function() {
-  cat("plotting (time_summary_all)\n")
-  trace =  paste("time_summary",sep="_")
-
-  file_name = paste(trace, output_filetype, sep=".")
-  
-  # reformat data  
-  mdata1 <- melt(xpilot_data, id=c("mode"),measure=graphTimeStats)
-  cdata1 <- cast(mdata1, mode~variable, sum, margins="grand_col")
-  
-  mdata2 <- melt(tetrinet_data, id=c("mode"),measure=graphTimeStats)
-  cdata2 <- cast(mdata2, mode~variable, sum, margins="grand_col")
-  
-  cdata <- rbind(cdata2, cdata1)
-  
-  for (statstr in graphTimeStats) {
-    cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
-  }
-  
-  # remove summary column 
-  cdata[["(all)"]] <- NULL
-
-  # remove SMT column 
-  cdata[["SMT"]] <- NULL
-
-  # construct plot
-  p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
-  p = p + geom_bar(stat="identity", width=.5)
-  
-  p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
-  
-  p = p + theme_bw()
-  
-  p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
-  p = p + scale_x_discrete(labels=c("Tetrinet\nDefault","Tetrinet\nHint","XPilot\nDefault","Xpilot\nHint"))
-
-  p = p + theme(axis.title.x=element_blank())
-  p = p + ylab("Verification Time")
-  p = p + guides(fill = guide_legend(title=NULL,reverse=TRUE))
-
-  p;
-  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
-
-}
 
 ### Boxplot
 do_box_plot = function(y_axis) {
@@ -746,141 +675,11 @@ print_Message = function(mdata,Message) {
   }
 }
 
-###############################################################################
-###############################################################################
-
-client_type = rev(strsplit(root_dir,"/")[[1]])[1]
-client_type = strsplit(client_type,"-")[[1]][1]
-num_threads=1
-
-if (client_type == "tetrinet") {
-  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg-256-64-8", "hint-256-64")
-  selected_modes_alt_names = c("Default", "Hint", "Default-Coarse", "Hint-Coarse")
-
-  #selected_modes = c("msg-65536-64-8-t", "hint-65536-64-t")
-  #selected_modes_alt_names = c("Tetrinet Default", "Tetrinet Hint")
-  
-  binwidth=10
-} else if (client_type == "xpilot") {
-  selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg-256-64-8", "hint-256-64")
-  selected_modes_alt_names = c("Default", "Hint", "Default-Coarse", "Hint-Coarse")
-  
-  #selected_modes = c("msg-65536-64-8-t", "hint-65536-64-t")
-  #selected_modes_alt_names = c("Xpilot Default", "Xpilot Hint")
-  
-  binwidth=100
+parse_client_type = function() {
+  client_type = rev(strsplit(root_dir,"/")[[1]])[1]
+  client_type = strsplit(client_type,"-")[[1]][1]
+  return(client_type)
 }
-cat("Client Type: ",client_type,"\n")
-num_threads=1
-
-# Read the timestamp data
-read_timestamps()
-
-# Read cliver logs
-read_all_data()
-
-# Convert list of data matrices to a single data frame
-data = as.data.frame(do.call(rbind, all_data))
-rm(all_data)
-colnames(data) = data_frame_col_names
-
-# Retrace integer factors to string names
-for (i in seq(length(modes))) {
-  data$mode[data$mode == i] <- get_mode_str(i)
-}
-
-# Remove Message times from list of time stats to graph
-graphTimeStats = timeStats[c(-1,-2,-3,-4)]
-
-# Compute OtherTime (total minus all other time stats)
-otherTime = data$TimeReal + data$TimeSys
-for (t in graphTimeStats) {
-  otherTime = otherTime - data[t]
-}
-data$OtherTime = otherTime
-
-# Compute additional stats and sub stat times
-data$ExtraInstructions = data$Instructions - data$ValidPathInstructions
-data$SendInstructions = data$Instructions - data$RecvInstructions
-data$Time = data$TimeReal - data$EdDistHintTime - data$EdDistStatTime
-data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
-data$EdDistBuildTime = data$EdDistBuildTime - data$EdDistHintTime
-data$EdDistTime = data$EdDistTime - data$EdDistStatTime
-
-# Scale time stats from microsecnds to seconds
-for (tstat in c(timeStats,"Delay")) {
-  data[tstat] = data[tstat] / 1000000.0
-}
-
-# Grouped Time stats
-
-data$ConstraintOpt = data$SolverTime + data$CEXTime
-data$SMT = data$STPTime
-data$EditDistance = data$EdDistTime + data$EdDistBuildTime + data$ExecTreeTime
-data$PathSelection = data$SearcherTime
-data$EquivalentStateDetection = data$MergeTime
-data$KLEE = data$TimeReal + data$TimeSys - data$ConstraintOpt - data$SMT - data$EditDistance - data$PathSelection - data$EdDistStatTime- data$EdDistHintTime - data$EquivalentStateDetection
-
-graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
-graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
-
-# Trim data by start and min Messages 
-#data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
-
-# Remove erronous traces
-data = subset(data, trace != 19)
-
-# Remove empty stats from plot list
-new_plotnames = NULL
-for (p in plotnames) {
-  if (max(data[[p]]) != 0 | min(data[[p]]) != 0) {
-    new_plotnames = c(new_plotnames, p)
-  }
-}
-plotnames = new_plotnames
-
-# Compute number of rows needed for legends
-legend_rows = ceiling(length(unique(factor(data$mode)))/3)
 
 ###############################################################################
 
-x_axis = "Message"
-
-# Create individual plots for selected modes
-if (length(selected_modes) != 0) {
- mode_params = selected_modes_alt_names
- y_params = c("Time","Delay")
- params = list()
- for (m in seq(length(mode_params))) {
-  for (y in seq(length(y_params))) {
-   params[[length(params)+1]] = c(mode_params[[m]], y_params[[y]])
-  }
- }
- plotwidth = default_plotwidth
- plotheight = default_plotheight/2
- results = mclapply(params, do_box_alt_log_plot, mc.cores=num_threads)
- results = mclapply(params, do_box_alt_plot, mc.cores=num_threads)
-}
-
-plotwidth = default_plotwidth
-plotheight = default_plotheight*2
-results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
-results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
-results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-
-plotheight = length(unique(data$trace))*heightscalefactor
-results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
-
-plotheight = default_plotheight/2
-plotwidth = default_plotwidth*0.75
-do_time_summary_plot()
-
-###############################################################################
