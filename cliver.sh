@@ -432,6 +432,8 @@ main()
         ;;
 
       f)
+        USE_TEE_BUF=0
+        EXTRA_CLIVER_OPTIONS+=" -minimal-output "
         CLIVER_BIN_FILE="cliver-opt"
         ;;
 
@@ -448,7 +450,7 @@ main()
         ;;
 
       x)
-        EXTRA_CLIVER_OPTIONS="$OPTARG"
+        EXTRA_CLIVER_OPTIONS+="$OPTARG"
         ;;
 
       m)
