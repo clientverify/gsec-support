@@ -146,11 +146,14 @@ install_waffles()
 
   cd $ROOT_DIR/src/$WAFFLES/src
 
-  #necho "[Configuring] "
-  #leval $ROOT_DIR/src/$WAFFLES/configure --prefix=$WAFFLES_ROOT 
+  necho "[Patching] "
+  get_file $WAFFLES_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$WAFFLES
+  cd $ROOT_DIR/src/$WAFFLES
+  leval patch -p1 < $WAFFLES_PATCH_FILE
 
+  cd $ROOT_DIR/src/$WAFFLES/src
   necho "[Compiling] "
-  leval make 
+  leval make
 
   necho "[Installing] "
   mkdir -p $WAFFLES_ROOT
@@ -207,7 +210,6 @@ install_boost()
 
   check_dirs $BOOST || { return 0; }
 
-  #get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST"
   get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/"
 
   cd $ROOT_DIR/src/$BOOST
@@ -237,7 +239,7 @@ install_libunwind()
   leval $ROOT_DIR/src/$LIBUNWIND/configure CFLAGS=\"-U_FORTIFY_SOURCE\" --prefix=$LIBUNWIND_ROOT 
 
   necho "[Compiling] "
-  leval make -j $MAKE_THREADS 
+  leval make -j $MAKE_THREADS
 
   necho "[Installing] "
   mkdir -p $LIBUNWIND_ROOT
@@ -269,7 +271,12 @@ install_google_perftools()
 {
   necho "$GOOGLE_PERFTOOLS\t\t"
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
-  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
+  #get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
+
+  necho "[Cloning] "
+  leval svn co $GOOGLE_PERFTOOLS_SVN $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  cd $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  leval ./autogen.sh
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
@@ -291,14 +298,20 @@ install_google_perftools()
     GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LIBUNWIND_ROOT/lib" 
   fi
 
+  GOOGLE_PERFTOOLS_MAKE_OPTIONS=""
+  if test ${ALTCC+defined}; then
+    GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+    GOOGLE_PERFTOOLS_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+
   leval LD_LIBRARY_PATH=$GOOGLE_PERFTOOLS_LD_LIBRARY_PATH $GOOGLE_PERFTOOLS_CONFIG_COMMAND 
 
   necho "[Compiling] "
-  leval make -j $MAKE_THREADS 
+  leval make -j $MAKE_THREADS $GOOGLE_PERFTOOLS_MAKE_OPTIONS
 
   necho "[Installing] "
   mkdir -p $GOOGLE_PERFTOOLS_ROOT
-  leval make -j $MAKE_THREADS install 
+  leval make -j $MAKE_THREADS $GOOGLE_PERFTOOLS_MAKE_OPTIONS install 
 
   necho "[Done]\n"
 }

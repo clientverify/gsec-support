@@ -7,9 +7,11 @@ LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
 KLEE="klee"
 UCLIBC="klee-uclibc-0.01-x64"
 BOOST="boost_1_51_0"
-GOOGLE_PERFTOOLS="gperftools-2.0"
+#GOOGLE_PERFTOOLS="gperftools-2.0"
+GOOGLE_PERFTOOLS="gperftools"
 UDIS86="udis86-1.7"
-LIBUNWIND="libunwind-1.0.1"
+#LIBUNWIND="libunwind-1.0.1"
+LIBUNWIND="libunwind-1.1"
 SPARSEHASH="sparsehash-2.0.2"
 NCURSES="ncurses-5.7"
 STP="stp"
@@ -28,19 +30,19 @@ TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
 # Source repositories
-GIT_HOST="rac@kudzoo.cs.unc.edu"
-GIT_DIR="/afs/cs.unc.edu/home/rac/repos/research"
+GIT_HOST="rac@compute.cs.unc.edu"
+GIT_DIR="/home/rac/repos/research"
+GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 STP_REV=940
-STP_PATCH_FILE="stp_r$STP_REV.patch"
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 
 # Tarball locations
-PACKAGE_HOST="rac@kudzoo.cs.unc.edu"
-PACKAGE_DIR="$PACKAGE_HOST:/afs/cs.unc.edu/home/rac/public/research/files"
+PACKAGE_HOST="rac@compute.cs.unc.edu"
+PACKAGE_DIR="$PACKAGE_HOST:/home/rac/public/research/files"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
@@ -54,6 +56,11 @@ ZLIB_PACKAGE="$ZLIB.tar.gz"
 WAFFLES_PACKAGE="$WAFFLES.tar.gz"
 EXPAT_PACKAGE="$EXPAT.tar.gz"
 STP_PACKAGE="stp_r$STP_REV.tar.gz"
+
+# Patch Files
+GOOGLE_PERFTOOLS_PATCH_FILE="chromium-20.0.1132.57-glib-2.16-use-siginfo_t.patch"
+STP_PATCH_FILE="stp_r$STP_REV.patch"
+WAFFLES_PATCH_FILE="waffles-types.patch"
 
 # Other
 RUN_PREFIX=$(date +%F.%T)
