@@ -283,20 +283,26 @@ install_google_perftools()
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
 
   necho "[Configuring] "
-  GOOGLE_PERFTOOLS_CONFIG_OPTIONS="LDFLAGS=-L$LIBUNWIND_ROOT/lib/ "
-  GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="CPPFLAGS=-I$LIBUNWIND_ROOT/include/ "
-  GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="LIBS=-lunwind-x86_64 "
-  GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="--prefix=$GOOGLE_PERFTOOLS_ROOT "
+  GOOGLE_PERFTOOLS_CONFIG_OPTIONS="--prefix=$GOOGLE_PERFTOOLS_ROOT "
+
+  if [ "$(uname)" != "Darwin" ] ; then
+    GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="LDFLAGS=-L$LIBUNWIND_ROOT/lib/ "
+    GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="CPPFLAGS=-I$LIBUNWIND_ROOT/include/ "
+    GOOGLE_PERFTOOLS_CONFIG_OPTIONS+="LIBS=-lunwind-x86_64 "
+  fi
 
   GOOGLE_PERFTOOLS_CONFIG_COMMAND="$ROOT_DIR/src/$GOOGLE_PERFTOOLS/configure $GOOGLE_PERFTOOLS_CONFIG_OPTIONS"
 
   # google-perf-tools requires libunwind libraries on x86_64, so we provide
   # the libunwind directory to the compiler for static libraries, and add the libunwind directory
   # to LD_LIBRARY_PATH for shared libraries
-  if test ${LD_LIBRARY_PATH+defined}; then
-    GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$LIBUNWIND_ROOT/lib" 
-  else
-    GOOGLE_PERFTOOLS_LD_LIBRARY_PATH="$LIBUNWIND_ROOT/lib" 
+  GOOGLE_PERFTOOLS_LD_LIBRARY_PATH=""
+  if [ "$(uname)" != "Darwin" ] ; then
+    if test ${LD_LIBRARY_PATH+defined}; then
+      GOOGLE_PERFTOOLS_LD_LIBRARY_PATH+="$LD_LIBRARY_PATH:$LIBUNWIND_ROOT/lib" 
+    else
+      GOOGLE_PERFTOOLS_LD_LIBRARY_PATH+="$LIBUNWIND_ROOT/lib" 
+    fi
   fi
 
   GOOGLE_PERFTOOLS_MAKE_OPTIONS=""
@@ -957,7 +963,11 @@ main()
       install_llvmgcc_from_source
     fi
   
-    install_libunwind
+    # google perftools requires libunwind on x86_64
+    if [ "$(uname)" != "Darwin" ] ; then
+      install_libunwind
+    fi
+
     install_sparsehash
     install_google_perftools
     install_boost
