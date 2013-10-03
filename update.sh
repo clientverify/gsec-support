@@ -272,12 +272,12 @@ install_google_perftools()
 {
   necho "$GOOGLE_PERFTOOLS\t\t"
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
-  #get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
+  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
 
-  necho "[Cloning] "
-  leval svn co $GOOGLE_PERFTOOLS_SVN $ROOT_DIR/src/$GOOGLE_PERFTOOLS
-  cd $ROOT_DIR/src/$GOOGLE_PERFTOOLS
-  leval ./autogen.sh
+  #necho "[Cloning] "
+  #leval svn co $GOOGLE_PERFTOOLS_SVN $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  #cd $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  #leval ./autogen.sh
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
