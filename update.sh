@@ -5,8 +5,9 @@ set -u # Exit if uninitialized value is used
 set -e # Exit on non-true value
 set -o pipefail # exit on fail of any command in a pipe
 
-WRAPPER="`readlink -f "$0"`"
-HERE="`dirname "$WRAPPER"`"
+#WRAPPER="`readlink -f "$0"`"
+#HERE="`dirname "$WRAPPER"`"
+HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Include gsec_common
 . $HERE/gsec_common
@@ -862,7 +863,7 @@ main()
     case $opt in
       a)
         lecho "Forcing alternative gcc"
-        set_alternative_gcc
+        set_alternate_gcc
         ;;
   
       f)

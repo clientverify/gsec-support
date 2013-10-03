@@ -30,8 +30,8 @@ TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="nuklear-support"
 
 # Source repositories
-GIT_HOST="rac@compute.cs.unc.edu"
-GIT_DIR="/home/rac/repos/research"
+GIT_HOST="git@git.cs.unc.edu"
+GIT_DIR="/cliver"
 GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 STP_REV=940
@@ -41,8 +41,10 @@ TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 
 # Tarball locations
-PACKAGE_HOST="rac@compute.cs.unc.edu"
-PACKAGE_DIR="$PACKAGE_HOST:/home/rac/public/research/files"
+#PACKAGE_HOST="rac@compute.cs.unc.edu"
+#PACKAGE_DIR="$PACKAGE_HOST:/home/rac/public/research/files"
+PACKAGE_HOST=""
+PACKAGE_DIR="$HERE/packages"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
@@ -207,9 +209,17 @@ gcc-minor-version() {
 
 set_alternate_gcc()
 {
-  ALTCC=gcc-4.4
-  ALTCXX=g++-4.4
-  GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+  if [ "$(uname)" == "Darwin" ] ; then
+    #ALTCC=gcc-mp-4.4
+    #ALTCXX=g++-mp-4.4
+    ALTCC=$HERE/gcc
+    ALTCXX=$HERE/g++
+    GXX_INCLUDE_DIR="/opt/local/include/gcc44/c++"
+  else
+    ALTCC=gcc-4.4
+    ALTCXX=g++-4.4
+    GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+  fi
   lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
 }
 
@@ -239,7 +249,11 @@ confirm ()
 # (currently using NUM_CPU*2)
 max_threads()
 {
-  grep "^processor" /proc/cpuinfo | tail -n 1 | awk -F' ' '{ printf ($3+1) }'
+  if [ "$(uname)" == "Darwin" ] ; then
+    sysctl hw.ncpu | awk '{print $2}'
+  else
+    grep "^processor" /proc/cpuinfo | tail -n 1 | awk -F' ' '{ printf ($3+1) }'
+  fi
 }
 
 ### Execute command, automatically logs and checks if this is a dry run
