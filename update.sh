@@ -211,18 +211,27 @@ install_boost()
 
   check_dirs $BOOST || { return 0; }
 
-  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/"
+  get_package $BOOST_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$BOOST/"
 
+  mkdir -p $ROOT_DIR/build/$BOOST
   cd $ROOT_DIR/src/$BOOST
 
-  BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
+  #BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
+  #BJAM_OPTIONS="--build-type=complete --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
+  BJAM_OPTIONS=" --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
+
+  if test ${ALTCC+defined}; then
+    echo "using gcc : 4.4 : /usr/bin/g++-4.4 ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
+    BJAM_OPTIONS+=" --toolset=gcc-4.4 "
+  fi
 
   necho "[Compiling] "
   leval ./bootstrap.sh --prefix=$BOOST_ROOT 
-  leval ./bjam $BJAM_OPTIONS 
+  #leval ./bjam $BJAM_OPTIONS
 
   necho "[Installing] "
-  leval ./bjam $BJAM_OPTIONS install 
+  #leval ./bjam $BJAM_OPTIONS install
+  leval ./b2 $BJAM_OPTIONS install
 
   necho "[Done]\n"
 }
