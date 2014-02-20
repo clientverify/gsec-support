@@ -22,7 +22,7 @@ BUILD_LOCAL=0 # build local code, don't checkout from git
 SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
-INSTALL_LLVMGCC_BIN=0
+INSTALL_LLVMGCC_BIN=1
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
@@ -344,7 +344,7 @@ install_uclibc()
 install_llvmgcc_bin()
 {
   necho "$LLVMGCC\t"
-  check_dirs $LLVMGCC || { return 0; }
+  check_dirs "../local/bin/llvm-gcc" || { return 0; }
   get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
   necho "[Done]\n"
 }
@@ -392,7 +392,7 @@ config_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_CONFIG_OPTIONS="--enable-optimized --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
+  LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -469,6 +469,28 @@ update_llvm()
   necho "[Done]\n"
 }
 
+install_llvm_package()
+{
+  necho "$LLVM\t\t"
+  check_dirs $LLVM|| { return 0; }
+  get_package $LLVM_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVM"
+
+  cd $ROOT_DIR"/src"
+
+  necho "[Configuring] "
+  config_llvm 
+
+  necho "[Compiling] "
+  #build_llvm "DISABLE_ASSERTIONS=1 "
+  build_llvm 
+
+  necho "[Installing] "
+  mkdir -p $LLVM_ROOT
+  build_llvm install
+
+  necho "[Done]\n"
+}
+
 install_llvm()
 {
   necho "$LLVM\t\t\t"
@@ -491,7 +513,7 @@ install_llvm()
   config_llvm 
 
   necho "[Compiling] "
-  build_llvm "DISABLE_ASSERTIONS=1 "
+  #build_llvm "DISABLE_ASSERTIONS=1 "
   build_llvm 
 
   necho "[Installing] "
@@ -524,7 +546,8 @@ install_stp()
   local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"
   leval ./scripts/configure $STP_CONFIG_FLAGS
 
-  local STP_MAKE_FLAGS="-j $MAKE_THREADS OPTIMIZE=-O2 CFLAGS_M32= "
+  # Building with multiple threads causes errors
+  local STP_MAKE_FLAGS="OPTIMIZE=-O2 CFLAGS_M32= "
 
   necho "[Compiling] "
   leval make $STP_MAKE_FLAGS
@@ -606,7 +629,8 @@ build_klee()
   local debug_build_options="ENABLE_OPTIMIZED=0 "
   local debug_tag=""
 
-  local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
+  #local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
+  local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
   build_klee_helper "$optimized_build_options" "$optimized_tag"
@@ -865,7 +889,7 @@ install_xpilot()
 
 main() 
 {
-  while getopts ":afkcivs:br:j:dlt:" opt; do
+  while getopts ":afkcivsb:r:j:dlt:" opt; do
     case $opt in
       a)
         lecho "Forcing alternative gcc"
@@ -908,15 +932,15 @@ main()
         VERBOSE_OUTPUT=1
         ;;
   
-      s)
-        lecho "Selective update"
+      b)
+        lecho "Only building $OPTARG"
         SELECTIVE_BUILD=1
         SELECTIVE_BUILD_TARGET="$OPTARG"
         ;;
   
-      b)
-        lecho "Installing llvm-gcc binaries"
-        INSTALL_LLVMGCC_BIN=1
+      s)
+        lecho "Building llvm-gcc from source"
+        INSTALL_LLVMGCC_BIN=0
         ;;
   
       r)
@@ -955,7 +979,7 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
   
-    install_llvm
+    install_llvm_package
   
     if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
       install_llvmgcc_bin
@@ -968,13 +992,11 @@ main()
       install_libunwind
     fi
 
-    install_sparsehash
     install_google_perftools
     install_boost
     install_uclibc
     install_ncurses
     install_zlib
-    install_waffles
     install_expat
     install_stp
     install_klee
