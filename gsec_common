@@ -5,8 +5,8 @@ LLVM="llvm-2.7"
 LLVMGCC="llvm-gcc-4.2-2.7"
 LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
 KLEE="klee"
-UCLIBC="klee-uclibc-0.01-x64"
-#UCLIBC="klee-uclibc"
+#UCLIBC="klee-uclibc-0.01-x64"
+UCLIBC="klee-uclibc"
 BOOST="boost_1_55_0"
 GOOGLE_PERFTOOLS="gperftools-2.1"
 UDIS86="udis86-1.7"
@@ -38,6 +38,8 @@ STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/tru
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
+UCLIBC_GIT="https://github.com/klee/klee-uclibc.git"
+UCLIBC_BRANCH="klee_0_9_29"
 
 # Tarball locations
 #PACKAGE_HOST="rac@compute.cs.unc.edu"
@@ -63,6 +65,7 @@ STP_PACKAGE="stp_r$STP_REV.tar.gz"
 GOOGLE_PERFTOOLS_PATCH_FILE="chromium-20.0.1132.57-glib-2.16-use-siginfo_t.patch"
 STP_PATCH_FILE="stp_r$STP_REV.patch"
 WAFFLES_PATCH_FILE="waffles-types.patch"
+UCLIBC_PATCH_FILE="klee-uclibc-0_9_29.patch"
 
 # Other
 RUN_PREFIX=$(date +%F.%T)

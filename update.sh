@@ -350,6 +350,32 @@ install_uclibc()
   necho "[Done]\n"
 } 
 
+install_uclibc_git()
+{
+  necho "$UCLIBC\t\t"
+  check_dirs $UCLIBC|| { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone --depth 1 --branch $UCLIBC_BRANCH $UCLIBC_GIT
+
+  cd $ROOT_DIR/src/$UCLIBC
+
+  # Patch needed for llvm-2.7 support
+  necho "[Patching for llvm-2.7] "
+  get_file $UCLIBC_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$UCLIBC
+  leval patch -p0 < $UCLIBC_PATCH_FILE
+
+  necho "[Configuring] "
+  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/llvm-gcc --make-llvm-lib
+
+  necho "[Compiling] "
+  leval make 
+
+  necho "[Done]\n"
+
+}
+
 install_llvmgcc_bin()
 {
   necho "$LLVMGCC\t"
@@ -1003,7 +1029,7 @@ main()
 
     install_google_perftools
     install_boost
-    install_uclibc
+    install_uclibc_git
     install_ncurses
     install_zlib
     install_expat
