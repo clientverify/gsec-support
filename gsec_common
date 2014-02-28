@@ -1,9 +1,9 @@
 # This file contains common variables and routines for the gsec scripts *- sh -*
 
 # Packages
-LLVM="llvm-2.7"
+LLVM="llvm-2.9"
 LLVMGCC="llvm-gcc-4.2-2.7"
-LLVMGCC_BIN="llvm-gcc4.2-2.7-x86_64-linux"
+LLVMGCC_BIN="llvm-gcc4.2-2.9-x86_64-linux"
 KLEE="klee"
 #UCLIBC="klee-uclibc-0.01-x64"
 UCLIBC="klee-uclibc"
