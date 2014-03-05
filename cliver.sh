@@ -126,7 +126,8 @@ bc_parameters()
 
 initialize_cliver()
 {
-  CLIVER_BIN="$KLEE_ROOT/bin/$CLIVER_BIN_FILE"
+  #CLIVER_BIN="$KLEE_ROOT/bin/$CLIVER_BIN_FILE"
+  CLIVER_BIN="$KLEE_ROOT/bin/klee -cliver "
 
   if test ${SPECIAL_OUTPUT_DIR+defined}; then
     BASE_OUTPUT_DIR=$DATA_DIR/$SPECIAL_OUTPUT_DIR/$(basename $BC_FILE .bc)
@@ -142,8 +143,14 @@ initialize_cliver()
 
 cliver_parameters()
 {
-  local cliver_params="-posix-runtime -pc-single-line -emit-all-errors -debug-stderr "
-  cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
+  local cliver_params="-posix-runtime -emit-all-errors -debug-stderr "
+  #cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
+  cliver_params+="-check-div-zero=0 -check-overshift=0 "
+  cliver_params+="-optimize -strip-debug "
+  cliver_params+="-use-forked-solver=0 "
+  cliver_params+="-use-query-log=solver:pc "
+  #cliver_params+="-suppress-external-warnings=false "
+  #cliver_params+="-all-external-warnings=true "
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
@@ -152,7 +159,8 @@ cliver_parameters()
   cliver_params+="-max-memory=$MAX_MEMORY "
   cliver_params+="-use-call-paths=0 "
   #cliver_params+="-use-cex-cache=1 "
-  cliver_params+="-use-canonicalization=1 "
+  #cliver_params+="-use-canonicalization=1 "
+  #cliver_params+="-output-istats=1 "
   cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
   cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
   cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
@@ -192,7 +200,8 @@ run_cliver()
     ibsub $CLIVER_BIN $@
     #gibsub $CLIVER_BIN-bin $@
   elif [ $USE_GDB -eq 1 ]; then
-    geval $CLIVER_BIN-bin $@
+    #geval $CLIVER_BIN-bin $@
+    geval $CLIVER_BIN $@
     exit
   elif [ $USE_HEAP_PROFILER -eq 1 ]; then
     leval env HEAPPROFILE=$CLIVER_OUTPUT_DIR/cliver $CLIVER_BIN-bin $@
@@ -201,7 +210,8 @@ run_cliver()
   elif [ $USE_HEAP_CHECK_LOCAL -eq 1 ]; then
     leval env HEAPCHECK=local $CLIVER_BIN-bin $@
   else
-    leval $CLIVER_BIN-bin $@
+    #leval $CLIVER_BIN-bin $@
+    leval $CLIVER_BIN $@
   fi
 }
 

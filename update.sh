@@ -80,7 +80,8 @@ get_package()
 check_dirs()
 {
   if [ -e $ROOT_DIR/src/$1 ] ||
-     [ -e $ROOT_DIR/build/$1 ]; then
+     [ -e $ROOT_DIR/build/$1 ] ||
+     [ -e $1 ] ; then
     if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
       echo "[Skipping] (Already exists, integrity unconfirmed) "
       return 1
@@ -361,13 +362,8 @@ install_uclibc_git()
 
   cd $ROOT_DIR/src/$UCLIBC
 
-  # Patch needed for llvm-2.7 support
-  necho "[Patching for llvm-2.7] "
-  get_file $UCLIBC_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$UCLIBC
-  leval patch -p0 < $UCLIBC_PATCH_FILE
-
   necho "[Configuring] "
-  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/llvm-gcc --make-llvm-lib
+  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
 
   necho "[Compiling] "
   leval make 
@@ -378,8 +374,8 @@ install_uclibc_git()
 
 install_llvmgcc_bin()
 {
-  necho "$LLVMGCC\t"
-  check_dirs "../local/bin/llvm-gcc" || { return 0; }
+  necho "$LLVMGCC_BIN\t"
+  check_dirs "$LLVMGCC_ROOT/bin/$LLVM_CC" || { return 0; }
   get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
   necho "[Done]\n"
 }
@@ -427,7 +423,8 @@ config_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
+  #LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
+  LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --prefix=$LLVM_ROOT "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -444,7 +441,7 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
@@ -598,6 +595,8 @@ config_klee()
   cd $ROOT_DIR/src/$KLEE
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM --with-llvmobj=$ROOT_DIR/build/$LLVM "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
   KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
@@ -618,7 +617,10 @@ make_klee()
   if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
   cd $ROOT_DIR/src/klee
-  KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
+  #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
+  #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
+  #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
+  KLEE_MAKE_OPTIONS="ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
 
   if test ${ALTCC+defined}; then
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
@@ -626,7 +628,8 @@ make_klee()
 
   ### HACK ### need to remove libraries from install location so that
   # old klee/cliver libs are not used before recently compiled libs
-  leval make $KLEE_MAKE_OPTIONS uninstall
+  #FIXME
+  #leval make $KLEE_MAKE_OPTIONS uninstall
 
   leval make $KLEE_MAKE_OPTIONS $TARGET 
 }
@@ -668,7 +671,7 @@ build_klee()
   local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
-  build_klee_helper "$optimized_build_options" "$optimized_tag"
+  #build_klee_helper "$optimized_build_options" "$optimized_tag"
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
@@ -1005,7 +1008,7 @@ main()
 
   initialize_logging $@
 
-  check_gcc_version
+  #check_gcc_version
 
   # record start time
   start_time=$(elapsed_time)
@@ -1014,13 +1017,13 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
   
-    install_llvm_package
-  
     if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
       install_llvmgcc_bin
     else
       install_llvmgcc_from_source
     fi
+  
+    install_llvm_package
   
     # google perftools requires libunwind on x86_64
     if [ "$(uname)" != "Darwin" ] ; then
