@@ -144,9 +144,8 @@ initialize_cliver()
 cliver_parameters()
 {
   local cliver_params="-posix-runtime -emit-all-errors -debug-stderr "
-  #cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
+  cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-check-div-zero=0 -check-overshift=0 "
-  cliver_params+="-optimize -strip-debug "
   cliver_params+="-use-forked-solver=0 "
   cliver_params+="-use-query-log=solver:pc "
   #cliver_params+="-suppress-external-warnings=false "

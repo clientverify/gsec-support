@@ -220,7 +220,9 @@ then
           OPTS=""
           OPTS+="-inputgenerationtype $INPUT_GEN_TYPE "
           OPTS+="-maxround $MAX_ROUND "
-          OPTS+="-log $LOG_DIR/$LOG_FILE -ktest $KTEST_FILE "
+          # Disable logging, causing problems with newer versions of gcc > 4.4 at sockets.c:121
+          #OPTS+="-log $LOG_DIR/$LOG_FILE "
+          OPTS+=" -ktest $KTEST_FILE "
           OPTS+="-random -seed $i "
           OPTS+="-autostart -partialtype $ptype -partialrate $rate "
           OPTS+="$PLAYER_NAME $SERVER_ADDRESS "

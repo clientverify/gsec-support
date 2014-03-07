@@ -226,13 +226,15 @@ install_boost()
     BJAM_OPTIONS+=" --toolset=gcc-4.4 "
   fi
 
-  necho "[Compiling] "
+  necho "[Configuring] "
   leval ./bootstrap.sh --prefix=$BOOST_ROOT 
   #leval ./bjam $BJAM_OPTIONS
 
-  necho "[Installing] "
+  necho "[Compiling] "
   #leval ./bjam $BJAM_OPTIONS install
   leval ./b2 $BJAM_OPTIONS install
+
+  necho "[Installing] "
 
   necho "[Done]\n"
 }
@@ -441,7 +443,8 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
+  #LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
@@ -1034,10 +1037,10 @@ main()
     install_boost
     install_uclibc_git
     install_ncurses
-    install_zlib
-    install_expat
     install_stp
     install_klee
+    install_zlib
+    install_expat
     install_tetrinet
     install_xpilot llvm
     install_xpilot x86
