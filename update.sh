@@ -41,12 +41,15 @@ get_file()
 
   mkdir -p $LOCAL_DEST
 
-  leval scp $REMOTE_PATH/$FILE $LOCAL_DEST/ 
+  if [[ $(expr match $REMOTE_PATH "http") -gt 0 ]]; then
+    leval wget $REMOTE_PATH/$PACKAGE -O $LOCAL_DEST/$PACKAGE
+  else
+    leval scp $REMOTE_PATH/$FILE $LOCAL_DEST/ 
+  fi
 }
 
 get_package()
 {
-  necho "[Extracting] "
   # usage: get_package [package] [remote-path] [local-dest]
   if [[ $# -lt 3 ]]; then
     echo "[Error getting package] "
@@ -62,8 +65,10 @@ get_package()
 
   mkdir -p $LOCAL_DEST
 
-  leval scp $REMOTE_PATH/$PACKAGE $LOCAL_DEST/ 
+  necho "[Downloading] "
+  get_file $PACKAGE $REMOTE_PATH $LOCAL_DEST
 
+  necho "[Extracting] "
   if [ $PACKAGE_TYPE == "gz" ] || [ $PACKAGE_TYPE == "tgz" ]; then
     leval tar $TAR_OPTIONS -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   elif [ $PACKAGE_TYPE == "bz2" ]; then
@@ -1006,6 +1011,8 @@ main()
   
     esac
   done
+
+  lecho "Compiling with $(max_threads) threads"
 
   initialize_root_directories
 
