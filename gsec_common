@@ -24,7 +24,7 @@ XPILOT_NATIVE_PREFIX="x86-"
 
 # Repository Branches
 LLVM_BRANCH="cliver_27"
-KLEE_BRANCH="oakland-upstream-merge"
+KLEE_BRANCH="cliver33"
 TETRINET_BRANCH="enumerate"
 #TETRINET_BRANCH="llvm_33"
 XPILOT_BRANCH="nuklear-support"
