@@ -106,7 +106,7 @@ install_ncurses()
   mkdir -p $ROOT_DIR/build/$NCURSES
   cd $ROOT_DIR/build/$NCURSES
 
-  NCURSES_CONFIG_OPTIONS="--with-shared --without-ada --without-manpages --prefix=$NCURSES_ROOT "
+  NCURSES_CONFIG_OPTIONS="--with-shared --without-ada --without-manpages --prefix=$NCURSES_ROOT --enable-symlinks "
   if test ${ALTCC+defined}; then
     NCURSES_CONFIG_OPTIONS+="CC=$ALTCC LD=$ALTCC "
   fi
@@ -136,11 +136,11 @@ install_zlib()
   leval $ROOT_DIR/src/$ZLIB/configure --prefix=$ZLIB_ROOT 
 
   necho "[Compiling] "
-  leval make -j $MAKE_THREADS 
+  leval make
 
   necho "[Installing] "
   mkdir -p $ZLIB_ROOT
-  leval make -j $MAKE_THREADS install 
+  leval make install
 
   necho "[Done]\n"
 }
