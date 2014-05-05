@@ -933,6 +933,78 @@ install_xpilot()
   necho "[Done]\n"
 }
 
+config_and_build_openssl()
+{
+  local openssl_config_options=""
+  openssl_config_options+="--prefix=${OPENSSL_DIR} "
+  openssl_config_options+="no-asm no-threads no-shared "
+  openssl_config_options+="-d" # compile with debugging symbols
+
+  necho "[Configuring] "
+  leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
+
+  necho "[Compiling] "
+  leval make depend
+  leval make
+  leval make test
+
+  necho "[Installing] "
+  mkdir -p $OPENSSL_DIR
+  leval make install
+}
+
+update_openssl()
+{
+  necho "$OPENSSL  \t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$OPENSSL/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$OPENSSL
+
+  if [ $BUILD_LOCAL -eq 0 ]; then
+    if [ "$(git_current_branch)" != "$OPENSSL_BRANCH" ]; then
+      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+    fi
+    necho "[Checking] "
+    leval git remote update
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      necho "[Pulling] "
+      leval git pull --all
+    fi
+
+    config_and_build_openssl
+  fi
+
+  necho "[Done]\n"
+}
+
+install_openssl()
+{
+  necho "$OPENSSL  \t\t"
+
+  check_dirs $OPENSSL || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone $OPENSSL_GIT $OPENSSL
+
+  cd $ROOT_DIR"/src/$OPENSSL"
+
+  leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
+
+  config_and_build_openssl
+
+  necho "[Done]\n"
+}
+
+###############################################################################
+
 main() 
 {
   while getopts ":afkcivsb:r:j:dlt:" opt; do
@@ -1051,6 +1123,7 @@ main()
     install_tetrinet
     install_xpilot llvm
     install_xpilot x86
+    install_openssl
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     case $SELECTIVE_BUILD_TARGET in 
@@ -1073,6 +1146,9 @@ main()
       xpilot-x86)
         update_xpilot x86 
         ;;
+      openssl)
+        update_openssl
+        ;;
     esac
 
   else
@@ -1082,6 +1158,7 @@ main()
     update_tetrinet
     update_xpilot llvm
     update_xpilot x86
+    update_openssl
   
   fi
   

@@ -21,6 +21,7 @@ EXPAT="expat-2.0.1"
 XPILOT="xpilot"
 XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
+OPENSSL="openssl"
 
 # Repository Branches
 LLVM_BRANCH="cliver_27"
@@ -28,6 +29,7 @@ KLEE_BRANCH="cliver33"
 TETRINET_BRANCH="enumerate"
 #TETRINET_BRANCH="llvm_33"
 XPILOT_BRANCH="nuklear-support"
+OPENSSL_BRANCH="heartbleed"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -41,6 +43,7 @@ TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 UCLIBC_GIT="https://github.com/klee/klee-uclibc.git"
 UCLIBC_BRANCH="klee_0_9_29"
+OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 
 # Tarball locations
 #PACKAGE_HOST="rac@compute.cs.unc.edu"
@@ -97,6 +100,7 @@ initialize_root_directories()
   WAFFLES_ROOT="$ROOT_DIR/local"
   EXPAT_ROOT="$ROOT_DIR/local"
   XPILOT_ROOT="$ROOT_DIR/local"
+  OPENSSL_DIR="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
 }
 
