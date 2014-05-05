@@ -42,7 +42,7 @@ get_file()
   mkdir -p $LOCAL_DEST
 
   if [[ $(expr match $REMOTE_PATH "http") -gt 0 ]]; then
-    leval wget $REMOTE_PATH/$PACKAGE -O $LOCAL_DEST/$PACKAGE
+    leval wget $REMOTE_PATH/$FILE -O $LOCAL_DEST/$FILE
   else
     leval scp $REMOTE_PATH/$FILE $LOCAL_DEST/ 
   fi
@@ -222,9 +222,9 @@ install_boost()
   mkdir -p $ROOT_DIR/build/$BOOST
   cd $ROOT_DIR/src/$BOOST
 
-  #BJAM_OPTIONS="--without-mpi --without-python --without-regex -j$MAKE_THREADS"
+  #BJAM_OPTIONS=" --without-regex -j$MAKE_THREADS"
   #BJAM_OPTIONS="--build-type=complete --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
-  BJAM_OPTIONS=" --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
+  BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
 
   if test ${ALTCC+defined}; then
     echo "using gcc : 4.4 : /usr/bin/g++-4.4 ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
@@ -581,6 +581,10 @@ install_stp()
     get_file $STP_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$STP
     leval patch -p0 < $STP_PATCH_FILE
   fi
+
+  necho "[Patching] "
+  get_file $STP_THREAD_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$STP
+  leval patch -p1 < $STP_THREAD_PATCH_FILE
 
   necho "[Configuring] "
   local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"

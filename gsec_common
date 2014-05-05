@@ -68,6 +68,7 @@ STP_PACKAGE="stp_r$STP_REV.tar.gz"
 # Patch Files
 GOOGLE_PERFTOOLS_PATCH_FILE="chromium-20.0.1132.57-glib-2.16-use-siginfo_t.patch"
 STP_PATCH_FILE="stp_r$STP_REV.patch"
+STP_THREAD_PATCH_FILE="stp_r"$STP_REV"_thread.patch"
 WAFFLES_PATCH_FILE="waffles-types.patch"
 UCLIBC_PATCH_FILE="klee-uclibc-0_9_29.patch"
 
