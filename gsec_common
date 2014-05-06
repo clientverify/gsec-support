@@ -25,7 +25,7 @@ OPENSSL="openssl"
 
 # Repository Branches
 LLVM_BRANCH="cliver_27"
-KLEE_BRANCH="cliver33"
+KLEE_BRANCH="cliver-parallel"
 TETRINET_BRANCH="enumerate"
 #TETRINET_BRANCH="llvm_33"
 XPILOT_BRANCH="nuklear-support"
