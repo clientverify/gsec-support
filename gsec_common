@@ -29,7 +29,6 @@ LLVM_BRANCH="cliver_27"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="cliver-parallel"
 TETRINET_BRANCH="enumerate"
-#TETRINET_BRANCH="llvm_33"
 XPILOT_BRANCH="nuklear-support"
 OPENSSL_BRANCH="heartbleed"
 
@@ -49,9 +48,6 @@ UCLIBC_BRANCH="klee_0_9_29"
 OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 
 # Tarball locations
-#PACKAGE_HOST="rac@compute.cs.unc.edu"
-#PACKAGE_DIR="$PACKAGE_HOST:/home/rac/public/research/files"
-#PACKAGE_DIR="$HERE/packages"
 PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
@@ -69,7 +65,7 @@ EXPAT_PACKAGE="$EXPAT.tar.gz"
 STP_PACKAGE="stp_r$STP_REV.tar.gz"
 
 # Patch Files
-GOOGLE_PERFTOOLS_PATCH_FILE="chromium-20.0.1132.57-glib-2.16-use-siginfo_t.patch"
+PATCH_DIR="$HERE/patches"
 STP_PATCH_FILE="stp_r$STP_REV.patch"
 STP_THREAD_PATCH_FILE="stp_r"$STP_REV"_thread.patch"
 WAFFLES_PATCH_FILE="waffles-types.patch"

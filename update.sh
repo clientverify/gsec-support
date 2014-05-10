@@ -154,7 +154,7 @@ install_waffles()
   cd $ROOT_DIR/src/$WAFFLES/src
 
   necho "[Patching] "
-  get_file $WAFFLES_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$WAFFLES
+  get_file $WAFFLES_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$WAFFLES
   cd $ROOT_DIR/src/$WAFFLES
   leval patch -p1 < $WAFFLES_PATCH_FILE
 
@@ -638,12 +638,12 @@ install_stp()
   local OLD_FLEX=$(flex --version | awk -F '[ .]' '{ print ($$(NF-2) < 2 || $$(NF-2) == 2 && ($$(NF-1) < 5 || $$(NF-1) == 5 && $$NF < 20)) }')
   if [ $OLD_FLEX -eq 0 ]; then
     necho "[Patching] "
-    get_file $STP_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$STP
+    get_file $STP_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$STP
     leval patch -p0 < $STP_PATCH_FILE
   fi
 
   necho "[Patching] "
-  get_file $STP_THREAD_PATCH_FILE $PACKAGE_DIR $ROOT_DIR/src/$STP
+  get_file $STP_THREAD_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$STP
   leval patch -p1 < $STP_THREAD_PATCH_FILE
 
   necho "[Configuring] "
