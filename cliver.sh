@@ -147,29 +147,61 @@ cliver_parameters()
   cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-check-div-zero=0 -check-overshift=0 "
   cliver_params+="-use-forked-solver=0 "
-  cliver_params+="-use-query-log=solver:pc "
+  #cliver_params+="-use-query-log=solver:pc "
   #cliver_params+="-suppress-external-warnings=false "
   #cliver_params+="-all-external-warnings=true "
+  cliver_params+="-use-call-paths=0 "
+  cliver_params+="-use-cex-cache=0 "
+  cliver_params+="-use-canonicalization=1 "
+  cliver_params+="-output-istats=0 "
+
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
   cliver_params+="-libc=$CLIVER_LIBC "
   cliver_params+="-switch-type=$SWITCH_TYPE "
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
   cliver_params+="-max-memory=$MAX_MEMORY "
-  cliver_params+="-use-call-paths=0 "
-  #cliver_params+="-use-cex-cache=1 "
-  #cliver_params+="-use-canonicalization=1 "
-  #cliver_params+="-output-istats=1 "
-  cliver_params+="-always-print-object-bytes=$PRINT_OBJECT_BYTES " 
-  cliver_params+="-debug-execution-tree=$DEBUG_EXECUTION_TREE "
-  cliver_params+="-debug-address-space-graph=$DEBUG_ADDRESS_SPACE_GRAPH " 
-  cliver_params+="-debug-state-merger=$DEBUG_STATE_MERGER "
-  cliver_params+="-debug-network-manager=$DEBUG_NETWORK_MANAGER "
-  cliver_params+="-debug-socket=$DEBUG_SOCKET "
-  cliver_params+="-debug-searcher=$DEBUG_SEARCHER "
-  #cliver_params+="-debug-print-instructions=$PRINT_INSTRUCTIONS "
-  cliver_params+="-debug-print-execution-events=$DEBUG_PRINT_EXECUTION_EVENTS "
-  #cliver_params+="-no-output=$DISABLE_OUTPUT "
+
+  if [ $PRINT_OBJECT_BYTES -eq 1 ]; then
+    cliver_params+="-always-print-object-bytes " 
+  fi
+
+  if [ $DEBUG_SEARCHER -eq 1 ]; then
+    cliver_params+="-debug-searcher "
+  fi
+
+  if [ $DEBUG_EXECUTION_TREE -eq 1 ]; then
+    cliver_params+="-debug-execution-tree "
+  fi
+
+  if [ $DEBUG_ADDRESS_SPACE_GRAPH -eq 1 ]; then
+    cliver_params+="-debug-address-space-graph " 
+  fi
+
+  if [ $DEBUG_STATE_MERGER -eq 1 ]; then
+    cliver_params+="-debug-state-merger "
+  fi
+
+  if [ $DEBUG_NETWORK_MANAGER -eq 1 ]; then
+    cliver_params+="-debug-network-manager "
+  fi
+
+  if [ $DEBUG_SOCKET -eq 1 ]; then
+    cliver_params+="-debug-socket "
+  fi
+
+  if [ $PRINT_INSTRUCTIONS -eq 1 ]; then
+    cliver_params+="-debug-print-instructions "
+  fi
+
+  if [ $DEBUG_PRINT_EXECUTION_EVENTS -eq 1 ]; then
+    cliver_params+="-debug-print-execution-events "
+  fi
+
+  if [ $DISABLE_OUTPUT -eq 1 ]; then
+    cliver_params+="-no-output=1 "
+  fi
+
   cliver_params+=" $EXTRA_CLIVER_OPTIONS "
 
   # BC specific cliver options
