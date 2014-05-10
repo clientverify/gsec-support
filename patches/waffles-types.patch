@@ -1,0 +1,23 @@
+diff -rupN waffles/src/GClasses/GApp.h waffles-2011-12-6/src/GClasses/GApp.h
+--- waffles/src/GClasses/GApp.h	2011-10-31 19:26:54.000000000 -0700
++++ waffles-2011-12-6/src/GClasses/GApp.h	2013-07-06 19:01:10.832560696 -0700
+@@ -13,6 +13,8 @@
+ #define __GAPP_H__
+ 
+ #include <stddef.h>
++#include <sys/types.h>
++#include <unistd.h>
+ #include "GError.h"
+ #ifdef WINDOWS
+ #	include <windows.h>
+diff -rupN waffles/src/GClasses/GFile.h waffles-2011-12-6/src/GClasses/GFile.h
+--- waffles/src/GClasses/GFile.h	2011-11-29 14:53:56.000000000 -0800
++++ waffles-2011-12-6/src/GClasses/GFile.h	2013-07-06 19:06:29.720576129 -0700
+@@ -14,6 +14,7 @@
+ 
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#include <unistd.h>
+ #include <fcntl.h>
+ #include <istream>
+ #include <vector>

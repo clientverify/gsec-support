@@ -1,0 +1,35 @@
+--- src/parser/Makefile.orig	2012-10-26 13:38:27.543486000 -0400
++++ src/parser/Makefile	2012-10-26 13:39:11.517177000 -0400
+@@ -2,7 +2,7 @@
+ include $(TOP)/scripts/Makefile.common
+ 
+ #`From the flex manual>: -Cfe' is often a good compromise between speed and size for production scanners.
+-LEX=flex -Cfe
++LEX=flex -Ce
+ YACC=bison -d -y --debug -v
+ 
+ SRCS = lexCVC.cpp parseCVC.cpp parseSMT.cpp lexSMT.cpp LetMgr.cpp parse2SMT.cpp lex2SMT.cpp
+@@ -17,6 +17,7 @@
+ 
+ lexCVC.cpp:	CVC.lex parseCVC_defs.h ../AST/AST.h
+ 		$(LEX)  -olexCVC.cpp -Pcvc CVC.lex
++		echo "int cvclex_destroy(void) { return 0; }" >> $@
+ 
+ #For rules with multiple targets. Make runs the rule once for each
+ #target.  These rules are "pattern rules" which only run once (rather
+@@ -29,6 +30,7 @@
+ 
+ lexSMT.cpp:	parseSMT_defs.h smtlib.lex ../AST/AST.h
+ 		$(LEX) -olexSMT.cpp -Psmt smtlib.lex 
++		echo "int smtlex_destroy(void) { return 0; }" >> $@
+ 
+ parseSM%_defs.h parseSM%.cpp:smtlib.y
+ 		$(YACC) -o smt.tab.c -p smt smtlib.y
+@@ -37,6 +39,7 @@
+ 
+ lex2SMT.cpp: parse2SMT_defs.h smtlib2.lex ../AST/AST.h
+ 		$(LEX) -olex2SMT.cpp -Psmt2 smtlib2.lex 
++		echo "int smt2lex_destroy(void) { return 0; }" >> $@
+ 
+ parse2SM%_defs.h parse2SM%.cpp:smtlib2.y
+ 		$(YACC) -o smt2.tab.c -p smt2 smtlib2.y

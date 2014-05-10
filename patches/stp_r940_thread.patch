@@ -1,0 +1,43 @@
+--- stp.orig/src/c_interface/c_interface.cpp	2014-05-01 22:03:50.484615367 -0400
++++ stp/src/c_interface/c_interface.cpp	2014-03-31 21:10:15.608336345 -0400
+@@ -25,7 +25,7 @@
+ typedef BEEV::AbsRefine_CounterExample * ctrexamplestar;
+ typedef BEEV::ASTVec                     nodelist;
+ typedef BEEV::CompleteCounterExample*    CompleteCEStar;
+-BEEV::ASTVec *decls = NULL;
++__thread BEEV::ASTVec *decls = NULL;
+ //vector<BEEV::ASTNode *> created_exprs;
+ 
+ // persist holds a copy of ASTNodes so that the reference count of
+--- stp.orig/src/main/Globals.cpp	2014-05-01 22:03:50.408616322 -0400
++++ stp/src/main/Globals.cpp	2014-04-04 18:12:30.980455855 -0400
+@@ -16,11 +16,11 @@
+   enum inputStatus input_status = NOT_DECLARED;
+ 
+   //Originally just used by the parser, now used elesewhere.
+-  STP     * GlobalSTP;
+-  STPMgr  * ParserBM;
++  __thread STP     * GlobalSTP;
++  __thread STPMgr  * ParserBM;
+ 
+   // Used exclusively for parsing.
+-  ParserInterface * parserInterface;
++  __thread ParserInterface * parserInterface;
+ 
+   void (*vc_error_hdlr)(const char* err_msg) = NULL;
+ 
+--- stp.orig/src/main/Globals.h	2014-05-01 22:03:50.412616272 -0400
++++ stp/src/main/Globals.h	2014-04-04 18:12:32.212440367 -0400
+@@ -72,9 +72,9 @@
+   extern ASTNode ASTFalse, ASTTrue, ASTUndefined;
+ 
+   //Useful global variables. Use for parsing only
+-  extern  STP * GlobalSTP;
+-  extern  STPMgr * ParserBM;
+-  extern ParserInterface * parserInterface;
++  extern __thread STP * GlobalSTP;
++  extern __thread STPMgr * ParserBM;
++  extern __thread ParserInterface * parserInterface;
+ 
+   //Some constant global vars for the Main function. Once they are
+   //set, these globals will remain constants. These vars are not used
