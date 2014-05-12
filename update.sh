@@ -425,6 +425,57 @@ install_llvmgcc_from_source()
   necho "[Done]\n"
 }
 
+update_wllvm()
+{
+  necho "$WLLVM\t"
+
+  if [ ! -e "$ROOT_DIR/src/$WLLVM/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$WLLVM
+
+  if [ $BUILD_LOCAL -eq 0 ]; then
+    if [ "$(git_current_branch)" != "$WLLVM_BRANCH" ]; then
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+    fi
+    necho "[Checking] "
+    leval git remote update
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      necho "[Pulling] "
+      leval git pull --all
+    fi
+
+    # No build step necessary (just python wrapper)
+  fi
+
+  necho "[Done]\n"
+}
+
+install_wllvm()
+{
+  necho "$WLLVM\t"
+
+  check_dirs $WLLVM || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone $WLLVM_GIT $WLLVM
+
+  cd $ROOT_DIR"/src/$WLLVM"
+
+  leval git checkout -b $WLLVM_BRANCH origin/$WLLVM_BRANCH
+
+  # No build step necessary (just python wrapper)
+
+  necho "[Done]\n"
+}
+
+
 config_llvm ()
 { 
   mkdir -p $ROOT_DIR/build/$LLVM
@@ -733,7 +784,7 @@ update_klee()
 
   if [ $BUILD_LOCAL -eq 0 ]; then
     if [ "$(git_current_branch)" != "$KLEE_BRANCH" ]; then
-      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
     fi
 
     necho "[Checking] "
@@ -788,7 +839,7 @@ update_tetrinet()
 
   if [ $BUILD_LOCAL -eq 0 ]; then
     if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
-      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
     fi
     
     necho "[Checking] "
@@ -891,7 +942,7 @@ update_xpilot()
 
   if [ $BUILD_LOCAL -eq 0 ]; then
     if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
-      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
     fi
     
     necho "[Checking] "
@@ -970,7 +1021,7 @@ update_openssl()
 
   if [ $BUILD_LOCAL -eq 0 ]; then
     if [ "$(git_current_branch)" != "$OPENSSL_BRANCH" ]; then
-      echo "[Error] (unkown git branch "$(git_current_branch)") "; exit;
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
     fi
     necho "[Checking] "
     leval git remote update
@@ -1117,6 +1168,7 @@ main()
       install_libunwind
     fi
 
+    install_wllvm
     install_google_perftools
     install_boost
     install_uclibc_git
@@ -1160,6 +1212,7 @@ main()
     # update all
     # currently llvm is not using the git repo
     # update_llvm
+    update_wllvm
     update_klee
     update_tetrinet
     update_xpilot llvm
