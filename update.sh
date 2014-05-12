@@ -464,6 +464,7 @@ update_llvm()
 {
   necho "$LLVM\t\t\t"
 
+  # FIXME: currently llvm does not use git
   if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
   fi
@@ -1157,7 +1158,8 @@ main()
 
   else
     # update all
-    update_llvm
+    # currently llvm is not using the git repo
+    # update_llvm
     update_klee
     update_tetrinet
     update_xpilot llvm
