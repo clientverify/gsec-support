@@ -466,11 +466,19 @@ install_wllvm()
   necho "[Cloning] "
   leval git clone $WLLVM_GIT $WLLVM
 
-  cd $ROOT_DIR"/src/$WLLVM"
+  WLLVM_SRC_DIR=$ROOT_DIR"/src/$WLLVM"
+  cd $WLLVM_SRC_DIR
 
-  leval git checkout -b $WLLVM_BRANCH origin/$WLLVM_BRANCH
+  leval git checkout $WLLVM_BRANCH
 
   # No build step necessary (just python wrapper)
+
+  necho "[Installing] "
+  cd ${WLLVM_ROOT}/bin
+  cp -a $WLLVM_SRC_DIR/wllvm .
+  cp -a $WLLVM_SRC_DIR/wllvm++ .
+  cp -a $WLLVM_SRC_DIR/extract-bc .
+  cp -a $WLLVM_SRC_DIR/driver .
 
   necho "[Done]\n"
 }
@@ -994,7 +1002,7 @@ install_xpilot()
 config_and_build_openssl()
 {
   local openssl_config_options=""
-  openssl_config_options+="--prefix=${OPENSSL_DIR} "
+  openssl_config_options+="--prefix=${OPENSSL_ROOT} "
   openssl_config_options+="no-asm no-threads no-shared "
   openssl_config_options+="-d" # compile with debugging symbols
 
@@ -1007,7 +1015,7 @@ config_and_build_openssl()
   leval make test
 
   necho "[Installing] "
-  mkdir -p $OPENSSL_DIR
+  mkdir -p $OPENSSL_ROOT
   leval make install
 }
 

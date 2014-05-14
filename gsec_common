@@ -26,7 +26,7 @@ OPENSSL="openssl"
 
 # Repository Branches
 LLVM_BRANCH="cliver_27"
-WLLVM_BRANCH="master"
+WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="cliver-parallel"
 TETRINET_BRANCH="enumerate"
 #TETRINET_BRANCH="llvm_33"
@@ -95,6 +95,7 @@ initialize_root_directories()
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
   LLVM_ROOT="$ROOT_DIR/local"
+  WLLVM_ROOT="$ROOT_DIR/local"
   BOOST_ROOT="$ROOT_DIR/local"
   LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC_BIN"
   LIBUNWIND_ROOT="$ROOT_DIR/local"
@@ -106,7 +107,7 @@ initialize_root_directories()
   WAFFLES_ROOT="$ROOT_DIR/local"
   EXPAT_ROOT="$ROOT_DIR/local"
   XPILOT_ROOT="$ROOT_DIR/local"
-  OPENSSL_DIR="$ROOT_DIR/local"
+  OPENSSL_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
 }
 
