@@ -77,8 +77,8 @@ LSF_QUEUE="day"
 #LSF_QUEUE="hour"
 #LSF_QUEUE="debug"
 XLIB_DIR="gsec-support/Xlibs"
-GNU_SHARED_LIBS=/usr/lib/gcc/x86_64-linux-gnu/4.6.3  # works on Ubuntu 12.04
-GNU_INCLUDE=/usr/include/x86_64-linux-gnu # works on Ubuntu 12.04
+GLIBC_INCLUDE_PATH=/usr/include/x86_64-linux-gnu    # works on Ubuntu 12.04
+GLIBC_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu        # works on Ubuntu 12.04
 
 initialize_root_directories() 
 {

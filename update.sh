@@ -412,7 +412,7 @@ install_llvmgcc_from_source()
 
   if test ${ALTCC+defined}; then
     # HACK for LLVM 2.7 + GCC 4.2 support: needs path to crti.o
-    LLVMGCC_MAKE_OPTIONS+="LIBRARY_PATH=/usr/lib/x86_64-linux-gnu "
+    LLVMGCC_MAKE_OPTIONS+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
   fi
 
   necho "[Compiling] "
@@ -1006,13 +1006,30 @@ config_and_build_openssl()
   openssl_config_options+="no-asm no-threads no-shared "
   openssl_config_options+="-d" # compile with debugging symbols
 
+  local make_options=""
+  make_options+="CC=wllvm "
+  make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
+  make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+
+  export LLVM_COMPILER="llvm-gcc"
+  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+
+  # Create 'makedepend' replacement
+  MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
+  echo "#!/bin/bash" > "${MAKEDEPEND}"
+  echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
+  chmod +x "${MAKEDEPEND}"
+
   necho "[Configuring] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
   necho "[Compiling] "
-  leval make depend
-  leval make
-  leval make test
+  leval make $make_options depend
+  leval make $make_options
+
+  necho "[Testing] "
+  leval make $make_options test
 
   necho "[Installing] "
   mkdir -p $OPENSSL_ROOT
