@@ -491,6 +491,7 @@ config_llvm ()
 
   #LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
   LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --prefix=$LLVM_ROOT "
+  LLVM_CONFIG_OPTIONS+="--enable-libffi "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
