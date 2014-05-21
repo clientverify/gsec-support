@@ -578,6 +578,10 @@ install_llvm_package()
 
   cd $ROOT_DIR"/src"
 
+  necho "[Patching] "
+  cd "$ROOT_DIR/src/$LLVM"
+  leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
+
   necho "[Configuring] "
   config_llvm 
 
