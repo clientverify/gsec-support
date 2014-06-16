@@ -1009,7 +1009,8 @@ config_and_build_openssl()
   local openssl_config_options=""
   openssl_config_options+="--prefix=${OPENSSL_ROOT} "
   openssl_config_options+="no-asm no-threads no-shared "
-  openssl_config_options+="-d" # compile with debugging symbols
+  openssl_config_options+="-DCLIVER "
+  openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
