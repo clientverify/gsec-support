@@ -267,6 +267,16 @@ max_threads()
   fi
 }
 
+### Execute command in background, automatically logs and checks if this is a dry run
+beval()
+{
+  eval "echo 'EXEC ($(pwd -P))\$ $@' $LOGGER"
+  if test ! ${DRY_RUN+defined}; then
+    $@ $LOGGER & 
+  fi
+}
+
+
 ### Execute command, automatically logs and checks if this is a dry run
 leval()
 {
