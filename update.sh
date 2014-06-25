@@ -491,7 +491,7 @@ config_llvm ()
 
   #LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
   LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--enable-libffi "
+  #LLVM_CONFIG_OPTIONS+="--enable-libffi "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -577,6 +577,10 @@ install_llvm_package()
   get_package $LLVM_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVM"
 
   cd $ROOT_DIR"/src"
+
+  necho "[Patching] "
+  cd "$ROOT_DIR/src/$LLVM"
+  leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
 
   necho "[Configuring] "
   config_llvm 
@@ -1004,8 +1008,9 @@ config_and_build_openssl()
 {
   local openssl_config_options=""
   openssl_config_options+="--prefix=${OPENSSL_ROOT} "
-  openssl_config_options+="no-asm no-threads no-shared "
-  openssl_config_options+="-d" # compile with debugging symbols
+  openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
+  openssl_config_options+="-DCLIVER "
+  openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "

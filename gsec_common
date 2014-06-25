@@ -66,6 +66,7 @@ STP_PACKAGE="stp_r$STP_REV.tar.gz"
 
 # Patch Files
 PATCH_DIR="$HERE/patches"
+LLVM_PATCH_FILE="llvm-2.9.patch"
 STP_PATCH_FILE="stp_r$STP_REV.patch"
 STP_THREAD_PATCH_FILE="stp_r"$STP_REV"_thread.patch"
 WAFFLES_PATCH_FILE="waffles-types.patch"
