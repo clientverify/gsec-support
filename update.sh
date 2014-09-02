@@ -365,7 +365,7 @@ install_uclibc_git()
   cd $ROOT_DIR"/src"
 
   necho "[Cloning] "
-  leval git clone --depth 1 --branch $UCLIBC_BRANCH $UCLIBC_GIT
+  leval git clone --branch $UCLIBC_BRANCH $UCLIBC_GIT
 
   cd $ROOT_DIR/src/$UCLIBC
 
@@ -1018,7 +1018,7 @@ config_and_build_openssl()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER="llvm-gcc"
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH}"
+  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
