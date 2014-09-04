@@ -1209,13 +1209,13 @@ main()
     install_uclibc_git
     install_ncurses
     install_stp
+    install_openssl
     install_klee
     install_zlib
     install_expat
     install_tetrinet
     install_xpilot llvm
     install_xpilot x86
-    install_openssl
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     case $SELECTIVE_BUILD_TARGET in 
@@ -1248,11 +1248,11 @@ main()
     # currently llvm is not using the git repo
     # update_llvm
     update_wllvm
+    update_openssl
     update_klee
     update_tetrinet
     update_xpilot llvm
     update_xpilot x86
-    update_openssl
   
   fi
   
