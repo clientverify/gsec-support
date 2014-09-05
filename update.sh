@@ -714,7 +714,7 @@ make_klee()
 
 build_klee_helper()
 {
-  local klee="cliver"
+  local klee="klee"
   local options=$1
   local tag=$2
 
@@ -731,7 +731,6 @@ build_klee_helper()
 
   if [ ${#tag} -gt 0 ]; then
     leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
-    leval cp "$KLEE_ROOT/bin/$klee-bin" "$KLEE_ROOT/bin/$klee$tag-bin"
   fi
 }
 
@@ -745,11 +744,10 @@ build_klee()
   local debug_build_options="ENABLE_OPTIMIZED=0 "
   local debug_tag=""
 
-  #local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
-  local optimized_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1 "
+  local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
-  #build_klee_helper "$optimized_build_options" "$optimized_tag"
+  build_klee_helper "$optimized_build_options" "$optimized_tag"
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
