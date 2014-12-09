@@ -86,6 +86,19 @@ xpilot_parameters()
   printf "%s" "$bc_file_opts"
 }
 
+openssl_parameters()
+{
+
+  local IP="127.0.0.1"
+  local PORT="4433"
+  local bc_file_opts=""
+
+  bc_file_opts+=" s_client -msg -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt"
+  bc_file_opts+=" -connect $IP:$PORT "
+
+  printf "%s" "$bc_file_opts"
+}
+
 initialize_bc()
 {
   # Alternative to using recent link in KTEST_DIR and TRAINING_DIR
@@ -94,6 +107,12 @@ initialize_bc()
   fi
 
   case $BC_MODE in
+    openssl*)
+      KTEST_DIR="$DATA_DIR/network/openssl/$DATA_TAG"
+      OPENSSL_CERTS_DIR="$DATA_DIR/network/openssl/certs"
+      BC_FILE="$OPENSSL_ROOT/bin/openssl.bc"
+      TRAINING_DIR="$DATA_DIR/training/openssl/$DATA_TAG"
+      ;;
     tetri*)
       KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
@@ -115,6 +134,9 @@ initialize_bc()
 bc_parameters()
 {
   case $BC_MODE in
+    openssl*)
+      openssl_parameters $1
+      ;;
     tetri*)
       tetrinet_parameters $1
       ;;
@@ -126,7 +148,6 @@ bc_parameters()
 
 initialize_cliver()
 {
-  #CLIVER_BIN="$KLEE_ROOT/bin/$CLIVER_BIN_FILE"
   CLIVER_BIN="$KLEE_ROOT/bin/klee -cliver "
 
   if test ${SPECIAL_OUTPUT_DIR+defined}; then
@@ -143,7 +164,10 @@ initialize_cliver()
 
 cliver_parameters()
 {
-  local cliver_params="-posix-runtime -emit-all-errors -debug-stderr "
+  local cliver_params=""
+
+  cliver_params+="-cloud9-posix-runtime "
+  cliver_params+="-emit-all-errors -debug-stderr "
   cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-check-div-zero=0 -check-overshift=0 "
   cliver_params+="-use-forked-solver=0 "
@@ -160,7 +184,10 @@ cliver_parameters()
   cliver_params+="-switch-type=$SWITCH_TYPE "
   cliver_params+="-output-source=$OUTPUT_LLVM_ASSEMBLY "
   cliver_params+="-output-module=$OUTPUT_LLVM_BITCODE "
-  cliver_params+="-max-memory=$MAX_MEMORY "
+
+  ### XXX FIX ME XXX ###
+  # This is disabled for now because klee's memory check is inefficient
+  #cliver_params+="-max-memory=$MAX_MEMORY "
 
   if [ $PRINT_OBJECT_BYTES -eq 1 ]; then
     cliver_params+="-always-print-object-bytes " 
@@ -207,12 +234,16 @@ cliver_parameters()
   # BC specific cliver options
   case $BC_MODE in
     xpilot*)
+      cliver_params+="-client-model=xpilot "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libSM.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libICE.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libX11.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXext.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libXxf86misc.so.1 "
       cliver_params+="-no-xwindows "
+      ;;
+    tetrinet*)
+      cliver_params+="-client-model=tetrinet "
       ;;
   esac
 
@@ -256,7 +287,6 @@ do_training()
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-copy-input-files-to-output-dir=1 "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
-    cliver_params+="-client-model=$BC_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -310,7 +340,6 @@ do_verification()
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
-    cliver_params+="-client-model=$BC_MODE "
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
@@ -358,7 +387,6 @@ do_ncross_verification()
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
-    cliver_params+="-client-model=$BC_MODE "
 
     for k in $indices; do
       if [[ $NCROSS_MODE == "ncross" ]] ; then
@@ -436,7 +464,6 @@ do_training_verification()
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
-    cliver_params+="-client-model=$BC_MODE "
 
     for k in $indices; do
       cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
@@ -451,7 +478,7 @@ usage()
 {
   echo -e "$0\n\nUSAGE:"
   echo -e "\t-t [verify|training|ncross]\t\t(type of verification)(REQUIRED)" 
-  echo -e "\t-c [xpilot|tetrinet]\t\t\t(client binary)(REQUIRED)"
+  echo -e "\t-c [xpilot|tetrinet|openssl]\t\t\t(client binary)(REQUIRED)"
   echo -e "\t-i [gdb|lsf|interactive]\t\t(run mode)"
   echo -e "\t-x [\"\"]\t\t\t\t\t(additional cliver options)"
   echo -e "\t-d [0|1|2]\t\t\t\t(debug level)"
