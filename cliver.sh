@@ -166,7 +166,6 @@ cliver_parameters()
 {
   local cliver_params=""
 
-  cliver_params+="-cloud9-posix-runtime "
   cliver_params+="-emit-all-errors -debug-stderr "
   cliver_params+="-optimize -disable-inlining -disable-internalize -strip-debug "
   cliver_params+="-check-div-zero=0 -check-overshift=0 "
@@ -234,6 +233,7 @@ cliver_parameters()
   # BC specific cliver options
   case $BC_MODE in
     xpilot*)
+      cliver_params+="-posix-runtime "
       cliver_params+="-client-model=xpilot "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libSM.so "
       cliver_params+="-load=$ROOT_DIR/$XLIB_DIR/libICE.so "
@@ -243,7 +243,11 @@ cliver_parameters()
       cliver_params+="-no-xwindows "
       ;;
     tetrinet*)
+      cliver_params+="-posix-runtime "
       cliver_params+="-client-model=tetrinet "
+      ;;
+    openssl*)
+      cliver_params+="-cloud9-posix-runtime "
       ;;
   esac
 
