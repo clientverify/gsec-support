@@ -90,10 +90,10 @@ RECORD_FILE="input.rec"
 #=============================================================================
 # game client and server paths
 #=============================================================================
-SERVER_BIN="xpilot-ng-server-x86"
+SERVER_BIN="xpilot-ng-server"
 SERVER_COMMAND="$XPILOT_ROOT/bin/$SERVER_BIN $SERVER_OPT "
 
-CLIENT_BIN="xpilot-ng-x11-x86"
+CLIENT_BIN="xpilot-ng-x11"
 CLIENT_OPT=" "
 CLIENT_COMMAND="$XPILOT_ROOT/bin/$CLIENT_BIN $CLIENT_OPT "
 
