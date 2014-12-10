@@ -29,9 +29,9 @@ LLVM_BRANCH="cliver_27"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="openssl"
 TETRINET_BRANCH="enumerate"
-XPILOT_BRANCH="nuklear-support"
+XPILOT_BRANCH="wllvm"
 OPENSSL_BRANCH="heartbleed"
-UCLIBC_BRANCH="openssl-support"
+UCLIBC_BRANCH="cloud9-support"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"

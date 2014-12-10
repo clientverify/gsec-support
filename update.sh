@@ -903,6 +903,36 @@ install_tetrinet()
   necho "[Done]\n"
 }
 
+config_and_build_xpilot_with_wllvm()
+{
+  local xpilot_config_options=""
+  xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
+  xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
+  xpilot_config_options+="--disable-replay --disable-sound "
+  xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
+  #xpilot_config_options+="--program-suffix=-$1 "
+
+  local make_options=""
+  make_options+="CC=wllvm "
+  make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
+  make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+
+  export LLVM_COMPILER="llvm-gcc"
+  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+  export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+
+  necho "[Configuring] "
+  leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
+
+  necho "[Compiling] "
+  leval make $make_options
+
+  necho "[Installing] "
+  mkdir -p $XPILOT_ROOT
+  leval make $make_options install
+  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11
+}
+
 config_and_build_xpilot()
 {
   if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
@@ -939,6 +969,63 @@ config_and_build_xpilot()
     leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/
   fi
 }
+
+update_xpilot_with_wllvm()
+{
+  necho "$XPILOT\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$XPILOT/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$XPILOT
+
+  if [ $BUILD_LOCAL -eq 0 ]; then
+    if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+    fi
+
+    necho "[Checking] "
+    leval git remote update
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      necho "[Pulling] "
+      leval git pull --all
+    fi
+
+    config_and_build_xpilot_with_wllvm
+  fi
+
+  necho "[Done]\n"
+}
+
+install_xpilot_with_wllvm()
+{
+  necho "$XPILOT \t\t"
+
+  check_dirs $XPILOT || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone $XPILOT_GIT $XPILOT
+
+  cd $ROOT_DIR"/src/$XPILOT"
+
+  leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
+
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout $GIT_TAG
+  fi
+
+  config_and_build_xpilot_with_wllvm
+
+  necho "[Done]\n"
+}
+
 
 update_xpilot()
 {
@@ -1212,8 +1299,7 @@ main()
     install_zlib
     install_expat
     install_tetrinet
-    install_xpilot llvm
-    install_xpilot x86
+    install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     case $SELECTIVE_BUILD_TARGET in 
@@ -1227,14 +1313,7 @@ main()
         update_tetrinet
         ;;
       xpilot)
-        update_xpilot llvm
-        update_xpilot x86
-        ;;
-      xpilot-llvm)
-        update_xpilot llvm
-        ;;
-      xpilot-x86)
-        update_xpilot x86 
+        update_xpilot_with_wllvm
         ;;
       openssl)
         update_openssl
