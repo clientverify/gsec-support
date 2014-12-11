@@ -16,15 +16,29 @@ MAX_ROUND=0
 DATA_TAG="recent"
 FPS=50
 
+usage()
+{
+  echo -e "$0\n\nUSAGE:"
+  echo -e "\t-m [game|server|client|record|playback]\t(mode) default=game, starts server in background and client in record mode" 
+  echo -e "\t-x number\t\t\t\t(number of client rounds)"
+  echo -e "\t-c number\t\t\t\t(count of instances)"
+  echo -e "\t-s number\t\t\t\t(count start (skip instances))"
+  echo -e "\t-f number\t\t\t\t(xpilot frames per second (FPS))"
+  echo -e "\t-o tag\t\t\t\t\t(name of record directory)"
+  echo -e "\t-r dir\t\t\t\t\t(root directory)"
+  echo -e "\t-h \t\t\t\t\t(help/usage)"
+}
+
 #=============================================================================
 # need to automatically set this var...
 if test ! ${XPILOTHOST+defined}; then
-  echo "set XPILOTHOST environment variable before running client"
+  echo "ERROR: set XPILOTHOST environment variable before running client"
+  usage
   exit
 fi
 #=============================================================================
 
-while getopts ":vr:j:t:c:m:x:o:f:s:" opt; do
+while getopts ":vr:j:t:c:m:x:o:f:s:h" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -58,9 +72,13 @@ while getopts ":vr:j:t:c:m:x:o:f:s:" opt; do
       echo "Setting root dir to $OPTARG"
       ROOT_DIR="$OPTARG"
       ;;
-
+    h)
+      usage
+      exit
+      ;;
     :)
       echo "Option -$OPTARG requires an argument"
+      usage
       exit
       ;;
 
