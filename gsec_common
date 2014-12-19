@@ -228,16 +228,19 @@ set_alternate_gcc()
     ALTCXX=$HERE/g++
     GXX_INCLUDE_DIR="/opt/local/include/gcc44/c++"
   else
-    ALTCC=gcc-4.4
-    ALTCXX=g++-4.4
-    GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+    #ALTCC=gcc-4.4
+    #ALTCXX=g++-4.4
+    #GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+    ALTCC=gcc-4.9
+    ALTCXX=g++-4.9
+    GXX_INCLUDE_DIR="/usr/include/c++/4.9"
   fi
   lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
 }
 
 check_gcc_version()
 {
-  if [ $(gcc-minor-version) -ge 5 ]; then
+  if [ $(gcc-minor-version) -ge 6 ]; then
     set_alternate_gcc
   fi
 }
