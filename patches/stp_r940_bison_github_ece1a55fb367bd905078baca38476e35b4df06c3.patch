@@ -1,0 +1,104 @@
+diff -r -p stp/src/parser/CVC.y stp.patched/src/parser/CVC.y
+*** stp/src/parser/CVC.y	2012-11-07 12:05:58.000000000 -0500
+--- stp.patched/src/parser/CVC.y	2015-01-09 10:12:18.415814772 -0500
+***************
+*** 22,28 ****
+  #define YYMAXDEPTH 1048576000
+  #define YYERROR_VERBOSE 1
+  #define YY_EXIT_FAILURE -1
+- #define YYPARSE_PARAM AssertsQuery
+    
+    extern int cvclex(void);
+    extern char* yytext;
+--- 22,27 ----
+***************
+*** 32,40 ****
+--- 31,42 ----
+      FatalError("");
+      return YY_EXIT_FAILURE;
+    };
++   int yyerror(void* AssertsQuery, const char* s) { return yyerror(s); }
+    
+    %}
+  
++ %parse-param {void* AssertsQuery}
++ 
+  %union {
+  
+    unsigned int uintval;                 /* for numerals in types. */
+Only in stp.patched/src/parser: .CVC.y.swp
+diff -r -p stp/src/parser/smtlib2.y stp.patched/src/parser/smtlib2.y
+*** stp/src/parser/smtlib2.y	2012-11-07 12:05:58.000000000 -0500
+--- stp.patched/src/parser/smtlib2.y	2015-01-09 10:30:09.894845904 -0500
+***************
+*** 64,69 ****
+--- 64,70 ----
+      FatalError("");
+      return 1;
+    }
++   int yyerror(void* AssertsQuery, const char* s) { return yyerror(s); }
+  
+    ASTNode querysmt2;
+    ASTVec assertionsSMT2;
+***************
+*** 72,80 ****
+  #define YYMAXDEPTH 104857600
+  #define YYERROR_VERBOSE 1
+  #define YY_EXIT_FAILURE -1
+- #define YYPARSE_PARAM AssertsQuery
+    %}
+  
+  %union {  
+    unsigned uintval;                  /* for numerals in types. */
+    //ASTNode,ASTVec
+--- 73,82 ----
+  #define YYMAXDEPTH 104857600
+  #define YYERROR_VERBOSE 1
+  #define YY_EXIT_FAILURE -1
+    %}
+  
++ %parse-param {void* AssertsQuery}
++ 
+  %union {  
+    unsigned uintval;                  /* for numerals in types. */
+    //ASTNode,ASTVec
+Only in stp.patched/src/parser: .smtlib2.y.swp
+diff -r -p stp/src/parser/smtlib.y stp.patched/src/parser/smtlib.y
+*** stp/src/parser/smtlib.y	2012-11-07 12:05:58.000000000 -0500
+--- stp.patched/src/parser/smtlib.y	2015-01-09 10:12:18.415814772 -0500
+***************
+*** 54,68 ****
+      FatalError("");
+      return 1;
+    }
+  
+    ASTNode query;
+  #define YYLTYPE_IS_TRIVIAL 1
+  #define YYMAXDEPTH 104857600
+  #define YYERROR_VERBOSE 1
+  #define YY_EXIT_FAILURE -1
+- #define YYPARSE_PARAM AssertsQuery
+    %}
+  
+  %union {  
+    // FIXME: Why is this not an UNSIGNED int?
+    int uintval;                  /* for numerals in types. */
+--- 54,70 ----
+      FatalError("");
+      return 1;
+    }
++   int yyerror(void* AssertsQuery, const char* s) { return yyerror(s); }
+  
+    ASTNode query;
+  #define YYLTYPE_IS_TRIVIAL 1
+  #define YYMAXDEPTH 104857600
+  #define YYERROR_VERBOSE 1
+  #define YY_EXIT_FAILURE -1
+    %}
+  
++ %parse-param {void* AssertsQuery}
++ 
+  %union {  
+    // FIXME: Why is this not an UNSIGNED int?
+    int uintval;                  /* for numerals in types. */
+Only in stp.patched/src/parser: .smtlib.y.swp
