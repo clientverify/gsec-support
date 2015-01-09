@@ -1128,7 +1128,7 @@ config_and_build_openssl()
 
   necho "[Installing] "
   mkdir -p $OPENSSL_ROOT
-  leval make install
+  leval make install_sw
   leval extract-bc $OPENSSL_ROOT/bin/openssl
 }
 
