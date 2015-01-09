@@ -648,6 +648,10 @@ install_stp()
   fi
 
   necho "[Patching] "
+  get_file $STP_BISON_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$STP
+  leval patch -p1 < $STP_BISON_PATCH_FILE
+
+  necho "[Patching] "
   get_file $STP_THREAD_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$STP
   leval patch -p1 < $STP_THREAD_PATCH_FILE
 
