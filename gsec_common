@@ -27,7 +27,7 @@ OPENSSL="openssl"
 # Repository Branches
 LLVM_BRANCH="cliver_27"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="openssl"
+KLEE_BRANCH="openssl-llvm34"
 TETRINET_BRANCH="enumerate"
 XPILOT_BRANCH="wllvm"
 OPENSSL_BRANCH="heartbleed"
@@ -41,6 +41,7 @@ LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="git@github.com:robbycochran/whole-program-llvm.git"
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
+STP_GIT="https://github.com/stp/stp.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
@@ -92,7 +93,7 @@ initialize_root_directories()
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
-  LLVM_ROOT="$ROOT_DIR/local"
+  LLVM_ROOT="$ROOT_DIR/local/$LLVM"
   WLLVM_ROOT="$ROOT_DIR/local"
   BOOST_ROOT="$ROOT_DIR/local"
   LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC_BIN"
@@ -220,19 +221,21 @@ gcc-minor-version() {
   _gcc_fullversion '$2' "$@"
 }
 
+set_alternate_gcc_old()
+{
+  ALTCC=gcc-4.4
+  ALTCXX=g++-4.4
+  GXX_INCLUDE_DIR="/usr/include/c++/4.4"
+  ALTCCVERSION=4.4
+  lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
+}
+
 set_alternate_gcc()
 {
-  if [ "$(uname)" == "Darwin" ] ; then
-    #ALTCC=gcc-mp-4.4
-    #ALTCXX=g++-mp-4.4
-    ALTCC=$HERE/gcc
-    ALTCXX=$HERE/g++
-    GXX_INCLUDE_DIR="/opt/local/include/gcc44/c++"
-  else
-    ALTCC=gcc-4.4
-    ALTCXX=g++-4.4
-    GXX_INCLUDE_DIR="/usr/include/c++/4.4"
-  fi
+  ALTCCVERSION=4.9
+  ALTCC=gcc-4.9
+  ALTCXX=g++-4.9
+  GXX_INCLUDE_DIR="/usr/include/c++/4.9"
   lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
 }
 

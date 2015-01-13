@@ -23,6 +23,7 @@ SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
 INSTALL_LLVMGCC_BIN=1
+USE_LLVM29=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
@@ -227,8 +228,8 @@ install_boost()
   BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
 
   if test ${ALTCC+defined}; then
-    echo "using gcc : 4.4 : /usr/bin/g++-4.4 ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
-    BJAM_OPTIONS+=" --toolset=gcc-4.4 "
+    echo "using gcc : $ALTCCVERSION : /usr/bin/$ALTCC ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
+    BJAM_OPTIONS+=" --toolset=$ALTCC "
   fi
 
   necho "[Configuring] "
@@ -370,7 +371,11 @@ install_uclibc_git()
   cd $ROOT_DIR/src/$UCLIBC
 
   necho "[Configuring] "
-  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
+  if [ $USE_LLVM29 -eq 1 ]; then
+    leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
+  else
+    leval ./configure --make-llvm-lib
+  fi
 
   necho "[Compiling] "
   leval make 
@@ -474,6 +479,7 @@ install_wllvm()
   # No build step necessary (just python wrapper)
 
   necho "[Installing] "
+  mkdir -p ${WLLVM_ROOT}/bin
   cd ${WLLVM_ROOT}/bin
   cp -a $WLLVM_SRC_DIR/wllvm .
   cp -a $WLLVM_SRC_DIR/wllvm++ .
@@ -628,6 +634,27 @@ install_llvm()
   necho "[Done]\n"
 }
 
+install_stp_git()
+{
+  necho "$STP\t\t\t"
+  check_dirs $STP || { return 0; }
+
+  necho "[Cloning] "
+  cd $ROOT_DIR"/src"
+  leval git clone $STP_GIT
+
+  necho "[Compiling] "
+  mkdir -p $ROOT_DIR/build/$STP
+  cd $ROOT_DIR/build/$STP
+  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF $ROOT_DIR/src/$STP
+  leval make -j $MAKE_THREADS
+
+  necho "[Installing] "
+  leval make install
+
+  necho "[Done]\n"
+}
+
 install_stp()
 {
   necho "$STP\t\t\t"
@@ -675,10 +702,18 @@ config_klee()
 {
   cd $ROOT_DIR/src/$KLEE
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
-  KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM --with-llvmobj=$ROOT_DIR/build/$LLVM "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+
+  if [ $USE_LLVM29 -eq 1 ]; then
+    KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
+    KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
+    KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
+    KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
+    KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+  else
+    ### NEW STP from github
+    KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
+  fi
+
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
   if test ${ALTCC+defined}; then
@@ -750,7 +785,7 @@ build_klee()
   local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
-  build_klee_helper "$optimized_build_options" "$optimized_tag"
+  #build_klee_helper "$optimized_build_options" "$optimized_tag"
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
@@ -772,7 +807,14 @@ install_klee()
 
   cd $ROOT_DIR"/src/$KLEE"
 
-  leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
+  if [ $USE_LLVM29 -eq 1 ]; then
+    leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
+  else
+    #leval git remote add github https://github.com/klee/klee.git
+    #leval git fetch github
+    #leval git checkout -b github-upstram github/master
+    leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
+  fi
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
@@ -920,9 +962,15 @@ config_and_build_xpilot_with_wllvm()
   make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
-  export LLVM_COMPILER="llvm-gcc"
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
-  export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  if [ $USE_LLVM29 -eq 1 ]; then
+    export LLVM_COMPILER="llvm-gcc"
+    export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+    export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  else
+    export LLVM_COMPILER="clang"
+    export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+    export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  fi
 
   necho "[Configuring] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
@@ -1106,9 +1154,13 @@ config_and_build_openssl()
   make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
-  export LLVM_COMPILER="llvm-gcc"
+  if [ $USE_LLVM29 -eq 1 ]; then
+    export LLVM_COMPILER="llvm-gcc"
+  else
+    export LLVM_COMPILER="clang"
+  fi
   export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
   MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
@@ -1186,7 +1238,7 @@ install_openssl()
 
 main() 
 {
-  while getopts ":afkcivsb:r:j:dlt:" opt; do
+  while getopts ":afkcivsb:r:j:dlt:n" opt; do
     case $opt in
       a)
         lecho "Forcing alternative gcc"
@@ -1259,7 +1311,14 @@ main()
         echo "Option -$OPTARG requires an argument"
         exit
         ;;
-  
+
+       n)
+        lecho "Use LLVM 2.9 rather than newer installed on system"
+        USE_LLVM29=1
+        set_alternate_gcc_old
+        ;;
+
+
     esac
   done
 
@@ -1269,8 +1328,6 @@ main()
 
   initialize_logging $@
 
-  #check_gcc_version
-
   # record start time
   start_time=$(elapsed_time)
   
@@ -1278,14 +1335,15 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
   
-    if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
-      install_llvmgcc_bin
-    else
-      install_llvmgcc_from_source
+    if [ $USE_LLVM29 -eq 1 ]; then
+      if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
+        install_llvmgcc_bin
+      else
+        install_llvmgcc_from_source
+      fi
+      install_llvm_package
     fi
-  
-    install_llvm_package
-  
+    
     # google perftools requires libunwind on x86_64
     if [ "$(uname)" != "Darwin" ] ; then
       install_libunwind
@@ -1296,12 +1354,20 @@ main()
     install_boost
     install_uclibc_git
     install_ncurses
-    install_stp
+    if [ $USE_LLVM29 -eq 1 ]; then
+      install_stp
+    else
+      install_stp_git
+    fi
     install_openssl
     install_klee
     install_zlib
     install_expat
-    install_tetrinet
+    if [ $USE_LLVM29 -eq 1 ]; then
+      install_tetrinet
+    else
+      lecho "Tetrinet not yet updated for compilation with llvm 3.4 clang"
+    fi
     install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
