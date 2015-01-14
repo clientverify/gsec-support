@@ -74,6 +74,29 @@ get_package()
     leval tar $TAR_OPTIONS -xvzf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   elif [ $PACKAGE_TYPE == "bz2" ]; then
     leval tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
+  elif [ $PACKAGE_TYPE == "xz" ]; then
+    leval tar $TAR_OPTIONS -xvf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST
+  else
+    echo "[Error invalid package type] "
+    rm $LOCAL_DEST/$PACKAGE
+    exit
+  fi
+
+  rm $LOCAL_DEST/$PACKAGE
+}
+
+check_dirs()
+{
+  if [ -e $ROOT_DIR/src/$1 ] ||
+     [ -e $ROOT_DIR/build/$1 ] ||
+     [ -e $1 ] ; then
+    if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
+      echo "[Skipping] (Already exists, integrity unconfirmed) "
+      return 1
+    else
+      echo "[Error checking dirs] "
+      exit
+    fi
   else
     echo "[Error invalid package type] "
     rm $LOCAL_DEST/$PACKAGE
@@ -495,9 +518,8 @@ config_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  #LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --with-llvmgccdir=$LLVMGCC_ROOT --prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS="--enable-optimized --enable-assertions --prefix=$LLVM_ROOT "
-  #LLVM_CONFIG_OPTIONS+="--enable-libffi "
+  LLVM_CONFIG_OPTIONS="--enable-optimized --prefix=$LLVM_ROOT "
+  LLVM_CONFIG_OPTIONS+="--disable-assertions --enable-shared --enable-pic --enable-libffi "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -514,8 +536,7 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  #LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
-  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS "
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
@@ -584,15 +605,14 @@ install_llvm_package()
 
   cd $ROOT_DIR"/src"
 
-  necho "[Patching] "
-  cd "$ROOT_DIR/src/$LLVM"
-  leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
+  #necho "[Patching] "
+  #cd "$ROOT_DIR/src/$LLVM"
+  #leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
 
   necho "[Configuring] "
   config_llvm 
 
   necho "[Compiling] "
-  #build_llvm "DISABLE_ASSERTIONS=1 "
   build_llvm 
 
   necho "[Installing] "
@@ -624,7 +644,6 @@ install_llvm()
   config_llvm 
 
   necho "[Compiling] "
-  #build_llvm "DISABLE_ASSERTIONS=1 "
   build_llvm 
 
   necho "[Installing] "
@@ -708,7 +727,8 @@ config_klee()
     KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
     KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
     KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
-    KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+    #KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+    KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
   else
     ### NEW STP from github
     KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
@@ -740,7 +760,7 @@ make_klee()
   KLEE_ENV_OPTIONS=""
   KLEE_ENV_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib\" "
   KLEE_ENV_OPTIONS+="CPPFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
-  KLEE_ENV_OPTIONS+="CXXFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  KLEE_ENV_OPTIONS+="CXXFLAGS=\"  -fdiagnostics-color=always -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
   KLEE_ENV_OPTIONS+="CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
 
   ### HACK ### need to remove libraries from install location so that
@@ -962,15 +982,9 @@ config_and_build_xpilot_with_wllvm()
   make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
-  if [ $USE_LLVM29 -eq 1 ]; then
-    export LLVM_COMPILER="llvm-gcc"
-    export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
-    export PATH="${ROOT_DIR}/local/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
-  else
-    export LLVM_COMPILER="clang"
-    export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
-    export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
-  fi
+  export LLVM_COMPILER=${LLVM_CC}
+  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   necho "[Configuring] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
@@ -1154,11 +1168,7 @@ config_and_build_openssl()
   make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
-  if [ $USE_LLVM29 -eq 1 ]; then
-    export LLVM_COMPILER="llvm-gcc"
-  else
-    export LLVM_COMPILER="clang"
-  fi
+  export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
@@ -1315,7 +1325,8 @@ main()
        n)
         lecho "Use LLVM 2.9 rather than newer installed on system"
         USE_LLVM29=1
-        set_alternate_gcc_old
+        #set_alternate_gcc_old
+        set_alternate_gcc
         ;;
 
 
@@ -1355,7 +1366,8 @@ main()
     install_uclibc_git
     install_ncurses
     if [ $USE_LLVM29 -eq 1 ]; then
-      install_stp
+      #install_stp
+      install_stp_git
     else
       install_stp_git
     fi
@@ -1364,7 +1376,8 @@ main()
     install_zlib
     install_expat
     if [ $USE_LLVM29 -eq 1 ]; then
-      install_tetrinet
+      #install_tetrinet
+      lecho "Tetrinet not yet updated for compilation with llvm 3.4 clang"
     else
       lecho "Tetrinet not yet updated for compilation with llvm 3.4 clang"
     fi
