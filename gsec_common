@@ -5,6 +5,7 @@ LLVM="llvm-3.4.2"
 LLVMGCC="llvm-gcc-4.2-2.9"
 LLVMGCC_BIN="clang+llvm-3.4.2"
 LLVM_CC="clang"
+LLVM_LD="llvm-link"
 WLLVM="whole-program-llvm"
 KLEE="klee"
 UCLIBC="klee-uclibc"
@@ -28,8 +29,8 @@ OPENSSL="openssl"
 LLVM_BRANCH="cliver_27"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="openssl-llvm34-wip"
-TETRINET_BRANCH="enumerate"
-XPILOT_BRANCH="wllvm"
+TETRINET_BRANCH="master"
+XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
 UCLIBC_BRANCH="cloud9-support"
 
@@ -95,7 +96,7 @@ initialize_root_directories()
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
-  LLVM_ROOT="$ROOT_DIR/local/$LLVM"
+  LLVM_ROOT="$ROOT_DIR/local"
   WLLVM_ROOT="$ROOT_DIR/local"
   BOOST_ROOT="$ROOT_DIR/local"
   LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC_BIN"
@@ -243,8 +244,19 @@ set_alternate_gcc()
 
 check_gcc_version()
 {
-  if [ $(gcc-minor-version) -ge 5 ]; then
+  if [ $(gcc-minor-version) -le 8 ]; then
     set_alternate_gcc
+  else
+    lecho "Using gcc-$(gcc-fullversion)"
+  fi
+}
+
+check_gcc_version_old()
+{
+  if [ $(gcc-minor-version) -ge 7 ]; then
+    set_alternate_gcc_old
+  else
+    lecho "Using gcc-$(gcc-fullversion)"
   fi
 }
 

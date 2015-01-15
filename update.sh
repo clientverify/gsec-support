@@ -394,11 +394,7 @@ install_uclibc_git()
   cd $ROOT_DIR/src/$UCLIBC
 
   necho "[Configuring] "
-  if [ $USE_LLVM29 -eq 1 ]; then
-    leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
-  else
-    leval ./configure --make-llvm-lib
-  fi
+  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
 
   necho "[Compiling] "
   leval make 
@@ -512,7 +508,6 @@ install_wllvm()
   necho "[Done]\n"
 }
 
-
 config_llvm ()
 { 
   mkdir -p $ROOT_DIR/build/$LLVM
@@ -605,9 +600,11 @@ install_llvm_package()
 
   cd $ROOT_DIR"/src"
 
-  #necho "[Patching] "
-  #cd "$ROOT_DIR/src/$LLVM"
-  #leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
+  if [ $USE_LLVM29 -eq 1 ]; then
+    necho "[Patching] "
+    cd "$ROOT_DIR/src/$LLVM"
+    leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
+  fi
 
   necho "[Configuring] "
   config_llvm 
@@ -722,17 +719,16 @@ config_klee()
   cd $ROOT_DIR/src/$KLEE
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
 
-  if [ $USE_LLVM29 -eq 1 ]; then
-    KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
-    KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
-    KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
-    KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
-    #KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
-    KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
-  else
-    ### NEW STP from github
-    KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
-  fi
+  KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
+  KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
+
+  # stp r940
+  KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+  
+  # stp git upstream
+  #KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
 
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
@@ -753,6 +749,10 @@ make_klee()
   #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
   KLEE_MAKE_OPTIONS="ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
 
+  if [ $USE_LLVM29 -eq 0 ]; then
+    KLEE_MAKE_OPTIONS+="KLEE_USE_CXX11=1 "
+  fi
+
   if test ${ALTCC+defined}; then
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
@@ -760,7 +760,11 @@ make_klee()
   KLEE_ENV_OPTIONS=""
   KLEE_ENV_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib\" "
   KLEE_ENV_OPTIONS+="CPPFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
-  KLEE_ENV_OPTIONS+="CXXFLAGS=\"  -fdiagnostics-color=always -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  if [ $USE_LLVM29 -eq 1 ]; then
+    KLEE_ENV_OPTIONS+="CXXFLAGS=\" -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  else
+    KLEE_ENV_OPTIONS+="CXXFLAGS=\" -fdiagnostics-color=always -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  fi
   KLEE_ENV_OPTIONS+="CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
 
   ### HACK ### need to remove libraries from install location so that
@@ -827,15 +831,8 @@ install_klee()
 
   cd $ROOT_DIR"/src/$KLEE"
 
-  if [ $USE_LLVM29 -eq 1 ]; then
-    leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
-  else
-    #leval git remote add github https://github.com/klee/klee.git
-    #leval git fetch github
-    #leval git checkout -b github-upstram github/master
-    leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
-  fi
-
+  leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
+  
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
     leval git checkout $GIT_TAG
@@ -889,16 +886,18 @@ update_klee()
 
 build_tetrinet()
 {
-  TETRINET_MAKE_OPTIONS="NCURSES_DIR=$NCURSES_ROOT LLVM_BIN_DIR=$LLVM_ROOT/bin "
-  TETRINET_MAKE_OPTIONS+="LLVMGCC_BIN_DIR=$LLVMGCC_ROOT/bin PREFIX=$TETRINET_ROOT "
-  TETRINET_MAKE_OPTIONS+="LLVMGCC_CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
+  TETRINET_MAKE_OPTIONS="NCURSES_DIR=${NCURSES_ROOT} "
+  TETRINET_MAKE_OPTIONS+="PREFIX=${TETRINET_ROOT} "
+  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${LLVMGCC_ROOT}/bin/${LLVM_CC}\" "
+  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER_FLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
+  TETRINET_MAKE_OPTIONS+="LLVMLINKER=\"${LLVM_ROOT}/bin/${LLVM_LD}\" "
 
   if test ${ALTCC+defined}; then
     TETRINET_MAKE_OPTIONS+="CC=$ALTCC LD=$ALTCC "
   fi
 
   necho "[Compiling] "
-  leval make $TETRINET_MAKE_OPTIONS 
+  leval make $TETRINET_MAKE_OPTIONS install
 
   necho "[Installing] "
   mkdir -p $TETRINET_ROOT
@@ -956,7 +955,9 @@ install_tetrinet()
 
   cd $ROOT_DIR"/src/$TETRINET"
 
-  leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
+  if [ "$TETRINET_BRANCH" != "master" ]; then
+    leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
+  fi
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
@@ -998,46 +999,9 @@ config_and_build_xpilot_with_wllvm()
   leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11
 }
 
-config_and_build_xpilot()
-{
-  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
-
-  local xpilot_config_options=""
-  xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
-  xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
-  xpilot_config_options+="--disable-replay --disable-sound "
-  xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  xpilot_config_options+="--program-suffix=-$1 "
-
-  local xpilot_llvm_options=""
-  xpilot_llvm_options+="LLVMINTERP=$LLVM_ROOT/bin/lli UCLIBC_ROOT=$UCLIBC_ROOT LLVM_ROOT=$LLVM_ROOT "
-  xpilot_llvm_options+="LLVMGCC_ROOT=$LLVMGCC_ROOT CC=$ROOT_DIR/src/$XPILOT-$1/llvm_gcc_script.py "
-
-  local xpilot_make_options=""
-  if [ "$1" == "llvm" ]; then
-    xpilot_config_options+="$xpilot_llvm_options"
-    xpilot_make_options+="$xpilot_llvm_options "
-  fi
-
-  necho "[Configuring] "
-  leval $ROOT_DIR/src/$xpilot_opt/configure $xpilot_config_options 
-
-  necho "[Compiling] "
-  leval make $xpilot_make_options 
-
-  necho "[Installing] "
-  mkdir -p $XPILOT_ROOT
-  leval make $xpilot_make_options install 
-
-  if [ "$1" == "llvm" ]; then
-    leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/client/x11/xpilot-ng-x11.bc $XPILOT_ROOT/bin/
-    leval cp -u $ROOT_DIR/src/$XPILOT-$1/src/server/xpilot-ng-server.bc $XPILOT_ROOT/bin/
-  fi
-}
-
 update_xpilot_with_wllvm()
 {
-  necho "$XPILOT\t\t"
+  necho "$XPILOT\t\t\t"
 
   if [ ! -e "$ROOT_DIR/src/$XPILOT/.git" ]; then
     echo "[Error] (git directory missing) "; exit;
@@ -1069,7 +1033,7 @@ update_xpilot_with_wllvm()
 
 install_xpilot_with_wllvm()
 {
-  necho "$XPILOT \t\t"
+  necho "$XPILOT\t\t\t"
 
   check_dirs $XPILOT || { return 0; }
   cd $ROOT_DIR"/src"
@@ -1079,7 +1043,9 @@ install_xpilot_with_wllvm()
 
   cd $ROOT_DIR"/src/$XPILOT"
 
-  leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
+  if [ "$XPILOT_BRANCH" != "master" ]; then
+    leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
+  fi
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
@@ -1087,69 +1053,6 @@ install_xpilot_with_wllvm()
   fi
 
   config_and_build_xpilot_with_wllvm
-
-  necho "[Done]\n"
-}
-
-
-update_xpilot()
-{
-  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
-
-  local xpilot_opt=$XPILOT-$1
-  necho "$xpilot_opt\t\t"
-
-  if [ ! -e "$ROOT_DIR/src/$xpilot_opt/.git" ]; then
-    echo "[Error] (git directory missing) "; exit;
-  fi
-
-  cd $ROOT_DIR/src/$xpilot_opt
-
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
-      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-    fi
-    
-    necho "[Checking] "
-    leval git remote update
-  fi
-
-  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
-
-    if [ $BUILD_LOCAL -eq 0 ]; then
-      necho "[Pulling] "
-      leval git pull --all
-    fi
-
-    config_and_build_xpilot $1
-  fi
-
-  necho "[Done]\n"
-}
-
-install_xpilot()
-{
-  if [[ $# -ne 1 ]]; then echo "[Error] "; exit; fi
-
-  local xpilot_opt=$XPILOT-$1
-  necho "$xpilot_opt \t\t"
-
-  check_dirs $xpilot_opt || { return 0; }
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone $XPILOT_GIT $xpilot_opt
-
-  cd $ROOT_DIR"/src/$xpilot_opt"
-
-  leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
-
-  if test ${GIT_TAG+defined}; then
-    necho "[Fetching $GIT_TAG] "
-    leval git checkout $GIT_TAG
-  fi
-
-  config_and_build_xpilot $1
 
   necho "[Done]\n"
 }
@@ -1323,15 +1226,25 @@ main()
         ;;
 
        n)
-        lecho "Use LLVM 2.9 rather than newer installed on system"
+        lecho "Using LLVM 2.9 and llvm-gcc-4.2"
         USE_LLVM29=1
-        #set_alternate_gcc_old
-        set_alternate_gcc
+        LLVM="llvm-2.9"
+        LLVM_PACKAGE="$LLVM.tgz"
+        LLVMGCC_BIN="llvm-gcc4.2-2.9"
+        LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN-x86_64-linux.tar.bz2"
+        LLVM_CC="llvm-gcc"
+        LLVM_LD="llvm-ld"
         ;;
 
 
     esac
   done
+
+  if [ $USE_LLVM29 -eq 0 ]; then
+    check_gcc_version
+  else
+    check_gcc_version_old
+  fi
 
   lecho "Compiling with $(max_threads) threads"
 
@@ -1346,15 +1259,14 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
   
-    if [ $USE_LLVM29 -eq 1 ]; then
-      if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
-        install_llvmgcc_bin
-      else
-        install_llvmgcc_from_source
-      fi
-      install_llvm_package
+    if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
+      install_llvmgcc_bin
+    else
+      install_llvmgcc_from_source
     fi
-    
+
+    install_llvm_package
+  
     # google perftools requires libunwind on x86_64
     if [ "$(uname)" != "Darwin" ] ; then
       install_libunwind
@@ -1365,29 +1277,17 @@ main()
     install_boost
     install_uclibc_git
     install_ncurses
-    if [ $USE_LLVM29 -eq 1 ]; then
-      #install_stp
-      install_stp_git
-    else
-      install_stp_git
-    fi
+    install_stp
+    #install_stp_git
     install_openssl
     install_klee
     install_zlib
     install_expat
-    if [ $USE_LLVM29 -eq 1 ]; then
-      #install_tetrinet
-      lecho "Tetrinet not yet updated for compilation with llvm 3.4 clang"
-    else
-      lecho "Tetrinet not yet updated for compilation with llvm 3.4 clang"
-    fi
+    install_tetrinet
     install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     case $SELECTIVE_BUILD_TARGET in 
-      llvm*)
-        update_llvm
-        ;;
       klee*)
         update_klee
         ;;
@@ -1404,8 +1304,6 @@ main()
 
   else
     # update all
-    # currently llvm is not using the git repo
-    # update_llvm
     update_wllvm
     update_openssl
     update_klee
@@ -1420,3 +1318,4 @@ main()
 
 # Run main
 main "$@"
+
