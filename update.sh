@@ -24,6 +24,7 @@ SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
 INSTALL_LLVMGCC_BIN=1
 USE_LLVM29=0
+USE_TSAN=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
@@ -610,6 +611,7 @@ install_llvm_package()
   config_llvm 
 
   necho "[Compiling] "
+  build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
   build_llvm 
 
   necho "[Installing] "
@@ -698,12 +700,18 @@ install_stp()
   get_file $STP_THREAD_PATCH_FILE $PATCH_DIR $ROOT_DIR/src/$STP
   leval patch -p1 < $STP_THREAD_PATCH_FILE
 
+  if test ${ALTCC+defined}; then
+    STP_COMPILER_OPTIONS="CC=$ALTCC CXX=$ALTCXX "
+  else
+    STP_COMPILER_OPTIONS=""
+  fi
+
   necho "[Configuring] "
-  local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2"
-  leval ./scripts/configure $STP_CONFIG_FLAGS
+  local STP_CONFIG_FLAGS="--with-prefix=$STP_ROOT --with-cryptominisat2 "
+  leval ${STP_COMPILER_OPTIONS} ./scripts/configure $STP_CONFIG_FLAGS
 
   # Building with multiple threads causes errors
-  local STP_MAKE_FLAGS="OPTIMIZE=-O2 CFLAGS_M32= "
+  local STP_MAKE_FLAGS=" ${STP_COMPILER_OPTIONS} OPTIMIZE=-O2 CFLAGS_M32=\" -fPIC \" VERBOSE=1 "
 
   necho "[Compiling] "
   leval make $STP_MAKE_FLAGS
@@ -747,7 +755,8 @@ make_klee()
   cd $ROOT_DIR/src/klee
   #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
   #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
-  KLEE_MAKE_OPTIONS="ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
+  KLEE_MAKE_OPTIONS="-j $MAKE_THREADS "
+  #KLEE_MAKE_OPTIONS+="ENABLE_GOOGLE_PROFILER=1 "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     KLEE_MAKE_OPTIONS+="KLEE_USE_CXX11=1 "
@@ -757,15 +766,26 @@ make_klee()
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
-  KLEE_ENV_OPTIONS=""
-  KLEE_ENV_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib\" "
-  KLEE_ENV_OPTIONS+="CPPFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
-  if [ $USE_LLVM29 -eq 1 ]; then
-    KLEE_ENV_OPTIONS+="CXXFLAGS=\" -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
-  else
-    KLEE_ENV_OPTIONS+="CXXFLAGS=\" -fdiagnostics-color=always -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  local klee_ldflags="-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib "
+  local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
+  local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
+  local klee_cflags="-I${GLIBC_INCLUDE_PATH}"
+
+  if [ $USE_TSAN -eq 1 ]; then
+    klee_ld_flags+="-ltsan -pie "
+    klee_cxx_flags+="-fPIE -fPIC -fsanitize=thread "
   fi
-  KLEE_ENV_OPTIONS+="CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
+
+  if [ $USE_LLVM29 -eq 1 ]; then
+    klee_cxx_flags+="-fdiagnostics-color=always "
+  fi
+
+  KLEE_ENV_OPTIONS+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxx_flags}\" CPPFLAGS=\"${klee_cppflags}\" CFLAGS=\"${klee_cflags}\" "
+
+  #KLEE_ENV_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib\" "
+  #KLEE_ENV_OPTIONS+="CXXFLAGS=\" -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
+  #KLEE_ENV_OPTIONS+="CPPFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
+  #KLEE_ENV_OPTIONS+="CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
 
   ### HACK ### need to remove libraries from install location so that
   # old klee/cliver libs are not used before recently compiled libs
@@ -800,10 +820,10 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1  "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1  "
   local debug_tag=""
 
   local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
