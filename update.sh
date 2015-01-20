@@ -1064,7 +1064,7 @@ install_openssl()
 
 main() 
 {
-  while getopts ":afkcivsb:r:j:dlt:n" opt; do
+  while getopts ":afkcivsb:r:j:dltn" opt; do
     case $opt in
       a)
         lecho "Forcing alternative gcc"
