@@ -677,6 +677,10 @@ config_klee()
   KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
   KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
 
+  if [ $USE_LLVM29 -eq 0 ]; then
+    KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
+  fi
+
   # stp r940
   KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
   
@@ -702,10 +706,6 @@ make_klee()
   KLEE_MAKE_OPTIONS="-j $MAKE_THREADS "
   KLEE_MAKE_OPTIONS+="ENABLE_GOOGLE_PROFILER=1 "
 
-  if [ $USE_LLVM29 -eq 0 ]; then
-    KLEE_MAKE_OPTIONS+="KLEE_USE_CXX11=1 "
-  fi
-
   if test ${ALTCC+defined}; then
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
@@ -719,8 +719,14 @@ make_klee()
   local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   local klee_cflags="-I${GLIBC_INCLUDE_PATH}"
 
-  if [ $USE_LLVM29 -eq 1 ]; then
-    klee_cxx_flags+="-fdiagnostics-color=always "
+  if [ $USE_LLVM29 -eq 0 ]; then
+    # compile with pretty colors!
+    klee_cxxflags+="-fdiagnostics-color=always "
+    # don't warn about unused typedefs and functions in boost
+    klee_cxxflags+="-Wno-unused-functions -Wno-unused-local-typedefs "
+  else
+    klee_cxxflags+="-std=c++0x "
+    klee_cppflags+="-std=c++0x "
   fi
 
   KLEE_ENV_OPTIONS+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxxflags}\" CPPFLAGS=\"${klee_cppflags}\" CFLAGS=\"${klee_cflags}\" "
@@ -1201,7 +1207,7 @@ main()
   if [ $INSTALL_PACKAGES -eq 1 ]; then
   
     mkdir -p $ROOT_DIR/{src,local,build}
-  
+
     if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
       install_llvmgcc_bin
     else
