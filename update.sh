@@ -258,10 +258,8 @@ install_boost()
 
   necho "[Configuring] "
   leval ./bootstrap.sh --prefix=$BOOST_ROOT 
-  #leval ./bjam $BJAM_OPTIONS
 
   necho "[Compiling] "
-  #leval ./bjam $BJAM_OPTIONS install
   leval ./b2 $BJAM_OPTIONS install
 
   necho "[Installing] "
@@ -514,8 +512,8 @@ config_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_CONFIG_OPTIONS="--enable-optimized --prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--disable-assertions --enable-shared --enable-pic --enable-libffi "
+  LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
+  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic  "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -534,63 +532,13 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
 
-  if [ $BUILD_DEBUG -eq 1 ]; then
-    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-  else
-    LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-  fi
+  #if [ $BUILD_DEBUG -eq 1 ]; then
+  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
+  #else
+  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
+  #fi
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
-}
-
-update_llvm()
-{
-  necho "$LLVM\t\t\t"
-
-  # FIXME: currently llvm does not use git
-  if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
-    echo "[Error] (git directory missing) "; exit;
-  fi
-
-  cd $ROOT_DIR/src/$LLVM
-
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    #if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
-    #  echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-    #fi
-
-    necho "[Checking] "
-    leval git remote update
-  fi
-
-  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
-
-    if [ $BUILD_LOCAL -eq 0 ]; then
-      necho "[Pulling] "
-      leval git pull --all 
-    fi
-
-    if [ $FORCE_CONFIGURE -eq 1 ]; then 
-      necho "[Configuring] "
-      config_llvm 
-    fi
-
-    if [ $FORCE_CLEAN -eq 1 ]; then 
-      necho "[Cleaning] "
-      build_llvm clean
-    fi
-
-    necho "[Compiling] "
-    build_llvm "DISABLE_ASSERTIONS=1 "
-    build_llvm 
-
-    necho "[Installing] "
-    mkdir -p $LLVM_ROOT
-    build_llvm install
-
-  fi
-
-  necho "[Done]\n"
 }
 
 install_llvm_package()
@@ -610,40 +558,10 @@ install_llvm_package()
   necho "[Configuring] "
   config_llvm 
 
-  necho "[Compiling] "
+  necho "[Compiling Debug] "
   build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
-  build_llvm 
-
-  necho "[Installing] "
-  mkdir -p $LLVM_ROOT
-  build_llvm install
-
-  necho "[Done]\n"
-}
-
-install_llvm()
-{
-  necho "$LLVM\t\t\t"
-  check_dirs $LLVM || { return 0; }
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone $LLVM_GIT 
-
-  cd $ROOT_DIR"/src/$LLVM"
-
-  leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH 
-
-  if test ${GIT_TAG+defined}; then
-    necho "[Fetching $GIT_TAG] "
-    leval git checkout $GIT_TAG
-  fi
-
-  necho "[Configuring] "
-  config_llvm 
-
-  necho "[Compiling] "
-  build_llvm 
+  necho "[Compiling Release] "
+  build_llvm
 
   necho "[Installing] "
   mkdir -p $LLVM_ROOT
@@ -678,9 +596,6 @@ install_stp()
   necho "$STP\t\t\t"
   check_dirs $STP || { return 0; }
   get_package $STP_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$STP"
-
-  #necho "[Cloning] "
-  #leval svn co -r $STP_REV $STP_SVN $STP
 
   cd $ROOT_DIR/src/$STP 
 
@@ -754,9 +669,8 @@ make_klee()
 
   cd $ROOT_DIR/src/klee
   #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
-  #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 -j $MAKE_THREADS "
   KLEE_MAKE_OPTIONS="-j $MAKE_THREADS "
-  #KLEE_MAKE_OPTIONS+="ENABLE_GOOGLE_PROFILER=1 "
+  KLEE_MAKE_OPTIONS+="ENABLE_GOOGLE_PROFILER=1 "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     KLEE_MAKE_OPTIONS+="KLEE_USE_CXX11=1 "
@@ -766,26 +680,20 @@ make_klee()
    KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
   fi
 
+  if [ $USE_TSAN -eq 1 ]; then
+     KLEE_MAKE_OPTIONS+=" ENABLE_THREAD_SANITIZER=1 "
+  fi
+
   local klee_ldflags="-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib "
   local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
   local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   local klee_cflags="-I${GLIBC_INCLUDE_PATH}"
 
-  if [ $USE_TSAN -eq 1 ]; then
-    klee_ld_flags+="-ltsan -pie "
-    klee_cxx_flags+="-fPIE -fPIC -fsanitize=thread "
-  fi
-
   if [ $USE_LLVM29 -eq 1 ]; then
     klee_cxx_flags+="-fdiagnostics-color=always "
   fi
 
-  KLEE_ENV_OPTIONS+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxx_flags}\" CPPFLAGS=\"${klee_cppflags}\" CFLAGS=\"${klee_cflags}\" "
-
-  #KLEE_ENV_OPTIONS+="LDFLAGS=\"-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib\" "
-  #KLEE_ENV_OPTIONS+="CXXFLAGS=\" -I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH}\" "
-  #KLEE_ENV_OPTIONS+="CPPFLAGS=\"-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include\" "
-  #KLEE_ENV_OPTIONS+="CFLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
+  KLEE_ENV_OPTIONS+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxxflags}\" CPPFLAGS=\"${klee_cppflags}\" CFLAGS=\"${klee_cflags}\" "
 
   ### HACK ### need to remove libraries from install location so that
   # old klee/cliver libs are not used before recently compiled libs
@@ -853,11 +761,6 @@ install_klee()
 
   leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
   
-  if test ${GIT_TAG+defined}; then
-    necho "[Fetching $GIT_TAG] "
-    leval git checkout $GIT_TAG
-  fi
-
   necho "[Configuring] "
   config_klee
 
@@ -979,11 +882,6 @@ install_tetrinet()
     leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
   fi
 
-  if test ${GIT_TAG+defined}; then
-    necho "[Fetching $GIT_TAG] "
-    leval git checkout $GIT_TAG
-  fi
-
   build_tetrinet
 
   necho "[Done]\n"
@@ -1065,11 +963,6 @@ install_xpilot_with_wllvm()
 
   if [ "$XPILOT_BRANCH" != "master" ]; then
     leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
-  fi
-
-  if test ${GIT_TAG+defined}; then
-    necho "[Fetching $GIT_TAG] "
-    leval git checkout $GIT_TAG
   fi
 
   config_and_build_xpilot_with_wllvm
@@ -1236,8 +1129,8 @@ main()
         ;;
    
       t)
-        lecho "Installing versions tagged with $OPTARG"
-        GIT_TAG="$OPTARG"
+        lecho "Building klee with ThreadSanitizer"
+        USE_TSAN=1
         ;;
 
       :)
