@@ -308,6 +308,36 @@ install_sparsehash()
   necho "[Done]\n"
 }
 
+install_ghmm()
+{
+  necho "$GHMM\t\t\t"
+  check_dirs $GHMM || { return 0; }
+
+  necho "[Cloning] "
+  leval svn co $GHMM_SVN $ROOT_DIR/src/$GHMM
+  cd $ROOT_DIR/src/$GHMM
+
+  necho "[Configuring] "
+  leval ./autogen.sh
+  GHMM_CONFIG_OPTIONS="--prefix=$GHMM_ROOT --without-python "
+
+  GHMM_MAKE_OPTIONS=""
+  if test ${ALTCC+defined}; then
+    GHMM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+    GHMM_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+  fi
+
+  leval $ROOT_DIR/src/$GHMM/configure $GHMM_CONFIG_OPTIONS
+
+  necho "[Compiling] "
+  leval make -j $MAKE_THREADS $GHMM_MAKE_OPTIONS
+
+  necho "[Installing] "
+  leval make $GHMM_MAKE_OPTIONS install
+
+  necho "[Done]\n"
+}
+
 install_google_perftools()
 {
   necho "$GOOGLE_PERFTOOLS\t\t"
@@ -1193,6 +1223,7 @@ main()
     install_stp
     #install_stp_git
     install_openssl
+    install_ghmm
     install_klee
     install_zlib
     install_expat
