@@ -95,6 +95,8 @@ initialize_root_directories()
     exit
   fi
 
+  LOCAL_ROOT="$ROOT_DIR/local"
+
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"

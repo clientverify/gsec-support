@@ -8,6 +8,7 @@ set -o pipefail # exit on fail of any command in a pipe
 #WRAPPER="`readlink -f "$0"`"
 #HERE="`dirname "$WRAPPER"`"
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ERROR_EXIT=1
 
 # Include gsec_common
 . $HERE/gsec_common
@@ -22,9 +23,11 @@ BUILD_LOCAL=0 # build local code, don't checkout from git
 SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
+SKIP_TESTS=0
 INSTALL_LLVMGCC_BIN=1
 USE_LLVM29=0
 USE_TSAN=0
+USE_ASAN=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
@@ -600,6 +603,42 @@ install_llvm_package()
   necho "[Done]\n"
 }
 
+update_llvm_package()
+{
+  necho "$LLVM\t\t"
+  if [ ! -e "$ROOT_DIR/src/$LLVM/" ] || [ ! -e "$ROOT_DIR/build/$LLVM" ]; then
+    echo "(directory missing)"; exit;
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] ; then
+    if [ $FORCE_CONFIGURE -eq 1 ]; then
+      necho "[Configuring] "
+      config_llvm
+    fi
+
+    if [ $BUILD_DEBUG -eq 1 ]; then
+      necho "[Compiling Debug] "
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
+
+      necho "[Installing Debug] "
+      mkdir -p $LLVM_ROOT
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
+
+    else
+
+      necho "[Compiling Release] "
+      build_llvm
+
+      necho "[Installing Debug] "
+      mkdir -p $LLVM_ROOT
+      build_llvm install
+
+    fi
+  fi
+  necho "[Done]\n"
+}
+
+
 install_stp_git()
 {
   necho "$STP\t\t\t"
@@ -656,7 +695,7 @@ install_stp()
   leval ${STP_COMPILER_OPTIONS} ./scripts/configure $STP_CONFIG_FLAGS
 
   # Building with multiple threads causes errors
-  local STP_MAKE_FLAGS=" ${STP_COMPILER_OPTIONS} OPTIMIZE=-O2 CFLAGS_M32=\" -fPIC \" VERBOSE=1 "
+  local STP_MAKE_FLAGS=" ${STP_COMPILER_OPTIONS} OPTIMIZE=-O2 CFLAGS_M32=\" -g -fPIC \" VERBOSE=1 "
 
   necho "[Compiling] "
   leval make $STP_MAKE_FLAGS
@@ -702,21 +741,28 @@ make_klee()
   if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
   cd $ROOT_DIR/src/klee
-  #KLEE_MAKE_OPTIONS="NO_PEDANTIC=1 NO_WEXTRA=1 RUNTIME_ENABLE_OPTIMIZED=1 REQUIRES_RTTI=1 -j $MAKE_THREADS "
-  KLEE_MAKE_OPTIONS="-j $MAKE_THREADS "
-  KLEE_MAKE_OPTIONS+="ENABLE_GOOGLE_PROFILER=1 "
+
+  local make_options=""
+  local env_options=""
+
+  make_options+="-j $MAKE_THREADS "
+  make_options+="ENABLE_GOOGLE_PROFILER=1 "
 
   if test ${ALTCC+defined}; then
-   KLEE_MAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX VERBOSE=1 "
+   make_options+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
   if [ $USE_TSAN -eq 1 ]; then
-     KLEE_MAKE_OPTIONS+=" ENABLE_THREAD_SANITIZER=1 "
+     make_options+=" ENABLE_THREAD_SANITIZER=1 "
+  elif [ $USE_ASAN -eq 1 ]; then
+     make_options+=" ENABLE_ADDRESS_SANITIZER=1 "
   fi
 
+
   local klee_ldflags="-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib "
-  local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
-  local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
+  local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
+  #local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
+  #local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   local klee_cflags="-I${GLIBC_INCLUDE_PATH}"
 
   if [ $USE_LLVM29 -eq 0 ]; then
@@ -726,16 +772,15 @@ make_klee()
     klee_cxxflags+="-Wno-unused-functions -Wno-unused-local-typedefs "
   else
     klee_cxxflags+="-std=c++0x "
-    klee_cppflags+="-std=c++0x "
   fi
 
-  KLEE_ENV_OPTIONS+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxxflags}\" CPPFLAGS=\"${klee_cppflags}\" CFLAGS=\"${klee_cflags}\" "
+  env_options+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxxflags}\" CFLAGS=\"${klee_cflags}\" "
 
   ### HACK ### need to remove libraries from install location so that
   # old klee/cliver libs are not used before recently compiled libs
-  #leval make $KLEE_MAKE_OPTIONS uninstall
+  #leval make $make_options uninstall
 
-  leval make $KLEE_ENV_OPTIONS $KLEE_MAKE_OPTIONS $TARGET
+  leval make $env_options $make_options $TARGET
 }
 
 build_klee_helper()
@@ -750,7 +795,21 @@ build_klee_helper()
   fi
 
   necho "[Compiling$tag] "
-  make_klee $options
+  make_klee "$options"
+
+  if [ $SKIP_TESTS -eq 0 ]; then
+    necho "[Testing$tag] "
+    cd $ROOT_DIR/src/klee
+
+    if [ $USE_TSAN -eq 1 ]; then
+      leval make "$options" VERBOSE=1 ENABLE_THREAD_SANITIZER=1 test
+    elif [ $USE_ASAN -eq 1 ]; then
+      make_options+=" ENABLE_ADDRESS_SANITIZER=1 "
+      leval make "$options" VERBOSE=1 ENABLE_ADDRESS_SANITIZER=1 test
+    else
+      leval make "$options" VERBOSE=1 test
+    fi
+  fi
 
   necho "[Installing$tag] "
   make_klee "$options install"
@@ -770,7 +829,7 @@ build_klee()
   local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1  "
   local debug_tag=""
 
-  local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
+  #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
   local optimized_tag="-opt"
 
   #build_klee_helper "$optimized_build_options" "$optimized_tag"
@@ -1037,8 +1096,10 @@ config_and_build_openssl()
   leval make $make_options depend
   leval make $make_options
 
-  necho "[Testing] "
-  leval make $make_options test
+  if [ $SKIP_TESTS -eq 0 ]; then
+    necho "[Testing] "
+    leval make $make_options test
+  fi
 
   necho "[Installing] "
   mkdir -p $OPENSSL_ROOT
@@ -1098,13 +1159,36 @@ install_openssl()
 
 ###############################################################################
 
+on_exit()
+{
+  if [ $ERROR_EXIT -eq 1 ]; then
+    lecho "Error"
+    if ! [ $VERBOSE_OUTPUT -eq 1 ]; then
+      if test ${LOG_FILE+defined}; then
+        necho "\n\n"
+        grep "error: " ${LOG_FILE} | tail -n 20
+        necho "\n"
+      fi
+    fi
+  fi
+  if [ $ERROR_EXIT -eq 0 ]; then
+    lecho "Success! Elapsed time: $(elapsed_time $start_time)"
+  fi
+}
+
+###############################################################################
+
 main() 
 {
+  echo
+  echo "====--configuration--===="
   while getopts ":afkcivsb:r:j:dltn" opt; do
     case $opt in
       a)
-        lecho "Forcing alternative gcc"
-        set_alternate_gcc
+        #lecho "Forcing alternative gcc"
+        #set_alternate_gcc
+        lecho "Building klee with AddressSanitizer"
+        USE_ASAN=1
         ;;
   
       f)
@@ -1134,7 +1218,6 @@ main()
         ;;
   
       i)
-        lecho "Installing packages"
         INSTALL_PACKAGES=1
         ;;
   
@@ -1150,8 +1233,8 @@ main()
         ;;
   
       s)
-        lecho "Building llvm-gcc from source"
-        INSTALL_LLVMGCC_BIN=0
+        lecho "\"Speedy build\" skipping tests"
+        SKIP_TESTS=1
         ;;
   
       r)
@@ -1201,10 +1284,10 @@ main()
 
   initialize_logging $@
 
-  # record start time
-  start_time=$(elapsed_time)
-  
+
   if [ $INSTALL_PACKAGES -eq 1 ]; then
+    echo
+    echo "====--installation--===="
   
     mkdir -p $ROOT_DIR/{src,local,build}
 
@@ -1237,6 +1320,8 @@ main()
     install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
+    echo
+    echo "====--update--===="
     case $SELECTIVE_BUILD_TARGET in 
       klee*)
         update_klee
@@ -1250,22 +1335,35 @@ main()
       openssl)
         update_openssl
         ;;
+      llvm)
+        update_llvm_package
+        ;;
+      *)
+       echo "${SELECTIVE_BUILD_TARGET} not found!"; exit
+        ;;
     esac
 
   else
+    echo
+    echo "====--update--===="
     # update all
     update_wllvm
     update_openssl
     update_klee
     update_tetrinet
-    update_xpilot llvm
-    update_xpilot x86
-  
+    update_xpilot_with_wllvm
   fi
   
-  lecho "Elapsed time: $(elapsed_time $start_time)"
+  echo
 }
+
+# set up exit handler
+trap on_exit EXIT
+
+# record start time
+start_time=$(elapsed_time)
 
 # Run main
 main "$@"
+ERROR_EXIT=0
 
