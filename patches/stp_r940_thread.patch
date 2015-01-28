@@ -1,6 +1,7 @@
---- stp.orig/src/c_interface/c_interface.cpp	2014-05-01 22:03:50.484615367 -0400
-+++ stp/src/c_interface/c_interface.cpp	2014-03-31 21:10:15.608336345 -0400
-@@ -25,7 +25,7 @@
+diff -rupN stp/src/c_interface/c_interface.cpp stp.new/src/c_interface/c_interface.cpp
+--- stp/src/c_interface/c_interface.cpp	2012-11-07 12:05:44.000000000 -0500
++++ stp.new/src/c_interface/c_interface.cpp	2015-01-27 16:26:24.380088210 -0500
+@@ -25,7 +25,7 @@ typedef BEEV::BVSolver*
  typedef BEEV::AbsRefine_CounterExample * ctrexamplestar;
  typedef BEEV::ASTVec                     nodelist;
  typedef BEEV::CompleteCounterExample*    CompleteCEStar;
@@ -9,9 +10,22 @@
  //vector<BEEV::ASTNode *> created_exprs;
  
  // persist holds a copy of ASTNodes so that the reference count of
---- stp.orig/src/main/Globals.cpp	2014-05-01 22:03:50.408616322 -0400
-+++ stp/src/main/Globals.cpp	2014-04-04 18:12:30.980455855 -0400
-@@ -16,11 +16,11 @@
+diff -rupN stp/src/extlib-abc/aig/cnf/cnfCore.c stp.new/src/extlib-abc/aig/cnf/cnfCore.c
+--- stp/src/extlib-abc/aig/cnf/cnfCore.c	2012-11-07 12:05:57.000000000 -0500
++++ stp.new/src/extlib-abc/aig/cnf/cnfCore.c	2015-01-27 17:08:24.778899183 -0500
+@@ -24,7 +24,7 @@
+ ///                        DECLARATIONS                              ///
+ ////////////////////////////////////////////////////////////////////////
+
+-static Cnf_Man_t * s_pManCnf = NULL;
++static __thread Cnf_Man_t * s_pManCnf = NULL;
+
+ ////////////////////////////////////////////////////////////////////////
+ ///                     FUNCTION DEFINITIONS                         ///
+diff -rupN stp/src/main/Globals.cpp stp.new/src/main/Globals.cpp
+--- stp/src/main/Globals.cpp	2012-11-07 12:05:47.000000000 -0500
++++ stp.new/src/main/Globals.cpp	2015-01-27 16:26:24.380088210 -0500
+@@ -16,11 +16,11 @@ namespace BEEV
    enum inputStatus input_status = NOT_DECLARED;
  
    //Originally just used by the parser, now used elesewhere.
@@ -26,9 +40,10 @@
  
    void (*vc_error_hdlr)(const char* err_msg) = NULL;
  
---- stp.orig/src/main/Globals.h	2014-05-01 22:03:50.412616272 -0400
-+++ stp/src/main/Globals.h	2014-04-04 18:12:32.212440367 -0400
-@@ -72,9 +72,9 @@
+diff -rupN stp/src/main/Globals.h stp.new/src/main/Globals.h
+--- stp/src/main/Globals.h	2012-11-07 12:05:47.000000000 -0500
++++ stp.new/src/main/Globals.h	2015-01-27 16:26:24.380088210 -0500
+@@ -72,9 +72,9 @@ namespace BEEV
    extern ASTNode ASTFalse, ASTTrue, ASTUndefined;
  
    //Useful global variables. Use for parsing only
