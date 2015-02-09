@@ -546,7 +546,7 @@ config_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic  "
+  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic --enable-libffi "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
