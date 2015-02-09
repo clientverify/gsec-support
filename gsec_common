@@ -1,7 +1,7 @@
 # This file contains common variables and routines for the gsec scripts *- sh -*
 
 # Packages
-LLVM="llvm-3.4.2"
+LLVM="llvm"
 LLVMGCC="llvm-gcc-4.2-2.9"
 LLVMGCC_BIN="clang+llvm-3.4.2"
 LLVM_CC="clang"
@@ -27,7 +27,7 @@ OPENSSL="openssl"
 GHMM="ghmm"
 
 # Repository Branches
-LLVM_BRANCH="cliver_27"
+LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="openssl-llvm34"
 TETRINET_BRANCH="master"

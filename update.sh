@@ -623,21 +623,106 @@ update_llvm_package()
       necho "[Installing Debug] "
       mkdir -p $LLVM_ROOT
       build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
-
     else
-
       necho "[Compiling Release] "
       build_llvm
 
-      necho "[Installing Debug] "
+      necho "[Installing Release] "
       mkdir -p $LLVM_ROOT
       build_llvm install
-
     fi
   fi
   necho "[Done]\n"
 }
 
+update_llvm()
+{
+  necho "$LLVM\t\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$LLVM
+
+  if [ $BUILD_LOCAL -eq 0 ]; then
+    if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+    fi
+
+    necho "[Checking] "
+    leval git remote update
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      necho "[Pulling] "
+      leval git pull --all
+    fi
+
+    if [ $FORCE_CONFIGURE -eq 1 ]; then
+      necho "[Configuring] "
+      config_llvm
+    fi
+
+    if [ $FORCE_CLEAN -eq 1 ]; then
+      necho "[Cleaning] "
+      build_llvm clean
+    fi
+
+    if [ $BUILD_DEBUG -eq 1 ]; then
+      necho "[Compiling Debug] "
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
+
+      necho "[Installing Debug] "
+      mkdir -p $LLVM_ROOT
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
+    else
+      necho "[Compiling Release] "
+      build_llvm
+
+      necho "[Installing Release] "
+      mkdir -p $LLVM_ROOT
+      build_llvm install
+    fi
+  fi
+  necho "[Done]\n"
+}
+
+
+install_llvm()
+{
+  necho "$LLVM\t\t\t"
+  check_dirs $LLVM || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone $LLVM_GIT
+
+  cd $ROOT_DIR"/src/$LLVM"
+
+  leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH
+
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout $GIT_TAG
+  fi
+
+  necho "[Configuring] "
+  config_llvm
+
+  necho "[Compiling Debug] "
+  build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
+  necho "[Compiling Release] "
+  build_llvm
+
+  necho "[Installing] "
+  mkdir -p $LLVM_ROOT
+  build_llvm install
+
+  necho "[Done]\n"
+}
 
 install_stp_git()
 {
@@ -1297,7 +1382,7 @@ main()
       install_llvmgcc_from_source
     fi
 
-    install_llvm_package
+    install_llvm
   
     # google perftools requires libunwind on x86_64
     if [ "$(uname)" != "Darwin" ] ; then
@@ -1336,7 +1421,7 @@ main()
         update_openssl
         ;;
       llvm)
-        update_llvm_package
+        update_llvm
         ;;
       *)
        echo "${SELECTIVE_BUILD_TARGET} not found!"; exit
