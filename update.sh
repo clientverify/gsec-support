@@ -1082,7 +1082,7 @@ config_and_build_xpilot_with_wllvm()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__ "
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   necho "[Configuring] "
@@ -1095,6 +1095,10 @@ config_and_build_xpilot_with_wllvm()
   mkdir -p $XPILOT_ROOT
   leval make $make_options install
   leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11
+
+  necho "[Optimizing] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11.bc
 }
 
 update_xpilot_with_wllvm()
@@ -1157,7 +1161,7 @@ config_and_build_openssl()
   openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
-  #openssl_config_options+="-d " # compile with debugging symbols
+  openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1165,7 +1169,7 @@ config_and_build_openssl()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
@@ -1190,6 +1194,10 @@ config_and_build_openssl()
   mkdir -p $OPENSSL_ROOT
   leval make install_sw
   leval extract-bc $OPENSSL_ROOT/bin/openssl
+
+  necho "[Optimizing] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt.bc ${OPENSSL_ROOT}/bin/openssl.bc
 }
 
 update_openssl()
