@@ -20,6 +20,7 @@ usage()
   echo -e "$(basename $0)\n\nUSAGE:"
   echo -e "\t-s [source]\t\t\t(source directory(s) to be recursively searched for debug.txt files)(REQUIRED)" 
   echo -e "\t-d [destination]\t\t(ssh://server:direcory to copy formated results)(REQUIRED)"
+  echo -e "\t-b [data tag]\t\t\t(name of subdirectory)(default=recent)"
   echo -e "\t-h \t\t\t\t(help/usage)"
 }
 
