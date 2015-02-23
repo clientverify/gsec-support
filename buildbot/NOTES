@@ -1,0 +1,24 @@
+Buildbot setup notes
+
+*******
+Install
+*******
+
+In order to get the latest version of buildbot on Ubuntu 12.04 LTS, I
+installed the prerequisites using apt-get, but buildbot itself using
+python pip.  http://docs.buildbot.net/latest/manual/installation.html
+
+*************
+Initial setup
+*************
+
+buildbot create-master master
+mv master/master.cfg.sample master/master.cfg
+# edit master/master.cfg to be the file in this directory
+buildbot start master
+tail -f master/twistd.log
+
+buildslave create-slave slave localhost:9989 beef3-slave cliver
+# check slave/buildbot.tac, edit slave/info/admin & host
+buildslave start slave
+
