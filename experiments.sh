@@ -12,6 +12,11 @@ set -o pipefail # exit on fail of any command in a pipe
 
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ERROR_EXIT=1
+PROG=$(basename $0)
+
+# gsec_common required variables
+ROOT_DIR="`pwd`"
+VERBOSE_OUTPUT=0
 
 # Include gsec_common
 . $HERE/gsec_common
@@ -24,14 +29,26 @@ ERROR_EXIT=1
 EXP_CONFIG="" # experiment config file 
 
 ###############################################################################
+# Variables that can be defined in config file
+
+EXPERIMENT_LIST=()
+EXPERIMENT_LIST_OUTPUT=()
+CLIENT_LIST=()
+CLIENT_LIST_KTEST=()
+CLIENT_LIST_DATA_TAG=()
+CLIENT_LIST_EXTRA_PARAMETERS=()
+CLIENT_LIST_EXTRA_PARAMETERS=()
+RESULTS_LOCATION=""
+
+###############################################################################
 
 on_exit()
 {
   if [ $ERROR_EXIT -eq 1 ]; then
-    echo "Error"
+    lecho "Error"
   fi
   if [ $ERROR_EXIT -eq 0 ]; then
-    echo "Elapsed time: $(elapsed_time $start_time)"
+    lecho "Elapsed time: $(elapsed_time $start_time)"
   fi
 }
 
@@ -39,6 +56,8 @@ on_exit()
 
 run_experiments()
 {
+  lecho "Running Cliver Experiments"
+
   clientListLen=${#CLIENT_LIST[@]}
   expListLen=${#EXPERIMENT_LIST[@]}
 
@@ -52,11 +71,13 @@ run_experiments()
     do
       client=${CLIENT_LIST[$j]}
       extra_params=${CLIENT_LIST_EXTRA_PARAMETERS[$j]}
-      data_tag=${CLIENT_LIST_DATA_TAG[$j]}
+      #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
+      data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-      ./gsec-support/cliver.sh -t $expType -c $client -b $data_tag -x "$extra_params" -o $expOutput
+      cliver_command="./gsec-support/cliver.sh -s -t $expType -c $client -b $data_tag -x \"$extra_params\" -o $expOutput"
+      lecho "EXEC: ${cliver_command}"
+      eval ${cliver_command}
     done
-
   done
 }
 
@@ -64,6 +85,8 @@ run_experiments()
 
 copy_results()
 {
+  lecho "Copying Cliver Output"
+
   clientListLen=${#CLIENT_LIST[@]}
   expListLen=${#EXPERIMENT_LIST[@]}
 
@@ -77,12 +100,11 @@ copy_results()
     do
       client=${CLIENT_LIST[$j]}
       extra_params=${CLIENT_LIST_EXTRA_PARAMETERS[$j]}
-      data_tag=${CLIENT_LIST_DATA_TAG[$j]}
+      #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
+      data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-      ./gsec-support/copy_results.sh -s data/$expOutput -d ${RESULTS_LOCATION} -b $data_tag
+      leval ./gsec-support/copy_results.sh -s data/$expOutput -d ${RESULTS_LOCATION} -b $data_tag
     done
-
-
   done
 }
 
@@ -90,12 +112,13 @@ copy_results()
 
 do_plots()
 {
+  lecho "Plotting Cliver Data"
   clientListLen=${#CLIENT_LIST[@]}
 
   for (( j=0; j<${clientListLen}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
-    ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client
+    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client
   done
 }
 
@@ -103,6 +126,7 @@ do_plots()
 
 generate_plot_html()
 {
+  lecho "Generating HTML"
   clientListLen=${#CLIENT_LIST[@]}
 
   for (( j=0; j<${clientListLen}; ++j ));
@@ -123,8 +147,62 @@ generate_plot_html()
 
 ###############################################################################
 
+load_config()
+{
+  lecho "Loading Experiment Config File: ${EXP_CONFIG}"
+
+  source ${EXP_CONFIG}
+
+  # check the configuration file
+
+  expListLen=${#EXPERIMENT_LIST[@]}
+  expListOutputLen=${#EXPERIMENT_LIST_OUTPUT[@]}
+
+  if [ "$expListLen" -ne "$expListOutputLen" ]; then
+    echo "${PROG}: EXPERIMENT_LIST* vars not equal lengths"
+    exit
+  fi
+
+  clientListLen=${#CLIENT_LIST[@]}
+  clientListKtestLen=${#CLIENT_LIST_KTEST[@]}
+  #clientListDataTagLen=${#CLIENT_LIST_DATA_TAG[@]}
+  clientListExtraParametersLen=${#CLIENT_LIST_EXTRA_PARAMETERS[@]}
+
+     #[ "$clientListLen" -ne "$clientListDataTagLen" ] ||
+  if [ "$clientListLen" -ne "$clientListKtestLen" ] ||
+     [  "$clientListLen" -ne "$clientListExtraParametersLen" ]; then
+    echo "CLIENT_LIST* variables not equal lengths"
+    echo "${PROG}: CLIENT_LIST* vars not equal lengths"
+    exit
+  fi
+}
+
+###############################################################################
+
+sync_ktest_data()
+{
+  lecho "Syncing Ktest Data"
+
+  clientListLen=${#CLIENT_LIST[@]}
+
+  for (( i=0; i<${clientListLen}; ++i ));
+  do
+    local data_tag=$(basename ${CLIENT_LIST_KTEST[$i]})
+    local ktestSrc=${CLIENT_LIST_KTEST[$i]}
+    local ktestDst=$DATA_DIR/network/${CLIENT_LIST[$i]}/${data_tag}
+    mkdir -p $ktestDst
+    #rsync -ave ssh $ktestSrc $ktestDst
+    leval cp -r $ktestSrc $ktestDst
+  done
+}
+
+###############################################################################
+
 main() 
 {
+  initialize_root_directories
+  initialize_logging $@
+
   while getopts "c:" opt; do
     case $opt in
       c)
@@ -137,19 +215,22 @@ main()
     esac
   done
 
-  echo "Reading experiment config file: ${EXP_CONFIG}"
-  source ${EXP_CONFIG}
+  # source "config" file and sanity check array lengths
+  load_config
 
-  # do the experiments specified in the config file
+  # copy ktest data
+  sync_ktest_data
+
+  ## do the experiments specified in the config file
   run_experiments
 
-  # copy the results to location specified in config file
+  ## copy the results to location specified in config file
   copy_results
 
-  # create plots with R
+  ## create plots with R
   do_plots
-  
-  # create simple html for viewing plots
+
+  ## create simple html for viewing plots
   generate_plot_html
 }
 
