@@ -74,7 +74,7 @@ main()
         local stats_file="$(basename $(dirname $file) ).txt"
         local dest=$output_dir/$stats_file
         #echo "grep STATS file=$file > dest=$dest"
-        grep STATS $file > $dest
+        grep STATS $file | cut -d " " -f 2- > $dest
         #echo "done"
 
         if [[ $(wc -l $dest | awk '{print $1}' ) -eq 0 ]]; then
