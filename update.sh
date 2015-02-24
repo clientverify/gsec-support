@@ -1076,12 +1076,15 @@ install_tetrinet()
 
 config_and_build_xpilot_with_wllvm()
 {
+  local llvm_compiler_options=$1
+  local tag=$2
+
   local xpilot_config_options=""
   xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
   xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
   xpilot_config_options+="--disable-replay --disable-sound "
   xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  #xpilot_config_options+="--program-suffix=-$1 "
+  xpilot_config_options+="--program-suffix=${tag} "
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1089,23 +1092,23 @@ config_and_build_xpilot_with_wllvm()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__ "
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DXLIB_ILLEGAL_ACCESS -D__GNUC__ ${llvm_compiler_options} "
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring] "
+  necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
 
-  necho "[Compiling] "
+  necho "[Compiling${tag}] "
   leval make $make_options
 
-  necho "[Installing] "
+  necho "[Installing${tag}] "
   mkdir -p $XPILOT_ROOT
   leval make $make_options install
-  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11
+  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11${tag}
 
-  necho "[Optimizing] "
+  necho "[Optimizing${tag}] "
   local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
-  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11.bc
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}.bc
 }
 
 update_xpilot_with_wllvm()
@@ -1134,7 +1137,9 @@ update_xpilot_with_wllvm()
       leval git pull --all
     fi
 
-    config_and_build_xpilot_with_wllvm
+    # Build two versions of xpilot, to support cliver and lli
+    config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
+    config_and_build_xpilot_with_wllvm " " "-run"
   fi
 
   necho "[Done]\n"
@@ -1156,13 +1161,18 @@ install_xpilot_with_wllvm()
     leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
   fi
 
-  config_and_build_xpilot_with_wllvm
+  # Build two versions of xpilot, to support cliver and lli
+  config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
+  config_and_build_xpilot_with_wllvm " " "-run"
 
   necho "[Done]\n"
 }
 
 config_and_build_openssl()
 {
+  local llvm_compiler_options=$1
+  local tag=$2
+
   local openssl_config_options=""
   openssl_config_options+="--prefix=${OPENSSL_ROOT} "
   openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
@@ -1176,7 +1186,7 @@ config_and_build_openssl()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
@@ -1185,10 +1195,10 @@ config_and_build_openssl()
   echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
   chmod +x "${MAKEDEPEND}"
 
-  necho "[Configuring] "
+  necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
-  necho "[Compiling] "
+  necho "[Compiling${tag}] "
   leval make $make_options depend
   leval make $make_options
 
@@ -1197,14 +1207,15 @@ config_and_build_openssl()
     leval make $make_options test
   fi
 
-  necho "[Installing] "
+  necho "[Installing${tag}] "
   mkdir -p $OPENSSL_ROOT
   leval make install_sw
   leval extract-bc $OPENSSL_ROOT/bin/openssl
+  leval cp $OPENSSL_ROOT/bin/openssl.bc $OPENSSL_ROOT/bin/openssl${tag}.bc
 
-  necho "[Optimizing] "
+  necho "[Optimizing${tag}] "
   local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
-  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt.bc ${OPENSSL_ROOT}/bin/openssl.bc
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt${tag}.bc ${OPENSSL_ROOT}/bin/openssl${tag}.bc
 }
 
 update_openssl()
@@ -1232,7 +1243,9 @@ update_openssl()
       leval git pull --all
     fi
 
-    config_and_build_openssl
+    # Build two versions of openssl, to support cliver and lli
+    config_and_build_openssl "-DKLEE" "-klee"
+    config_and_build_openssl " " "-run"
   fi
 
   necho "[Done]\n"
@@ -1252,7 +1265,9 @@ install_openssl()
 
   leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
 
-  config_and_build_openssl
+  # Build two versions of openssl, to support cliver and lli
+  config_and_build_openssl "-DKLEE" "-klee"
+  config_and_build_openssl " " "-run"
 
   necho "[Done]\n"
 }
