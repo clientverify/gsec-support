@@ -712,14 +712,21 @@ install_llvm()
   necho "[Configuring] "
   config_llvm
 
-  necho "[Compiling Debug] "
-  build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
-  necho "[Compiling Release] "
-  build_llvm
+  if [ $BUILD_DEBUG -eq 1 ]; then
+    necho "[Compiling Debug] "
+    build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
 
-  necho "[Installing] "
-  mkdir -p $LLVM_ROOT
-  build_llvm install
+    necho "[Installing Debug] "
+    mkdir -p $LLVM_ROOT
+    build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
+  else
+    necho "[Compiling Release] "
+    build_llvm
+
+    necho "[Installing Release] "
+    mkdir -p $LLVM_ROOT
+    build_llvm install
+  fi
 
   necho "[Done]\n"
 }
