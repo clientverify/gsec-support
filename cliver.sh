@@ -19,6 +19,7 @@ set -o pipefail # exit on fail of any command in a pipe
 
 WRAPPER="`readlink -f "$0"`"
 HERE="`dirname "$WRAPPER"`"
+PROG=$(basename $0)
 
 # Include gsec_common
 . $HERE/gsec_common
@@ -35,6 +36,7 @@ USE_HEAP_CHECK=0
 USE_HEAP_CHECK_LOCAL=0
 ROOT_DIR="`pwd`"
 BC_MODE="tetrinet"
+KTEST_DIR=""
 
 # Default cliver options
 CLIVER_BIN_FILE="cliver"
@@ -130,13 +132,17 @@ initialize_bc()
 
   case $BC_MODE in
     openssl*)
-      KTEST_DIR="$DATA_DIR/network/openssl/$DATA_TAG"
-      OPENSSL_CERTS_DIR="$DATA_DIR/network/openssl/certs"
+      if [ -z "$KTEST_DIR" ] ; then
+        KTEST_DIR="$DATA_DIR/network/openssl/$DATA_TAG"
+      fi
+      OPENSSL_CERTS_DIR="$KTEST_DIR/certs"
       BC_FILE="$OPENSSL_ROOT/bin/openssl-opt-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/openssl-klee/$DATA_TAG"
       ;;
     tetri*)
-      KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
+      if [ -z "$KTEST_DIR" ] ; then
+        KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
+      fi
       BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/$DATA_TAG"
       ;;
@@ -147,7 +153,9 @@ initialize_bc()
       #  echo "set XPILOTHOST environment variable before running xpilot"
       #  exit
       #fi
-      KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
+      if [ -z "$KTEST_DIR" ] ; then
+        KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
+      fi
       BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/$DATA_TAG"
       ;;
@@ -523,6 +531,8 @@ usage()
   echo -e "\t-t [verify|training|ncross]\t\t(type of verification)(REQUIRED)" 
   echo -e "\t-c [xpilot|tetrinet|openssl]\t\t\t(client binary)(REQUIRED)"
   echo -e "\t-i [gdb|lsf|interactive]\t\t(run mode)"
+  echo -e "\t-b [\"\"]\t\t\t\\t(name of ktest dir in data\network\[client-type]\ dir)"
+  echo -e "\t-k [\"\"]\t\t\t\\t(full path to ktest directory)"
   echo -e "\t-x [\"\"]\t\t\t\t\t(additional cliver options)"
   echo -e "\t-d [0|1|2]\t\t\t\t(debug level)"
   echo -e "\t-m [gigabytes]\t\t\t\t(maximum memory usage)"
@@ -535,11 +545,15 @@ usage()
 
 main() 
 {
-  while getopts "b:t:o:c:x:i:p:d:r:m:nshvf" opt; do
+  while getopts "b:k:t:o:c:x:i:p:d:r:m:nshvf" opt; do
     case $opt in
 
       b)
         DATA_TAG="$OPTARG"
+        ;;
+
+      k)
+        KTEST_DIR="$OPTARG"
         ;;
 
       f)
@@ -654,7 +668,7 @@ main()
   done
 
   #echo "[cliver mode: $CLIVER_MODE]"
-  echo "Params: $@"
+  #echo "Params: $@"
 
   initialize_root_directories
   initialize_logging $@
@@ -705,7 +719,7 @@ main()
   esac
 
   if [ $USE_LSF -eq 0 ]; then
-    echo "[elapsed time: $(elapsed_time $start_time)]"
+    lecho "${PROG}: elapsed time: $(elapsed_time $start_time)"
   fi
 }
 
