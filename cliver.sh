@@ -1,5 +1,17 @@
 #!/bin/bash
 
+################################################################################
+# cliver.sh - helper script for cliver. 
+#
+# - Handles parameters for openssl, xpilot and tetrinet clients
+# - Several modes for verifying ktest network logs
+#   - naive: BFS search for a valid execution path for a given network log
+#   - training: same as naive but output execution fragments
+#   - ncross: uses output from training mode to guide verification with a
+#     basic cross-validation setup 
+#
+################################################################################
+
 # see http://www.davidpashley.com/articles/writing-robust-shell-scripts.html
 set -u # Exit if uninitialized value is used 
 set -e # Exit on non-true value
@@ -29,20 +41,23 @@ CLIVER_BIN_FILE="cliver"
 CLIVER_MODE="training"
 CLIVER_LIBC="uclibc"
 OUTPUT_LLVM_ASSEMBLY=0
-OUTPUT_LLVM_BITCODE=1
+OUTPUT_LLVM_BITCODE=0
 PRINT_INSTRUCTIONS=0
 MAX_MEMORY=8000
 WARN_MEMORY=6000
 SWITCH_TYPE="simple"
 USE_TEE_BUF=1
 DISABLE_OUTPUT=0
+
+# Debug Flags
 DEBUG_PRINT_EXECUTION_EVENTS=0
 DEBUG_EXECUTION_TREE=0
 DEBUG_ADDRESS_SPACE_GRAPH=0
 DEBUG_STATE_MERGER=0
 DEBUG_NETWORK_MANAGER=0
-DEBUG_SOCKET=1
+DEBUG_SOCKET=0
 DEBUG_SEARCHER=0
+
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
 
@@ -94,6 +109,13 @@ openssl_parameters()
   local bc_file_opts=""
 
   bc_file_opts+=" s_client -msg -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt"
+
+  ## Use this to add extra BC parameters from the commandline
+  if test ${CLIVER_BC_PARAMS+defined}; then
+    
+    bc_file_opts+=" ${CLIVER_BC_PARAMS} "
+  fi
+
   bc_file_opts+=" -connect $IP:$PORT "
 
   printf "%s" "$bc_file_opts"
@@ -110,8 +132,8 @@ initialize_bc()
     openssl*)
       KTEST_DIR="$DATA_DIR/network/openssl/$DATA_TAG"
       OPENSSL_CERTS_DIR="$DATA_DIR/network/openssl/certs"
-      BC_FILE="$OPENSSL_ROOT/bin/openssl.bc"
-      TRAINING_DIR="$DATA_DIR/training/openssl/$DATA_TAG"
+      BC_FILE="$OPENSSL_ROOT/bin/openssl-opt-klee.bc"
+      TRAINING_DIR="$DATA_DIR/training/openssl-klee/$DATA_TAG"
       ;;
     tetri*)
       KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
@@ -119,13 +141,14 @@ initialize_bc()
       TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/$DATA_TAG"
       ;;
     xpilot*)
-      # need to automatically set this var...
-      if test ! ${XPILOTHOST+defined}; then
-        echo "set XPILOTHOST environment variable before running xpilot"
-        exit
-      fi
+      # HACK_HOSTNAME and XPILOTHOST handle this for now...
+      ## need to automatically set this var...
+      #if test ! ${XPILOTHOST+defined}; then
+      #  echo "set XPILOTHOST environment variable before running xpilot"
+      #  exit
+      #fi
       KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
-      BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11.bc"
+      BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11-klee.bc"
       TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/$DATA_TAG"
       ;;
   esac
@@ -292,6 +315,12 @@ do_training()
     cliver_params+="-copy-input-files-to-output-dir=1 "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
 
+    case $BC_MODE in
+      xpilot*)
+        cliver_params+="-use-recv-processing-flag "
+        ;;
+    esac
+
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
     run_cliver $cliver_params
@@ -340,7 +369,6 @@ do_verification()
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
-    cliver_params+="-randomize-fork=true "
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
@@ -348,6 +376,8 @@ do_verification()
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
     run_cliver $cliver_params
+
+    cp $i $CLIVER_OUTPUT_DIR/$ktest_basename/
 
   done
 }
@@ -391,15 +421,23 @@ do_ncross_verification()
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
+    cliver_params+="-use-clustering "
+
+    case $BC_MODE in
+      xpilot*)
+        cliver_params+="-use-recv-processing-flag "
+        ;;
+    esac
 
     for k in $indices; do
       if [[ $NCROSS_MODE == "ncross" ]] ; then
         if [ $i != $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
         fi 
-        if [ $i == $k ]; then
-          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
-        fi 
+        # enable to support self-training checks during verificiation
+        #if [ $i == $k ]; then
+        #  cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        #fi 
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           #cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
@@ -468,6 +506,7 @@ do_training_verification()
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
+
 
     for k in $indices; do
       cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
