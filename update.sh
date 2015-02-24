@@ -1213,64 +1213,75 @@ config_and_build_openssl()
   leval extract-bc $OPENSSL_ROOT/bin/openssl
   leval cp $OPENSSL_ROOT/bin/openssl.bc $OPENSSL_ROOT/bin/openssl${tag}.bc
 
+}
+
+build_optimized_openssl_bitcode()
+{
+  local tag=$1
+
   necho "[Optimizing${tag}] "
   local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt${tag}.bc ${OPENSSL_ROOT}/bin/openssl${tag}.bc
 }
-
-update_openssl()
+ 
+manage_openssl()
 {
   necho "$OPENSSL  \t\t"
+  case $1 in 
+    install)
+      check_dirs $OPENSSL || { return 0; }
 
-  if [ ! -e "$ROOT_DIR/src/$OPENSSL/.git" ]; then
-    echo "[Error] (git directory missing) "; exit;
-  fi
+      cd $ROOT_DIR"/src"
 
-  cd $ROOT_DIR/src/$OPENSSL
+      necho "[Cloning] "
+      leval git clone $OPENSSL_GIT $OPENSSL
 
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    if [ "$(git_current_branch)" != "$OPENSSL_BRANCH" ]; then
-      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-    fi
-    necho "[Checking] "
-    leval git remote update
-  fi
+      cd $ROOT_DIR"/src/$OPENSSL"
 
-  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+      leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
 
-    if [ $BUILD_LOCAL -eq 0 ]; then
-      necho "[Pulling] "
-      leval git pull --all
-    fi
+      # Build two versions of openssl, to support cliver and lli
+      config_and_build_openssl "-DKLEE" "-klee"
+      config_and_build_openssl " " "-run"
+      ;;
 
-    # Build two versions of openssl, to support cliver and lli
-    config_and_build_openssl "-DKLEE" "-klee"
-    config_and_build_openssl " " "-run"
-  fi
+    update)
+      if [ ! -e "$ROOT_DIR/src/$OPENSSL/.git" ]; then
+        echo "[Error] (git directory missing) "; exit;
+      fi
 
+      cd $ROOT_DIR/src/$OPENSSL
+
+      if [ $BUILD_LOCAL -eq 0 ]; then
+        if [ "$(git_current_branch)" != "$OPENSSL_BRANCH" ]; then
+          echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+        fi
+        necho "[Checking] "
+        leval git remote update
+      fi
+
+      if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+        if [ $BUILD_LOCAL -eq 0 ]; then
+          necho "[Pulling] "
+          leval git pull --all
+        fi
+
+        # Build two versions of openssl, to support cliver and lli
+        config_and_build_openssl "-DKLEE" "-klee"
+        config_and_build_openssl " " "-run"
+      fi
+      ;;
+
+    opt*)
+      # runt opt on two versions of openssl, to support cliver and lli
+      build_optimized_openssl_bitcode "-klee"
+      build_optimized_openssl_bitcode "-run"
+      ;;
+  esac
   necho "[Done]\n"
 }
 
-install_openssl()
-{
-  necho "$OPENSSL  \t\t"
-
-  check_dirs $OPENSSL || { return 0; }
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone $OPENSSL_GIT $OPENSSL
-
-  cd $ROOT_DIR"/src/$OPENSSL"
-
-  leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
-
-  # Build two versions of openssl, to support cliver and lli
-  config_and_build_openssl "-DKLEE" "-klee"
-  config_and_build_openssl " " "-run"
-
-  necho "[Done]\n"
-}
 
 ###############################################################################
 
@@ -1427,8 +1438,9 @@ main()
     install_stp
     #install_stp_git
     #install_ghmm
+    manage_openssl install
     install_klee
-    install_openssl
+    manage_openssl opt
     install_zlib
     install_expat
     install_tetrinet
@@ -1448,7 +1460,8 @@ main()
         update_xpilot_with_wllvm
         ;;
       openssl)
-        update_openssl
+        manage_openssl update
+        manage_openssl opt
         ;;
       llvm)
         update_llvm
