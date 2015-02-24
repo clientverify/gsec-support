@@ -22,3 +22,12 @@ buildslave create-slave slave localhost:9989 beef3-slave cliver
 # check slave/buildbot.tac, edit slave/info/admin & host
 buildslave start slave
 
+# To enable the browsing of the directory for build/experiment results:
+mkdir master/public_html/results
+cd master/public_html/results
+ln -s ../../../slave/debug/
+ln -s ../../../slave/hmm/
+ln -s ../../../slave/release/
+cd -
+cp [gsec-support]/buildbot/templates/root.html master/templates/ # or symlink
+# restart buildbot master
