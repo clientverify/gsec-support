@@ -20,6 +20,7 @@ usage()
   echo -e "$(basename $0)\n\nUSAGE:"
   echo -e "\t-s [source]\t\t\t(source directory(s) to be recursively searched for debug.txt files)(REQUIRED)" 
   echo -e "\t-d [destination]\t\t(ssh://server:direcory to copy formated results)(REQUIRED)"
+  echo -e "\t-b [data tag]\t\t\t(name of subdirectory)(default=recent)"
   echo -e "\t-h \t\t\t\t(help/usage)"
 }
 
@@ -73,7 +74,7 @@ main()
         local stats_file="$(basename $(dirname $file) ).txt"
         local dest=$output_dir/$stats_file
         #echo "grep STATS file=$file > dest=$dest"
-        grep STATS $file > $dest
+        grep STATS $file | cut -d " " -f 2- > $dest
         #echo "done"
 
         if [[ $(wc -l $dest | awk '{print $1}' ) -eq 0 ]]; then

@@ -14,7 +14,8 @@ COUNT=0
 COUNT_START=0
 MAX_ROUND=0
 DATA_TAG="recent"
-FPS=50
+FPS=25
+USE_LLI=0
 
 usage()
 {
@@ -26,6 +27,7 @@ usage()
   echo -e "\t-f number\t\t\t\t(xpilot frames per second (FPS))"
   echo -e "\t-o tag\t\t\t\t\t(name of record directory)"
   echo -e "\t-r dir\t\t\t\t\t(root directory)"
+  echo -e "\t-l \t\t\t\t\t(use interpreter (lli) instead of native execution)"
   echo -e "\t-h \t\t\t\t\t(help/usage)"
 }
 
@@ -38,7 +40,7 @@ if test ! ${XPILOTHOST+defined}; then
 fi
 #=============================================================================
 
-while getopts ":vr:j:t:c:m:x:o:f:s:h" opt; do
+while getopts ":vr:j:t:c:m:x:o:f:s:hl" opt; do
   case $opt in
     v)
       VERBOSE_OUTPUT=1
@@ -76,6 +78,10 @@ while getopts ":vr:j:t:c:m:x:o:f:s:h" opt; do
       usage
       exit
       ;;
+    l)
+      echo "Using lli interpreter instead of native code"
+      ;;
+
     :)
       echo "Option -$OPTARG requires an argument"
       usage
@@ -114,6 +120,11 @@ SERVER_COMMAND="$XPILOT_ROOT/bin/$SERVER_BIN $SERVER_OPT "
 CLIENT_BIN="xpilot-ng-x11"
 CLIENT_OPT=" "
 CLIENT_COMMAND="$XPILOT_ROOT/bin/$CLIENT_BIN $CLIENT_OPT "
+
+if [ ${USE_LLI} -eq 1 ]; then
+  CLIENT_BC="$XPILOT_ROOT/bin/$CLIENT_BIN-run-opt.bc"
+  CLIENT_COMMAND="$XPILOT_ROOT/bin/lli -force-interpreter -load=/usr/lib/x86_64-linux-gnu/libX11.so $CLIENT_BC $CLIENT_OPT "
+fi
 
 #=============================================================================
 # output paths
@@ -167,23 +178,26 @@ case "$MODE" in
       done
 
       echo "starting client..."
+      echo "$CLIENT_COMMAND $CLIENT_OPTIONS $SERVER_ADDRESS"
       eval $CLIENT_COMMAND $CLIENT_OPTIONS $SERVER_ADDRESS
       sleep 5
 
-      mv $KTEST_DIR/net_server.log "$KTEST_DIR"/"xpilot_"$i"_server.log" ;
-      mv $KTEST_DIR/net_client.log "$KTEST_DIR"/"xpilot_"$i"_client.log" ;
+      ## Commands below not needed because we now store timing data
+      ## in the ktest file
+      #mv $KTEST_DIR/net_server.log "$KTEST_DIR"/"xpilot_"$i"_server.log" ;
+      #mv $KTEST_DIR/net_client.log "$KTEST_DIR"/"xpilot_"$i"_client.log" ;
 
-      grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_server.log" > "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" ;
-      grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_client.log" > "$KTEST_DIR"/"xpilot_"$i"_client_socket.log" ;
+      #grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_server.log" > "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" ;
+      #grep -a MSGINFO "$KTEST_DIR"/"xpilot_"$i"_client.log" > "$KTEST_DIR"/"xpilot_"$i"_client_socket.log" ;
 
-      # check socket log is correct length
-      LEN=$(wc -l "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" | awk '{print $1}')
-      if [[ $LEN -lt $MAX_ROUND ]]; then
-        echo "ERROR: $KTEST_DIR/xpilot_$i_server_socket.log has only $LEN entries"
-        exit
-      fi
+      ## check socket log is correct length
+      #LEN=$(wc -l "$KTEST_DIR"/"xpilot_"$i"_server_socket.log" | awk '{print $1}')
+      #if [[ $LEN -lt $MAX_ROUND ]]; then
+      #  echo "ERROR: $KTEST_DIR/xpilot_$i_server_socket.log has only $LEN entries"
+      #  exit
+      #fi
 
-      mv $KTEST_DIR/interleave "$KTEST_DIR"/"interleave_$i.log" ;
+      #mv $KTEST_DIR/interleave "$KTEST_DIR"/"interleave_$i.log" ;
 
     done
     ;;

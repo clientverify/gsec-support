@@ -1,6 +1,6 @@
 
 # Read the timestamp data
-read_timestamps()
+#read_timestamps()
 
 # Read cliver logs
 read_all_data()
@@ -50,9 +50,9 @@ graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetecti
 graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
 
 # Trim data by start and min Messages 
-data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
+#data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
 
 # Remove erronous traces
-data = subset(data, trace != 19)
+#data = subset(data, trace != 19)
 
 

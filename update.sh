@@ -546,7 +546,7 @@ config_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic  "
+  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic --enable-libffi "
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -623,21 +623,113 @@ update_llvm_package()
       necho "[Installing Debug] "
       mkdir -p $LLVM_ROOT
       build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
-
     else
-
       necho "[Compiling Release] "
       build_llvm
 
-      necho "[Installing Debug] "
+      necho "[Installing Release] "
       mkdir -p $LLVM_ROOT
       build_llvm install
-
     fi
   fi
   necho "[Done]\n"
 }
 
+update_llvm()
+{
+  necho "$LLVM\t\t\t"
+
+  if [ ! -e "$ROOT_DIR/src/$LLVM/.git" ]; then
+    echo "[Error] (git directory missing) "; exit;
+  fi
+
+  cd $ROOT_DIR/src/$LLVM
+
+  if [ $BUILD_LOCAL -eq 0 ]; then
+    if [ "$(git_current_branch)" != "$LLVM_BRANCH" ]; then
+      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+    fi
+
+    necho "[Checking] "
+    leval git remote update
+  fi
+
+  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+    if [ $BUILD_LOCAL -eq 0 ]; then
+      necho "[Pulling] "
+      leval git pull --all
+    fi
+
+    if [ $FORCE_CONFIGURE -eq 1 ]; then
+      necho "[Configuring] "
+      config_llvm
+    fi
+
+    if [ $FORCE_CLEAN -eq 1 ]; then
+      necho "[Cleaning] "
+      build_llvm clean
+    fi
+
+    if [ $BUILD_DEBUG -eq 1 ]; then
+      necho "[Compiling Debug] "
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
+
+      necho "[Installing Debug] "
+      mkdir -p $LLVM_ROOT
+      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
+    else
+      necho "[Compiling Release] "
+      build_llvm
+
+      necho "[Installing Release] "
+      mkdir -p $LLVM_ROOT
+      build_llvm install
+    fi
+  fi
+  necho "[Done]\n"
+}
+
+
+install_llvm()
+{
+  necho "$LLVM\t\t\t"
+  check_dirs $LLVM || { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone $LLVM_GIT
+
+  cd $ROOT_DIR"/src/$LLVM"
+
+  leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH
+
+  if test ${GIT_TAG+defined}; then
+    necho "[Fetching $GIT_TAG] "
+    leval git checkout $GIT_TAG
+  fi
+
+  necho "[Configuring] "
+  config_llvm
+
+  if [ $BUILD_DEBUG -eq 1 ]; then
+    necho "[Compiling Debug] "
+    build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
+
+    necho "[Installing Debug] "
+    mkdir -p $LLVM_ROOT
+    build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
+  else
+    necho "[Compiling Release] "
+    build_llvm
+
+    necho "[Installing Release] "
+    mkdir -p $LLVM_ROOT
+    build_llvm install
+  fi
+
+  necho "[Done]\n"
+}
 
 install_stp_git()
 {
@@ -823,10 +915,10 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1  "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1 ENABLE_TCMALLOC=1 "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1  "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 RUNTIME_DEBUG_SYMBOLS=1 DISABLE_TIMER_STATS=1 "
   local debug_tag=""
 
   #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
@@ -984,12 +1076,15 @@ install_tetrinet()
 
 config_and_build_xpilot_with_wllvm()
 {
+  local llvm_compiler_options=$1
+  local tag=$2
+
   local xpilot_config_options=""
   xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
   xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
   xpilot_config_options+="--disable-replay --disable-sound "
   xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  #xpilot_config_options+="--program-suffix=-$1 "
+  xpilot_config_options+="--program-suffix=${tag} "
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -997,19 +1092,23 @@ config_and_build_xpilot_with_wllvm()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DNUKLEAR -DXLIB_ILLEGAL_ACCESS -D__GNUC__"
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DXLIB_ILLEGAL_ACCESS -D__GNUC__ ${llvm_compiler_options} "
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring] "
+  necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
 
-  necho "[Compiling] "
+  necho "[Compiling${tag}] "
   leval make $make_options
 
-  necho "[Installing] "
+  necho "[Installing${tag}] "
   mkdir -p $XPILOT_ROOT
   leval make $make_options install
-  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11
+  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11${tag}
+
+  necho "[Optimizing${tag}] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}.bc
 }
 
 update_xpilot_with_wllvm()
@@ -1038,7 +1137,9 @@ update_xpilot_with_wllvm()
       leval git pull --all
     fi
 
-    config_and_build_xpilot_with_wllvm
+    # Build two versions of xpilot, to support cliver and lli
+    config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
+    config_and_build_xpilot_with_wllvm " " "-run"
   fi
 
   necho "[Done]\n"
@@ -1060,19 +1161,24 @@ install_xpilot_with_wllvm()
     leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
   fi
 
-  config_and_build_xpilot_with_wllvm
+  # Build two versions of xpilot, to support cliver and lli
+  config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
+  config_and_build_xpilot_with_wllvm " " "-run"
 
   necho "[Done]\n"
 }
 
 config_and_build_openssl()
 {
+  local llvm_compiler_options=$1
+  local tag=$2
+
   local openssl_config_options=""
   openssl_config_options+="--prefix=${OPENSSL_ROOT} "
   openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
-  #openssl_config_options+="-d " # compile with debugging symbols
+  openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1080,7 +1186,7 @@ config_and_build_openssl()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-I${GLIBC_INCLUDE_PATH} -DKLEE -B${GLIBC_LIBRARY_PATH}"
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
@@ -1089,10 +1195,10 @@ config_and_build_openssl()
   echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
   chmod +x "${MAKEDEPEND}"
 
-  necho "[Configuring] "
+  necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
-  necho "[Compiling] "
+  necho "[Compiling${tag}] "
   leval make $make_options depend
   leval make $make_options
 
@@ -1101,10 +1207,15 @@ config_and_build_openssl()
     leval make $make_options test
   fi
 
-  necho "[Installing] "
+  necho "[Installing${tag}] "
   mkdir -p $OPENSSL_ROOT
   leval make install_sw
   leval extract-bc $OPENSSL_ROOT/bin/openssl
+  leval cp $OPENSSL_ROOT/bin/openssl.bc $OPENSSL_ROOT/bin/openssl${tag}.bc
+
+  necho "[Optimizing${tag}] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt${tag}.bc ${OPENSSL_ROOT}/bin/openssl${tag}.bc
 }
 
 update_openssl()
@@ -1132,7 +1243,9 @@ update_openssl()
       leval git pull --all
     fi
 
-    config_and_build_openssl
+    # Build two versions of openssl, to support cliver and lli
+    config_and_build_openssl "-DKLEE" "-klee"
+    config_and_build_openssl " " "-run"
   fi
 
   necho "[Done]\n"
@@ -1152,7 +1265,9 @@ install_openssl()
 
   leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
 
-  config_and_build_openssl
+  # Build two versions of openssl, to support cliver and lli
+  config_and_build_openssl "-DKLEE" "-klee"
+  config_and_build_openssl " " "-run"
 
   necho "[Done]\n"
 }
@@ -1297,7 +1412,7 @@ main()
       install_llvmgcc_from_source
     fi
 
-    install_llvm_package
+    install_llvm
   
     # google perftools requires libunwind on x86_64
     if [ "$(uname)" != "Darwin" ] ; then
@@ -1312,7 +1427,7 @@ main()
     install_stp
     #install_stp_git
     install_openssl
-    install_ghmm
+    #install_ghmm
     install_klee
     install_zlib
     install_expat
@@ -1336,7 +1451,7 @@ main()
         update_openssl
         ;;
       llvm)
-        update_llvm_package
+        update_llvm
         ;;
       *)
        echo "${SELECTIVE_BUILD_TARGET} not found!"; exit
