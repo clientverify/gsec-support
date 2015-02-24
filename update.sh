@@ -1426,9 +1426,9 @@ main()
     install_ncurses
     install_stp
     #install_stp_git
-    install_openssl
     #install_ghmm
     install_klee
+    install_openssl
     install_zlib
     install_expat
     install_tetrinet
