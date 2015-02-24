@@ -187,9 +187,8 @@ sync_ktest_data()
 
   for (( i=0; i<${clientListLen}; ++i ));
   do
-    local data_tag=$(basename ${CLIENT_LIST_KTEST[$i]})
     local ktestSrc=${CLIENT_LIST_KTEST[$i]}
-    local ktestDst=$DATA_DIR/network/${CLIENT_LIST[$i]}/${data_tag}
+    local ktestDst=$DATA_DIR/network/${CLIENT_LIST[$i]}/
     mkdir -p $ktestDst
     #rsync -ave ssh $ktestSrc $ktestDst
     leval cp -r $ktestSrc $ktestDst
