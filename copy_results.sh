@@ -86,7 +86,7 @@ main()
     done
   done
   #rsync -ave ssh $OUTPUT_ROOT/* $RESULTS_DESTINATION
-  cp -r $OUTPUT_ROOT/* $RESULTS_DESTINATION
+  cp -r $OUTPUT_ROOT/* $RESULTS_DESTINATION/
   rm -rf $OUTPUT_ROOT
 }
 

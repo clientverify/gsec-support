@@ -105,7 +105,7 @@ copy_results()
       #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-      leval ./gsec-support/copy_results.sh -s data/$expOutput -d ${RESULTS_LOCATION} -b $data_tag
+      leval ./gsec-support/copy_results.sh -s data/$expOutput -d ${RESULTS_LOCATION}/ -b $data_tag
     done
   done
 }
