@@ -71,7 +71,6 @@ run_experiments()
     do
       client=${CLIENT_LIST[$j]}
       extra_params=${CLIENT_LIST_EXTRA_PARAMETERS[$j]}
-      #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
       ktest_dir=${CLIENT_LIST_KTEST[$j]}
@@ -101,11 +100,28 @@ copy_results()
     for (( j=0; j<${clientListLen}; ++j ));
     do
       client=${CLIENT_LIST[$j]}
-      extra_params=${CLIENT_LIST_EXTRA_PARAMETERS[$j]}
-      #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
+
+      # Directory that holds output of all cliver.sh experiments
+      # with this expOutput and client name pair (i.e., data/naive/openssl)
+      client_data_path=${DATA_DIR}/${expOutput}/${client}
+
+      # the symlink created by cliver.sh is set to $data_tag
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-      leval ./gsec-support/copy_results.sh -s data/$expOutput -d ${RESULTS_LOCATION}/ -b $data_tag
+      # the symlink created by cliver.sh will point to dir named $data_id
+      data_id=$(readlink ${client_data_path}/${data_tag})
+
+      # stats directory will all of the experiment data (past and present)
+      stats_dir=${RESULTS_LOCATION}/$client/data/$expOutput/$data_id
+      leval mkdir -p ${stats_dir}
+
+      pattern="debug.txt"
+      for file in $( find -L ${client_data_path}/${data_id} -name $pattern); do
+        stats_file="$(basename $(dirname $file) ).txt"
+        stats_command="grep STATS $file | cut -d \" \" -f 2- > ${stats_dir}/${stats_file}"
+        lecho $stats_command
+        eval $stats_command
+      done
     done
   done
 }
@@ -153,13 +169,13 @@ load_config()
 {
   lecho "Loading Experiment Config File: ${EXP_CONFIG}"
 
+  # source the configuration file
   source ${EXP_CONFIG}
-
-  # check the configuration file
 
   expListLen=${#EXPERIMENT_LIST[@]}
   expListOutputLen=${#EXPERIMENT_LIST_OUTPUT[@]}
 
+  # check that the exp config arrays are of equal length
   if [ "$expListLen" -ne "$expListOutputLen" ]; then
     echo "${PROG}: EXPERIMENT_LIST* vars not equal lengths"
     exit
@@ -167,48 +183,47 @@ load_config()
 
   clientListLen=${#CLIENT_LIST[@]}
   clientListKtestLen=${#CLIENT_LIST_KTEST[@]}
-  #clientListDataTagLen=${#CLIENT_LIST_DATA_TAG[@]}
   clientListExtraParametersLen=${#CLIENT_LIST_EXTRA_PARAMETERS[@]}
 
-     #[ "$clientListLen" -ne "$clientListDataTagLen" ] ||
+  # check that the client config arrays are of equal length
   if [ "$clientListLen" -ne "$clientListKtestLen" ] ||
      [  "$clientListLen" -ne "$clientListExtraParametersLen" ]; then
-    echo "CLIENT_LIST* variables not equal lengths"
     echo "${PROG}: CLIENT_LIST* vars not equal lengths"
     exit
   fi
-}
 
-###############################################################################
-
-sync_ktest_data()
-{
-  lecho "Syncing Ktest Data"
-
-  clientListLen=${#CLIENT_LIST[@]}
-
-  for (( i=0; i<${clientListLen}; ++i ));
+  # KTest config checks
+  for (( j=0; j<${clientListLen}; ++j ));
   do
-    local ktestSrc=${CLIENT_LIST_KTEST[$i]}
-    local ktestDst=$DATA_DIR/network/${CLIENT_LIST[$i]}/
-    mkdir -p $ktestDst
-    #rsync -ave ssh $ktestSrc $ktestDst
-    lecho cp -r $ktestSrc $ktestDst
-    leval cp -r $ktestSrc $ktestDst
+    client=${CLIENT_LIST[$j]}
+    client_ktest=${CLIENT_LIST_KTEST[$j]}
+    # check that ktest dir exists
+    if ! [ -e ${client_ktest} ]; then
+      echo "${PROG}: ${client_ktest} doesn't exist or isn't readable"; exit
+    fi
+
+    # check that ktest dir contains ktest files
+    ktest_count=$(find ${client_ktest} -maxdepth 1 -name "*.ktest" | wc -l)
+    if [ "${ktest_count}" -eq "0" ]; then
+      echo "${PROG}: ${client_ktest} contains no ktest files"; exit
+    else
+      lecho "Using ${ktest_count} ktest files from ${client_ktest}"
+    fi
   done
+
 }
 
 ###############################################################################
 
 main() 
 {
-  initialize_root_directories
-  initialize_logging $@
-
-  while getopts "c:" opt; do
+  while getopts "vc:" opt; do
     case $opt in
       c)
         EXP_CONFIG=$OPTARG
+        ;;
+      v)
+        VERBOSE_OUTPUT=1
         ;;
       :)
         echo "Option -$OPTARG requires an argument"
@@ -217,22 +232,22 @@ main()
     esac
   done
 
+  initialize_root_directories
+  initialize_logging $@
+
   # source "config" file and sanity check array lengths
   load_config
 
-  # copy ktest data
-  sync_ktest_data
-
-  ## do the experiments specified in the config file
+  # do the experiments specified in the config file
   run_experiments
 
-  ## copy the results to location specified in config file
+  # copy the results to location specified in config file
   copy_results
 
-  ## create plots with R
+  # create plots with R
   do_plots
 
-  ## create simple html for viewing plots
+  # create simple html for viewing plots
   generate_plot_html
 }
 
