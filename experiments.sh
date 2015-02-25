@@ -74,7 +74,9 @@ run_experiments()
       #data_tag=${CLIENT_LIST_DATA_TAG[$j]}
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-      cliver_command="./gsec-support/cliver.sh -s -t $expType -c $client -b $data_tag -x \"$extra_params\" -o $expOutput"
+      ktest_dir=${CLIENT_LIST_KTEST[$j]}
+      
+      cliver_command="./gsec-support/cliver.sh -s -t $expType -c $client -b $data_tag -k $ktest_dir -x \"$extra_params\" -o $expOutput"
       lecho "EXEC: ${cliver_command}"
       eval ${cliver_command}
     done
@@ -191,6 +193,7 @@ sync_ktest_data()
     local ktestDst=$DATA_DIR/network/${CLIENT_LIST[$i]}/
     mkdir -p $ktestDst
     #rsync -ave ssh $ktestSrc $ktestDst
+    lecho cp -r $ktestSrc $ktestDst
     leval cp -r $ktestSrc $ktestDst
   done
 }
