@@ -61,7 +61,7 @@ num_threads=1
 # Read and parse the data
 ###############################################################################
 
-source("/playpen/rac/cliver/gsec-support/read_data.r")
+source("gsec-support/read_data.r")
 
 ###############################################################################
 # Compute number of rows needed for legends
