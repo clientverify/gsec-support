@@ -37,10 +37,13 @@ dir.create(save_dir, recursive=TRUE)
 
 client_type = parse_client_type()
 if (client_type == "openssl") {
-  selected_modes = c("lli", "lli-opt", "ncross-ed-256-16", "ncross-ed-256-1")
-  selected_modes_alt_names = c("interp","interp-opt", "ED-16", "ED-1")
-  binwidth=100
-  printf("client type: %s ", client_type)
+  selected_modes = c("naive")
+  selected_modes_alt_names = c("naive")
+  binwidth=10
+  #selected_modes = c("lli", "lli-opt", "ncross-ed-256-16", "ncross-ed-256-1")
+  #selected_modes_alt_names = c("interp","interp-opt", "ED-16", "ED-1")
+  #binwidth=100
+  #printf("client type: %s ", client_type)
 } else if (client_type == "tetrinet") {
 
   selected_modes = c("msg-65536-64-8", "hint-65536-64", "msg-256-64-8", "hint-256-64")
@@ -61,7 +64,7 @@ num_threads=1
 # Read and parse the data
 ###############################################################################
 
-source("/playpen/rac/cliver/gsec-support/read_data.r")
+source("gsec-support/read_data.r")
 
 ###############################################################################
 # Compute number of rows needed for legends
@@ -105,7 +108,7 @@ if (length(selected_modes) != 0) {
 plotwidth = default_plotwidth
 plotheight = default_plotheight*2
 results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
+#results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
 #results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
 #results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
 #results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
@@ -116,7 +119,7 @@ results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
 plotheight = length(unique(data$trace))*heightscalefactor
 results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
 results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
+#results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
 results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 
 plotheight = default_plotheight/2

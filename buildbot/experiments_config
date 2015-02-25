@@ -11,13 +11,16 @@ EXPERIMENT_LIST=(naive)
 EXPERIMENT_LIST_OUTPUT=(naive)
 
 # list of client types
-CLIENT_LIST=(xpilot-ng-x11-klee)
+CLIENT_LIST=(openssl-opt-klee xpilot-ng-x11-klee)
 
-# location of Ktest files
-CLIENT_LIST_KTEST=(/playpen/rac/buildbot-data/network/xpilot-ng-x11/xpilot_2_100)
+# location of directories holding ktest files for experiments
+CLIENT_LIST_KTEST=(
+/playpen/rac/buildbot-data/network/openssl/gmail-subset
+/playpen/rac/buildbot-data/network/xpilot-ng-x11/xpilot_2_100
+)
 
-# list of extra paramters
-CLIENT_LIST_EXTRA_PARAMETERS=("--use-threads=16")
+# list of extra paramters specific to each client type
+CLIENT_LIST_EXTRA_PARAMETERS=("--use-threads=1" "--use-threads=1")
 
 # data locations
 RESULTS_LOCATION="data/results"
