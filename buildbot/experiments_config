@@ -15,8 +15,8 @@ CLIENT_LIST=(openssl-opt-klee xpilot-ng-x11-klee)
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-/playpen/rac/buildbot-data/network/openssl/gmail-subset
-/playpen/rac/buildbot-data/network/xpilot-ng-x11/xpilot_2_100
+/playpen/buildbot/data/network/openssl/gmail-subset
+/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2_100
 )
 
 # list of extra paramters specific to each client type
