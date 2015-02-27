@@ -50,6 +50,7 @@ on_exit()
   if [ $ERROR_EXIT -eq 0 ]; then
     lecho "Elapsed time: $(elapsed_time $start_time)"
   fi
+  exit $ERROR_EXIT
 }
 
 ###############################################################################
