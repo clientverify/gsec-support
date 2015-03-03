@@ -19,6 +19,7 @@ set -o pipefail # exit on fail of any command in a pipe
 
 WRAPPER="`readlink -f "$0"`"
 HERE="`dirname "$WRAPPER"`"
+ERROR_EXIT=1
 PROG=$(basename $0)
 
 # Include gsec_common
@@ -534,6 +535,21 @@ do_training_verification()
   done
 }
 
+###############################################################################
+
+on_exit()
+{
+  if [ $ERROR_EXIT -eq 1 ]; then
+    lecho "Error"
+  fi
+  if [ $ERROR_EXIT -eq 0 ]; then
+    lecho "Elapsed time: $(elapsed_time $start_time)"
+  fi
+  exit $ERROR_EXIT
+}
+
+###############################################################################
+
 usage()
 {
   echo -e "$0\n\nUSAGE:"
@@ -551,6 +567,8 @@ usage()
   echo -e "\t-s \t\t\t\t\t(silent)"
   echo -e "\t-h \t\t\t\t\t(help/usage)"
 }
+
+###############################################################################
 
 main() 
 {
@@ -756,6 +774,7 @@ main()
       echo "${CLIVER_JOBS[$i]} > ${PARALLEL_LOG_DIR}/${i}.log 2>&1" ;
     done | ## execute in parallel with xargs
       ( xargs -I{} --max-procs ${XARGS_MAX_PROCS} bash -c '{ {}; }' )
+
   fi
 
   if [ $USE_LSF -eq 0 ]; then
@@ -763,5 +782,12 @@ main()
   fi
 }
 
+# set up exit handler
+trap on_exit EXIT
+
+# record start time
+start_time=$(elapsed_time)
+
 # Run main
 main "$@"
+ERROR_EXIT=0
