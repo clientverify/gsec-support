@@ -58,7 +58,8 @@ heightscalefactor = 0.75
 heightscalefactor = 0.5
 plotwidth = default_plotwidth
 plotheight = default_plotheight
-x_axis = "Message"
+#x_axis = "Message"
+x_axis = "RoundNumber"
 num_threads=1
 #output_filetype="eps"
 output_filetype="png"
@@ -314,6 +315,71 @@ read_all_data = function() {
       for (data_date_dir in data_date_dirs[seq(1)]) {
         mode_id = get_mode_id(data_mode_dir)
         read_data_subdir(data_mode_dir, data_date_dir, mode_id)
+      }
+    }
+  }
+}
+
+read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
+
+  data_path = paste(root_dir, data_dir, data_mode_dir, data_date_dir, sep="/")
+
+  for (file in list.files(path=data_path)) {
+    file_name = paste(data_path,file,sep="/")
+    debug_printf("Reading: %s", file_name)
+
+    tmp_data = read.csv(file_name)
+
+    # length of rows, not cols
+    len = length(tmp_data[,1])
+
+    # extract file id
+    if (client_type == "openssl") {
+      id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
+    } else {
+      id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
+    }
+
+    debug_printf("id = %d", id)
+    cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
+
+    #data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
+
+    # Add Name id
+    tmp_data$trace = rep(id, len)
+
+    # Add Mode id
+    #tmp_data = cbind(tmp_data, rep(mode_id, len))
+    tmp_data$mode = rep(mode_id, len)
+
+    # Set bin number
+    g = c()
+    for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
+    #tmp_data = cbind(tmp_data, g)
+    tmp_data$Bin = g
+
+    if (min_size > length(tmp_data[,1])) {
+      min_size <<- length(tmp_data[,1])
+    }
+
+    # add data to global data list
+    #all_data[[length(all_data) + 1]] <<- tmp_data
+    data <<- rbind(data, tmp_data)
+  }
+}
+
+read_csv_data = function() {
+
+  for (data_mode_dir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
+
+    data_path = paste(root_dir, data_dir, data_mode_dir, sep="/")
+
+    data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
+
+    if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
+      for (data_date_dir in data_date_dirs[seq(1)]) {
+        mode_id = get_mode_id(data_mode_dir)
+        read_csv_subdir(data_mode_dir, data_date_dir, mode_id)
       }
     }
   }
