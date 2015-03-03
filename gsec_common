@@ -162,7 +162,18 @@ initialize_logging()
   echo "LOG: `date` $(basename $0) $@ " >> $LOG_FILE
 }
 
+###  Initialize gsec logging directories under parallel execution
+initialize_parallel()
+{
+  local SCRIPT_BASENAME=`basename $0 .sh`
+  local PARALLEL_LOG_DIR_BASENAME=$SCRIPT_BASENAME"_parallel_"$RUN_PREFIX
+  local RECENT_PARALLEL_LOG_DIR=$SCRIPT_BASENAME"_parallel_recent"
 
+  PARALLEL_LOG_DIR=$LOG_DIR/$PARALLEL_LOG_DIR_BASENAME
+
+  mkdir -p $PARALLEL_LOG_DIR
+  ln -sfT $PARALLEL_LOG_DIR_BASENAME $LOG_DIR/$RECENT_PARALLEL_LOG_DIR
+}
 
 ###  Initialize gsec logging directories under LSF(killdevil)
 initialize_lsf()
