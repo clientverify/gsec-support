@@ -426,7 +426,7 @@ do_ncross_verification()
   indices="$(seq 0 $(($num_dirs - 1)))"
 
   # Check that we trained on the same bc file used for verification
-  check_equiv_training_bc
+  #check_equiv_training_bc
 
   for i in $indices; do
     leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
