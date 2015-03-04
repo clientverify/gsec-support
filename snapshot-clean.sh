@@ -23,7 +23,10 @@ then
 
     echo "Moving directories to snapshot: ${snapdir}"
     mkdir -p "${snapdir}"
-    mv -v build local src "${snapdir}/"
+    for dirname in build local src
+    do
+        [ -d "${dirname}" ] && mv -v "${dirname}" "${snapdir}/"
+    done
 else
     echo "No symlink detected at ${logsymlink}"
     echo "Removing directories without taking a snapshot."
