@@ -124,7 +124,7 @@ lecho()
   echo "[ $@ ]"
   if test ${LOG_FILE+defined}; then
     if test ! ${DRY_RUN+defined}; then
-      eval echo "LOG: $@" >> $LOG_FILE 2>&1
+      echo "LOG: $@" >> $LOG_FILE 2>&1
     fi
   fi
 }
