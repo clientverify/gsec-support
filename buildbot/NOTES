@@ -18,7 +18,7 @@ mv master/master.cfg.sample master/master.cfg
 buildbot start master
 tail -f master/twistd.log
 
-buildslave create-slave slave localhost:9989 beef3-slave cliver
+buildslave create-slave --umask=022 slave localhost:9989 beef3-slave cliver
 # check slave/buildbot.tac, edit slave/info/admin & host
 buildslave start slave
 
