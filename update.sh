@@ -853,16 +853,22 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1 ENABLE_TCMALLOC=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1 "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local debug_tag=""
 
   #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
   #local optimized_tag="-opt"
 
   #build_klee_helper "$optimized_build_options" "$optimized_tag"
+
+  # ThreadSanitizer and AddressSanitizer don't work with tcmalloc
+  if [ $USE_TSAN -eq 0 ] && [ $USE_ASAN -eq 0 ]; then
+    release_build_options+="ENABLE_TCMALLOC=1 "
+    debug_build_options+="ENABLE_TCMALLOC=1 "
+  fi
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
