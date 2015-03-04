@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Snapshot and clean the following list of directories:
-# build, gsec-support, local, src
+# build, local, src
 
 # If data/logs/update_recent.log exists, then move the current
 # directories into a "snapshot" with the same timestamp as the directory
@@ -23,10 +23,10 @@ then
 
     echo "Moving directories to snapshot: ${snapdir}"
     mkdir -p "${snapdir}"
-    mv -v build gsec-support local src "${snapdir}/"
+    mv -v build local src "${snapdir}/"
 else
     echo "No symlink detected at ${logsymlink}"
     echo "Removing directories without taking a snapshot."
-    echo "rm -rf build gsec-support local src"
-    rm -rf build gsec-support local src
+    echo "rm -rf build local src"
+    rm -rf build local src
 fi
