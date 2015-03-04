@@ -400,7 +400,8 @@ do_point_plot = function(y_axis) {
     return
   
   # vars
-  trace = paste(client_type,"point",paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  #trace = paste(client_type,"point",paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"point",sep="_")
   title = paste(x_axis,"vs",y_axis, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
@@ -426,7 +427,7 @@ do_line_plot = function(y_axis) {
   #  return
   
   # vars
-  trace = paste(client_type,"line",paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"line",sep="_")
   title = paste(x_axis,"vs",y_axis, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
@@ -450,7 +451,7 @@ do_line_alt_plot = function(y_axis) {
   cat("plotting: (alt line), ",x_axis," vs ",y_axis,"\n")
  
   # vars
-  trace = paste(client_type,"line","alt",paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"line","alt",sep="_")
   title = paste(x_axis,"vs",y_axis, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
@@ -472,7 +473,7 @@ do_logscale_line_plot = function(y_axis) {
   cat("plotting (line, log scale): ",x_axis," vs ",y_axis,"\n")
  
   # vars
-  trace = paste(client_type,"line","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  trace = paste( paste(x_axis,"vs",y_axis,sep=""),client_type,"line","yscalelog10",sep="_")
   title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
@@ -496,7 +497,8 @@ do_histogram_plot = function(y_axis) {
   cat("plotting (histogram, log scale): ",x_axis," vs ",y_axis,"\n")
 
   # vars
-  trace = paste(client_type,"histogram","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  #trace = paste(client_type,"histogram","yscalelog10", paste(x_axis,"vs",y_axis,sep=""),sep="_")
+  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"histogram","yscalelog10",sep="_")
   title = paste(x_axis,"vs",y_axis,"with","log10","yscale", sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -518,7 +520,8 @@ do_summary_plot = function(y_axis) {
   cat("plotting (summary): ",x_axis," vs ",y_axis,"\n")
 
   # vars
-  trace =  paste(client_type,"bar",y_axis,sep="_")
+  #trace =  paste(client_type,"bar",y_axis,sep="_")
+  trace =  paste(y_axis,client_type,"bar",sep="_")
   title = paste("Summary of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -535,7 +538,8 @@ do_summary_plot = function(y_axis) {
 do_mean_plot = function(y_axis) {
   cat("plotting (mean of): ",x_axis," vs ",y_axis,"\n")
 
-  trace =  paste(client_type,"mean_bar",y_axis,sep="_")
+  #trace =  paste(client_type,"mean_bar",y_axis,sep="_")
+  trace =  paste(y_axis,client_type,"mean_bar",sep="_")
   title = paste("Mean of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -551,7 +555,8 @@ do_mean_plot = function(y_axis) {
 do_max_plot = function(y_axis) {
   cat("plotting (max of): ",x_axis," vs ",y_axis,"\n")
 
-  trace =  paste(client_type,"max_bar",y_axis,sep="_")
+  #trace =  paste(client_type,"max_bar",y_axis,sep="_")
+  trace =  paste(y_axis,client_type,"max_bar",sep="_")
   title = paste("max of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -562,6 +567,7 @@ do_max_plot = function(y_axis) {
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
+
 ### Time summary plot
 do_time_summary_plot = function() {
   cat("plotting (time_summary)\n")
@@ -602,7 +608,8 @@ do_box_plot = function(y_axis) {
   cat("plotting (boxplot of): ",x_axis,", ",y_axis,"\n")
 
   # vars
-  trace =  paste(client_type,"boxplot_bar",y_axis,sep="_")
+  #trace =  paste(client_type,"boxplot_bar",y_axis,sep="_")
+  trace =  paste(y_axis,client_type,"boxplot_bar",sep="_")
   title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -620,7 +627,8 @@ do_log_box_plot = function(y_axis) {
   cat("plotting (boxplot of): ",x_axis,", ",y_axis,"\n")
 
   # vars
-  trace =  paste(client_type,"boxplot_log_bar",y_axis,sep="_")
+  #trace =  paste(client_type,"boxplot_log_bar",y_axis,sep="_")
+  trace =  paste(y_axis,client_type,"boxplot_log_bar",sep="_")
   title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -647,8 +655,10 @@ do_box_alt_plot = function(params) {
   mdata = subset(data, mode == p_mode)
 
   # vars
-  trace =  paste(client_type,"boxplot_bar_alt",y_axis,p_mode,sep="_")
+  #trace =  paste(client_type,"boxplot_bar_alt",y_axis,p_mode,sep="_")
+  trace =  paste(y_axis,p_mode,client_type,"boxplot_bar_alt",sep="_")
   title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
+  title = paste(p_mode,": Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
   # construct plot
@@ -666,7 +676,6 @@ do_box_alt_plot = function(params) {
 
   limits_y = c(min_y, max_y)
 
-
   #breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
   breaks_y = (0:5)*diff(floor(limits_y))/5
 
@@ -676,6 +685,7 @@ do_box_alt_plot = function(params) {
   p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
   p = p + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message Bin")
   p = p + theme(axis.text.x=element_text(angle=45))
+  p = p + ggtitle(title)
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
   rm(mdata)
@@ -690,8 +700,9 @@ do_box_alt_log_plot = function(params) {
   mdata = subset(data, mode == p_mode)
 
   # vars
-  trace =  paste(client_type,"boxplot_bar_alt_log",y_axis,p_mode,sep="_")
-  title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
+  #trace =  paste(client_type,"boxplot_bar_alt_log",y_axis,p_mode,sep="_")
+  trace =  paste(client_type,p_mode,y_axis,"boxplot_bar_alt_log",sep="_")
+  title = paste(p_mode,": Log Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
   # construct plot
@@ -705,13 +716,19 @@ do_box_alt_log_plot = function(params) {
   
   #cat(y_axis," min: ", min(data[[y_axis]])," ", min_y, "\n")
   #cat(y_axis," max: ", max(data[[y_axis]])," ", max_y, "\n")
+
+  # causes error
+  #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+  #                      labels = trans_format("log10", math_format(10^.x)),
+  #                      limits = limits_y)
   
-  p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-                        labels = trans_format("log10", math_format(10^.x)),
-                        limits = limits_y)
+  p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x))
+
   p = p + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message Bin")
   p = p + theme(axis.text.x=element_text(angle=45))
+  p = p + ggtitle(title)
   p;
+
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
   rm(mdata)
 }
