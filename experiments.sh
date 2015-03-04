@@ -150,24 +150,52 @@ do_plots()
 
 ###############################################################################
 
+generate_plot_pdf()
+{
+  lecho "Generating PDF"
+  num_clients=${#CLIENT_LIST[@]}
+
+  for (( j=0; j<${num_clients}; ++j ));
+  do
+    client=${CLIENT_LIST[$j]}
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    RECENT=$(basename ${RECENT_FULL_PATH})
+    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
+    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
+    leval ./gsec-support/make_plot_pdf.sh ${PLOT_DIR} $HTML_DIR/${RECENT}.tex
+  done
+}
+
+###############################################################################
+
 generate_plot_html()
 {
   lecho "Generating HTML"
-  clientListLen=${#CLIENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
 
-  for (( j=0; j<${clientListLen}; ++j ));
+  for (( j=0; j<${num_clients}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
-    RECENT=$(ls -t ${RESULTS_LOCATION}/${client}/plots/ | head -1)
-    HTML_DIR=$RESULTS_LOCATION/$client/plots
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    RECENT=$(basename ${RECENT_FULL_PATH})
+
+    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
     PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
-    echo "<html><head><title>Cliver Plots: $RECENT</title></head><body>" > ${HTML_DIR}/$RECENT.html
+    htmlfile=${HTML_DIR}/$RECENT.html
+    jquery="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.js"
+    jsdir="http://cs.unc.edu/~rac/js/galleria"
+
+    echo "<html><head><title>Cliver Plots: $RECENT</title>" > $htmlfile
+    echo "<script src=\"${jquery}\"></script>" >> $htmlfile
+    echo "<script src=\"${jsdir}/galleria.js\"></script>" >> $htmlfile
+    echo "<script src=\"${jsdir}/config.js\"></script>" >> $htmlfile
+    echo "</head><body><div class=\"galleria\">" >> $htmlfile
     for fullPathPlot in ${PLOT_DIR}/*
     do
       local plot=$(basename $fullPathPlot)
-      echo "<img src=\"./$RECENT/$plot\" width=50%></br>$plot</br></br>" >> ${HTML_DIR}/$RECENT.html
+      echo "<img src=\"./$RECENT/$plot\" data-title=\"$plot\">" >> $htmlfile
     done
-    echo "</body></html>" >> ${HTML_DIR}/$RECENT.html
+    echo "</div></body></html>" >> $htmlfile
   done
 }
 
@@ -267,6 +295,9 @@ main()
 
   # create simple html for viewing plots
   generate_plot_html
+
+  # create simple pdf for viewing plots
+  generate_plot_pdf
 }
 
 # set up exit handler
