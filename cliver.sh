@@ -163,7 +163,7 @@ initialize_bc()
         KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
       fi
       BC_FILE="$XPILOT_ROOT/bin/${BC_MODE}.bc"
-      TRAINING_DIR="$DATA_DIR/training/{$BC_MODE}/$DATA_TAG"
+      TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
       ;;
   esac
 }
