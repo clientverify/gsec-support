@@ -574,67 +574,6 @@ build_llvm ()
   leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
 
-install_llvm_package()
-{
-  necho "$LLVM\t\t"
-  check_dirs $LLVM|| { return 0; }
-  get_package $LLVM_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVM"
-
-  cd $ROOT_DIR"/src"
-
-  if [ $USE_LLVM29 -eq 1 ]; then
-    necho "[Patching] "
-    cd "$ROOT_DIR/src/$LLVM"
-    leval patch -p1 < "${PATCH_DIR}/${LLVM_PATCH_FILE}"
-  fi
-
-  necho "[Configuring] "
-  config_llvm 
-
-  necho "[Compiling Debug] "
-  build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
-  necho "[Compiling Release] "
-  build_llvm
-
-  necho "[Installing] "
-  mkdir -p $LLVM_ROOT
-  build_llvm install
-
-  necho "[Done]\n"
-}
-
-update_llvm_package()
-{
-  necho "$LLVM\t\t"
-  if [ ! -e "$ROOT_DIR/src/$LLVM/" ] || [ ! -e "$ROOT_DIR/build/$LLVM" ]; then
-    echo "(directory missing)"; exit;
-  fi
-
-  if [ $FORCE_COMPILATION -eq 1 ] ; then
-    if [ $FORCE_CONFIGURE -eq 1 ]; then
-      necho "[Configuring] "
-      config_llvm
-    fi
-
-    if [ $BUILD_DEBUG -eq 1 ]; then
-      necho "[Compiling Debug] "
-      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 "
-
-      necho "[Installing Debug] "
-      mkdir -p $LLVM_ROOT
-      build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
-    else
-      necho "[Compiling Release] "
-      build_llvm
-
-      necho "[Installing Release] "
-      mkdir -p $LLVM_ROOT
-      build_llvm install
-    fi
-  fi
-  necho "[Done]\n"
-}
-
 update_llvm()
 {
   necho "$LLVM\t\t\t"
@@ -680,16 +619,15 @@ update_llvm()
       build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
     else
       necho "[Compiling Release] "
-      build_llvm
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 "
 
       necho "[Installing Release] "
       mkdir -p $LLVM_ROOT
-      build_llvm install
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 install"
     fi
   fi
   necho "[Done]\n"
 }
-
 
 install_llvm()
 {
@@ -721,11 +659,11 @@ install_llvm()
     build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
   else
     necho "[Compiling Release] "
-    build_llvm
+    build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 "
 
     necho "[Installing Release] "
     mkdir -p $LLVM_ROOT
-    build_llvm install
+    build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 install"
   fi
 
   necho "[Done]\n"
@@ -915,16 +853,22 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_TIMER_STATS=1 ENABLE_TCMALLOC=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=1 "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local debug_tag=""
 
   #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
   #local optimized_tag="-opt"
 
   #build_klee_helper "$optimized_build_options" "$optimized_tag"
+
+  # ThreadSanitizer and AddressSanitizer don't work with tcmalloc
+  if [ $USE_TSAN -eq 0 ] && [ $USE_ASAN -eq 0 ]; then
+    release_build_options+="ENABLE_TCMALLOC=1 "
+    debug_build_options+="ENABLE_TCMALLOC=1 "
+  fi
 
   if [ $BUILD_DEBUG -eq 1 ]; then
     build_klee_helper "$debug_build_options" "$debug_tag"
@@ -1385,13 +1329,14 @@ main()
 
        n)
         lecho "Using LLVM 2.9 and llvm-gcc-4.2"
-        USE_LLVM29=1
-        LLVM="llvm-2.9"
-        LLVM_PACKAGE="$LLVM.tgz"
-        LLVMGCC_BIN="llvm-gcc4.2-2.9"
-        LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN-x86_64-linux.tar.bz2"
-        LLVM_CC="llvm-gcc"
-        LLVM_LD="llvm-ld"
+        lecho "NOT SUPPORTED" ; exit
+        #USE_LLVM29=1
+        #LLVM="llvm-2.9"
+        #LLVM_PACKAGE="$LLVM.tgz"
+        #LLVMGCC_BIN="llvm-gcc4.2-2.9"
+        #LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN-x86_64-linux.tar.bz2"
+        #LLVM_CC="llvm-gcc"
+        #LLVM_LD="llvm-ld"
         ;;
 
 

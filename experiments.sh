@@ -27,17 +27,23 @@ VERBOSE_OUTPUT=0
 ###############################################################################
 
 EXP_CONFIG="" # experiment config file 
+CLIVERSH="./gsec-support/cliver.sh"
+PLOTS_ONLY=0
 
 ###############################################################################
 # Variables that can be defined in config file
+# NB: *_LIST variables with equiv prefix must be the same length
 
 EXPERIMENT_LIST=()
-EXPERIMENT_LIST_OUTPUT=()
+EXPERIMENT_LIST_NAMES=()
+EXPERIMENT_LIST_PARAMETERS=()
+
+CLIVER_PARAMETERS=""
+
 CLIENT_LIST=()
 CLIENT_LIST_KTEST=()
-CLIENT_LIST_DATA_TAG=()
-CLIENT_LIST_EXTRA_PARAMETERS=()
-CLIENT_LIST_EXTRA_PARAMETERS=()
+CLIENT_LIST_PARAMETERS=()
+
 RESULTS_LOCATION=""
 
 ###############################################################################
@@ -59,24 +65,27 @@ run_experiments()
 {
   lecho "Running Cliver Experiments"
 
-  clientListLen=${#CLIENT_LIST[@]}
-  expListLen=${#EXPERIMENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
+  num_experiments=${#EXPERIMENT_LIST[@]}
 
-  for (( i=0; i<${expListLen}; ++i ));
+  for (( i=0; i<${num_experiments}; ++i ));
   do
 
     expType=${EXPERIMENT_LIST[$i]}
-    expOutput=${EXPERIMENT_LIST_OUTPUT[$i]}
+    expOutput=${EXPERIMENT_LIST_NAMES[$i]}
+    exp_params=${EXPERIMENT_LIST_PARAMETERS[$i]}
 
-    for (( j=0; j<${clientListLen}; ++j ));
+    for (( j=0; j<${num_clients}; ++j ));
     do
       client=${CLIENT_LIST[$j]}
-      extra_params=${CLIENT_LIST_EXTRA_PARAMETERS[$j]}
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
       ktest_dir=${CLIENT_LIST_KTEST[$j]}
+
+      client_params=${CLIENT_LIST_PARAMETERS[$j]}
+      extra_params=" -x \"${client_params} ${exp_params}\" "
       
-      cliver_command="./gsec-support/cliver.sh -s -t $expType -c $client -b $data_tag -k $ktest_dir -x \"$extra_params\" -o $expOutput"
+      cliver_command="${CLIVERSH} -s -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput ${CLIVER_PARAMETERS} $extra_params "
       lecho "EXEC: ${cliver_command}"
       eval ${cliver_command}
     done
@@ -89,16 +98,16 @@ copy_results()
 {
   lecho "Copying Cliver Output"
 
-  clientListLen=${#CLIENT_LIST[@]}
-  expListLen=${#EXPERIMENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
+  num_experiments=${#EXPERIMENT_LIST[@]}
 
-  for (( i=0; i<${expListLen}; ++i ));
+  for (( i=0; i<${num_experiments}; ++i ));
   do
 
     expType=${EXPERIMENT_LIST[$i]}
-    expOutput=${EXPERIMENT_LIST_OUTPUT[$i]}
+    expOutput=${EXPERIMENT_LIST_NAMES[$i]}
 
-    for (( j=0; j<${clientListLen}; ++j ));
+    for (( j=0; j<${num_clients}; ++j ));
     do
       client=${CLIENT_LIST[$j]}
 
@@ -116,12 +125,10 @@ copy_results()
       stats_dir=${RESULTS_LOCATION}/$client/data/$expOutput/$data_id
       leval mkdir -p ${stats_dir}
 
-      pattern="debug.txt"
+      pattern="cliver.stats"
       for file in $( find -L ${client_data_path}/${data_id} -name $pattern); do
-        stats_file="$(basename $(dirname $file) ).txt"
-        stats_command="grep STATS $file | cut -d \" \" -f 2- > ${stats_dir}/${stats_file}"
-        lecho $stats_command
-        eval $stats_command
+        stats_file="$(basename $(dirname $file) ).csv"
+        leval cp ${file} ${stats_dir}/${stats_file}
       done
     done
   done
@@ -132,12 +139,30 @@ copy_results()
 do_plots()
 {
   lecho "Plotting Cliver Data"
-  clientListLen=${#CLIENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
 
-  for (( j=0; j<${clientListLen}; ++j ));
+  for (( j=0; j<${num_clients}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
-    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client
+    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${EXPERIMENT_LIST_NAMES[@]}
+  done
+}
+
+###############################################################################
+
+generate_plot_pdf()
+{
+  lecho "Generating PDF"
+  num_clients=${#CLIENT_LIST[@]}
+
+  for (( j=0; j<${num_clients}; ++j ));
+  do
+    client=${CLIENT_LIST[$j]}
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    RECENT=$(basename ${RECENT_FULL_PATH})
+    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
+    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
+    leval ./gsec-support/make_plot_pdf.sh ${PLOT_DIR} $HTML_DIR/${RECENT}.tex
   done
 }
 
@@ -146,21 +171,31 @@ do_plots()
 generate_plot_html()
 {
   lecho "Generating HTML"
-  clientListLen=${#CLIENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
 
-  for (( j=0; j<${clientListLen}; ++j ));
+  for (( j=0; j<${num_clients}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
-    RECENT=$(ls -t ${RESULTS_LOCATION}/${client}/plots/ | head -1)
-    HTML_DIR=$RESULTS_LOCATION/$client/plots
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    RECENT=$(basename ${RECENT_FULL_PATH})
+
+    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
     PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
-    echo "<html><head><title>Cliver Plots: $RECENT</title></head><body>" > ${HTML_DIR}/$RECENT.html
+    htmlfile=${HTML_DIR}/$RECENT.html
+    jquery="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.js"
+    jsdir="http://cs.unc.edu/~rac/js/galleria"
+
+    echo "<html><head><title>Cliver Plots: $RECENT</title>" > $htmlfile
+    echo "<script src=\"${jquery}\"></script>" >> $htmlfile
+    echo "<script src=\"${jsdir}/galleria.js\"></script>" >> $htmlfile
+    echo "<script src=\"${jsdir}/config.js\"></script>" >> $htmlfile
+    echo "</head><body><div class=\"galleria\">" >> $htmlfile
     for fullPathPlot in ${PLOT_DIR}/*
     do
       local plot=$(basename $fullPathPlot)
-      echo "<img src=\"./$RECENT/$plot\" width=50%></br>$plot</br></br>" >> ${HTML_DIR}/$RECENT.html
+      echo "<img src=\"./$RECENT/$plot\" data-title=\"$plot\">" >> $htmlfile
     done
-    echo "</body></html>" >> ${HTML_DIR}/$RECENT.html
+    echo "</div></body></html>" >> $htmlfile
   done
 }
 
@@ -173,28 +208,32 @@ load_config()
   # source the configuration file
   source ${EXP_CONFIG}
 
-  expListLen=${#EXPERIMENT_LIST[@]}
-  expListOutputLen=${#EXPERIMENT_LIST_OUTPUT[@]}
+  num_experiments=${#EXPERIMENT_LIST[@]}
+  expListOutputLen=${#EXPERIMENT_LIST_NAMES[@]}
+  exp_extra_params_len=${#EXPERIMENT_LIST_PARAMETERS[@]}
 
   # check that the exp config arrays are of equal length
-  if [ "$expListLen" -ne "$expListOutputLen" ]; then
+  if [ "$num_experiments" -ne "$expListOutputLen" ]; then
     echo "${PROG}: EXPERIMENT_LIST* vars not equal lengths"
     exit
   fi
 
-  clientListLen=${#CLIENT_LIST[@]}
+  num_clients=${#CLIENT_LIST[@]}
   clientListKtestLen=${#CLIENT_LIST_KTEST[@]}
-  clientListExtraParametersLen=${#CLIENT_LIST_EXTRA_PARAMETERS[@]}
+  client_extra_params_len=${#CLIENT_LIST_PARAMETERS[@]}
 
   # check that the client config arrays are of equal length
-  if [ "$clientListLen" -ne "$clientListKtestLen" ] ||
-     [  "$clientListLen" -ne "$clientListExtraParametersLen" ]; then
+  if [ "$num_clients" -ne "$clientListKtestLen" ] ||
+     [  "$num_clients" -ne "$client_extra_params_len" ]; then
     echo "${PROG}: CLIENT_LIST* vars not equal lengths"
     exit
   fi
 
+  lecho "Clients: ${CLIENT_LIST[@]}"
+  lecho "Experiments: ${EXPERIMENT_LIST_NAMES[@]}"
+
   # KTest config checks
-  for (( j=0; j<${clientListLen}; ++j ));
+  for (( j=0; j<${num_clients}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
     client_ktest=${CLIENT_LIST_KTEST[$j]}
@@ -204,7 +243,7 @@ load_config()
     fi
 
     # check that ktest dir contains ktest files
-    ktest_count=$(find ${client_ktest} -maxdepth 1 -name "*.ktest" | wc -l)
+    ktest_count=$(find ${client_ktest} -follow -maxdepth 1 -name "*.ktest" | wc -l)
     if [ "${ktest_count}" -eq "0" ]; then
       echo "${PROG}: ${client_ktest} contains no ktest files"; exit
     else
@@ -218,13 +257,17 @@ load_config()
 
 main() 
 {
-  while getopts "vc:" opt; do
+  while getopts "c:vp" opt; do
     case $opt in
       c)
         EXP_CONFIG=$OPTARG
         ;;
       v)
         VERBOSE_OUTPUT=1
+        ;;
+      p)
+        lecho "Only Generating Plots"
+        PLOTS_ONLY=1
         ;;
       :)
         echo "Option -$OPTARG requires an argument"
@@ -240,7 +283,9 @@ main()
   load_config
 
   # do the experiments specified in the config file
-  run_experiments
+  if [ ${PLOTS_ONLY} -eq "0" ]; then
+    run_experiments
+  fi
 
   # copy the results to location specified in config file
   copy_results
@@ -250,6 +295,9 @@ main()
 
   # create simple html for viewing plots
   generate_plot_html
+
+  # create simple pdf for viewing plots
+  generate_plot_pdf
 }
 
 # set up exit handler

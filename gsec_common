@@ -10,7 +10,7 @@ WLLVM="whole-program-llvm"
 KLEE="klee"
 UCLIBC="klee-uclibc"
 BOOST="boost_1_55_0"
-GOOGLE_PERFTOOLS="gperftools-2.1"
+GOOGLE_PERFTOOLS="gperftools-2.4"
 UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.1"
 SPARSEHASH="sparsehash-2.0.2"
@@ -124,7 +124,7 @@ lecho()
   echo "[ $@ ]"
   if test ${LOG_FILE+defined}; then
     if test ! ${DRY_RUN+defined}; then
-      eval echo "LOG: $@" >> $LOG_FILE 2>&1
+      echo "LOG: $@" >> $LOG_FILE 2>&1
     fi
   fi
 }
@@ -162,7 +162,18 @@ initialize_logging()
   echo "LOG: `date` $(basename $0) $@ " >> $LOG_FILE
 }
 
+###  Initialize gsec logging directories under parallel execution
+initialize_parallel()
+{
+  local SCRIPT_BASENAME=`basename $0 .sh`
+  local PARALLEL_LOG_DIR_BASENAME=$SCRIPT_BASENAME"_parallel_"$RUN_PREFIX
+  local RECENT_PARALLEL_LOG_DIR=$SCRIPT_BASENAME"_parallel_recent"
 
+  PARALLEL_LOG_DIR=$LOG_DIR/$PARALLEL_LOG_DIR_BASENAME
+
+  mkdir -p $PARALLEL_LOG_DIR
+  ln -sfT $PARALLEL_LOG_DIR_BASENAME $LOG_DIR/$RECENT_PARALLEL_LOG_DIR
+}
 
 ###  Initialize gsec logging directories under LSF(killdevil)
 initialize_lsf()

@@ -19,6 +19,7 @@ set -o pipefail # exit on fail of any command in a pipe
 
 WRAPPER="`readlink -f "$0"`"
 HERE="`dirname "$WRAPPER"`"
+ERROR_EXIT=1
 PROG=$(basename $0)
 
 # Include gsec_common
@@ -28,6 +29,7 @@ PROG=$(basename $0)
 VERBOSE_OUTPUT=1
 MAKE_THREADS=4
 USE_LSF=0
+USE_PARALLEL=0
 USE_LSF_THREADED=0
 USE_INTERACTIVE_LSF=0
 USE_GDB=0
@@ -37,6 +39,7 @@ USE_HEAP_CHECK_LOCAL=0
 ROOT_DIR="`pwd`"
 BC_MODE="tetrinet"
 KTEST_DIR=""
+XARGS_MAX_PROCS=0 # for running in parallel mode with xargs
 
 # Default cliver options
 CLIVER_BIN_FILE="cliver"
@@ -62,6 +65,9 @@ DEBUG_SEARCHER=0
 
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
+
+# Global Variables
+CLIVER_JOBS=()
 
 parse_ktest_filename()
 {
@@ -136,15 +142,15 @@ initialize_bc()
         KTEST_DIR="$DATA_DIR/network/openssl/$DATA_TAG"
       fi
       OPENSSL_CERTS_DIR="$KTEST_DIR/certs"
-      BC_FILE="$OPENSSL_ROOT/bin/openssl-opt-klee.bc"
+      BC_FILE="$OPENSSL_ROOT/bin/${BC_MODE}.bc"
       TRAINING_DIR="$DATA_DIR/training/openssl-klee/$DATA_TAG"
       ;;
     tetri*)
       if [ -z "$KTEST_DIR" ] ; then
         KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
       fi
-      BC_FILE="$TETRINET_ROOT/bin/tetrinet-klee.bc"
-      TRAINING_DIR="$DATA_DIR/training/tetrinet-klee/$DATA_TAG"
+      BC_FILE="$TETRINET_ROOT/bin/${BC_MODE}.bc"
+      TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
       ;;
     xpilot*)
       # HACK_HOSTNAME and XPILOTHOST handle this for now...
@@ -156,8 +162,8 @@ initialize_bc()
       if [ -z "$KTEST_DIR" ] ; then
         KTEST_DIR="$DATA_DIR/network/xpilot-ng-x11/$DATA_TAG"
       fi
-      BC_FILE="$XPILOT_ROOT/bin/xpilot-ng-x11-klee.bc"
-      TRAINING_DIR="$DATA_DIR/training/xpilot-ng-x11/$DATA_TAG"
+      BC_FILE="$XPILOT_ROOT/bin/${BC_MODE}.bc"
+      TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
       ;;
   esac
 }
@@ -287,6 +293,10 @@ cliver_parameters()
 
 run_cliver()
 {
+  # Save each cliver command and parameters
+  local cliver_params="$@"
+  CLIVER_JOBS+=( "${CLIVER_BIN} ${cliver_params}" )
+
   if [ $USE_LSF -eq 1 ]; then
     if [ $USE_LSF_THREADED -eq 1 ]; then
       ltbsub $CLIVER_BIN $@
@@ -306,6 +316,8 @@ run_cliver()
     leval env HEAPCHECK=normal $CLIVER_BIN-bin $@
   elif [ $USE_HEAP_CHECK_LOCAL -eq 1 ]; then
     leval env HEAPCHECK=local $CLIVER_BIN-bin $@
+  elif [ $USE_PARALLEL -eq 1 ]; then
+    return
   else
     #leval $CLIVER_BIN-bin $@
     leval $CLIVER_BIN $@
@@ -385,8 +397,6 @@ do_verification()
 
     run_cliver $cliver_params
 
-    cp $i $CLIVER_OUTPUT_DIR/$ktest_basename/
-
   done
 }
 
@@ -417,7 +427,7 @@ do_ncross_verification()
   indices="$(seq 0 $(($num_dirs - 1)))"
 
   # Check that we trained on the same bc file used for verification
-  check_equiv_training_bc
+  #check_equiv_training_bc
 
   for i in $indices; do
     leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
@@ -525,14 +535,29 @@ do_training_verification()
   done
 }
 
+###############################################################################
+
+on_exit()
+{
+  if [ $ERROR_EXIT -eq 1 ]; then
+    lecho "Error"
+  fi
+  if [ $ERROR_EXIT -eq 0 ]; then
+    lecho "Elapsed time: $(elapsed_time $start_time)"
+  fi
+  exit $ERROR_EXIT
+}
+
+###############################################################################
+
 usage()
 {
   echo -e "$0\n\nUSAGE:"
   echo -e "\t-t [verify|training|ncross]\t\t(type of verification)(REQUIRED)" 
-  echo -e "\t-c [xpilot|tetrinet|openssl]\t\t\t(client binary)(REQUIRED)"
+  echo -e "\t-c [xpilot|tetrinet|openssl]\t\t(client binary)(REQUIRED)"
   echo -e "\t-i [gdb|lsf|interactive]\t\t(run mode)"
-  echo -e "\t-b [\"\"]\t\t\t\\t(name of ktest dir in data\network\[client-type]\ dir)"
-  echo -e "\t-k [\"\"]\t\t\t\\t(full path to ktest directory)"
+  echo -e "\t-b [\"\"]\t\t\t\t\t(name of ktest dir in data/network/[client-type]/ dir)"
+  echo -e "\t-k [\"\"]\t\t\t\t\t(full path to ktest directory)"
   echo -e "\t-x [\"\"]\t\t\t\t\t(additional cliver options)"
   echo -e "\t-d [0|1|2]\t\t\t\t(debug level)"
   echo -e "\t-m [gigabytes]\t\t\t\t(maximum memory usage)"
@@ -543,9 +568,11 @@ usage()
   echo -e "\t-h \t\t\t\t\t(help/usage)"
 }
 
+###############################################################################
+
 main() 
 {
-  while getopts "b:k:t:o:c:x:i:p:d:r:m:nshvf" opt; do
+  while getopts "b:k:t:o:c:x:i:j:p:d:r:m:nshvf" opt; do
     case $opt in
 
       b)
@@ -587,15 +614,16 @@ main()
           interactive*)
             USE_INTERACTIVE_LSF=1
             ;;
-          interactive*)
-            USE_INTERACTIVE_LSF=1
-            ;;
           gdb*)
             DISABLE_OUTPUT=1
             USE_GDB=1
             ;;
           lsf*)
             USE_LSF=1
+            VERBOSE_OUTPUT=0
+            ;;
+          parallel*)
+            USE_PARALLEL=1
             VERBOSE_OUTPUT=0
             ;;
           threaded-lsf*)
@@ -606,6 +634,10 @@ main()
         esac
         ;;
  
+      j)
+        XARGS_MAX_PROCS=$OPTARG
+        ;;
+
       p)
         case $OPTARG in
           heapprofile*)
@@ -673,10 +705,23 @@ main()
   initialize_root_directories
   initialize_logging $@
   initialize_bc
+
+  # check ktest files exist
+  local ktest_count=$(find ${KTEST_DIR} -follow -maxdepth 1 -name "*.ktest" 2>/dev/null | wc -l)
+  if [ "${ktest_count}" -eq "0" ]; then
+    echo "${PROG}: ${KTEST_DIR} contains no ktest files"; exit
+  else
+    lecho "Using ${ktest_count} ktest files from ${KTEST_DIR}"
+  fi
+
   initialize_cliver
 
   if [ $USE_LSF -eq 1 ]; then
     initialize_lsf
+  fi
+
+  if [ $USE_PARALLEL -eq 1 ]; then
+    initialize_parallel
   fi
 
   # record start time
@@ -718,10 +763,31 @@ main()
 
   esac
 
+  if [ $USE_PARALLEL -eq 1 ]; then
+    num_jobs=${#CLIVER_JOBS[@]}
+
+    lecho "Executing ${num_jobs} jobs in parallel"
+
+    # Execute all the cliver jobs in parallel using xargs
+    for (( i=0; i<${num_jobs}; ++i)) ;
+    do
+      echo "${CLIVER_JOBS[$i]} > ${PARALLEL_LOG_DIR}/${i}.log 2>&1" ;
+    done | ## execute in parallel with xargs
+      ( xargs -I{} --max-procs ${XARGS_MAX_PROCS} bash -c '{ {}; }' )
+
+  fi
+
   if [ $USE_LSF -eq 0 ]; then
     lecho "${PROG}: elapsed time: $(elapsed_time $start_time)"
   fi
 }
 
+# set up exit handler
+trap on_exit EXIT
+
+# record start time
+start_time=$(elapsed_time)
+
 # Run main
 main "$@"
+ERROR_EXIT=0
