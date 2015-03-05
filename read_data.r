@@ -27,6 +27,33 @@ for (col in colnames(data)) {
   }
 }
 
+graphTimeStats = c()
+for (col in colnames(data)) {
+  if (grepl("Time", col)) {
+    if (! grepl("RoundUser", col)) {
+      if (! grepl("RoundSys", col)) {
+        graphTimeStats = c(graphTimeStats, col)
+      }
+    }
+  }
+}
+graphTimeLabels = graphTimeStats
+
+graphInstructionStats = c()
+for (col in colnames(data)) {
+  if (grepl("InstructionCount", col)) {
+    graphInstructionStats = c(graphInstructionStats, col)
+  }
+}
+graphInstructionLabels = graphInstructionStats
+
+
+#graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
+#graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
+#
+#graphTimeStats = c("RoundRealTime","SolverTime","ExecTreeTime","MergerTime", "SearcherTime","QueryTime")
+#graphTimeLabels= c("RoundRealTime","SolverTime","ExecTreeTime","MergerTime", "SearcherTime","QueryTime")
+
 ############### regen and uncomment XXX
 # Compute additional stats and sub stat times
 #data$ExtraInstructionCount = data$InstructionCount - data$ValidPathInstructionCount
