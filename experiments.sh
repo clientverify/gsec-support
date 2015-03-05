@@ -162,7 +162,7 @@ generate_plot_pdf()
     RECENT=$(basename ${RECENT_FULL_PATH})
     PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
     HTML_DIR=${RESULTS_LOCATION}/${client}/plots
-    leval ./gsec-support/make_plot_pdf.sh ${PLOT_DIR} $HTML_DIR/${RECENT}.tex
+    leval ./gsec-support/make_plot_pdf.sh ${PLOT_DIR}
   done
 }
 
