@@ -853,7 +853,7 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
   local release_tag=""
 
   local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
