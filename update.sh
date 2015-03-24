@@ -828,17 +828,19 @@ build_klee_helper()
   make_klee "$options"
 
   if [ $SKIP_TESTS -eq 0 ]; then
-    necho "[Testing$tag] "
     cd $ROOT_DIR/src/klee
 
+    necho "[Testing$tag] "
     if [ $USE_TSAN -eq 1 ]; then
       leval make "$options" VERBOSE=1 ENABLE_THREAD_SANITIZER=1 test
     elif [ $USE_ASAN -eq 1 ]; then
-      make_options+=" ENABLE_ADDRESS_SANITIZER=1 "
       leval make "$options" VERBOSE=1 ENABLE_ADDRESS_SANITIZER=1 test
     else
       leval make "$options" VERBOSE=1 test
     fi
+
+    necho "[Unittesting$tag] "
+    make_klee "LD_LIBRARY_PATH=${BOOST_ROOT}/lib ${options} ENABLE_SHARED=0 unittests "
   fi
 
   necho "[Installing$tag] "
@@ -853,7 +855,7 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
   local release_tag=""
 
   local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "

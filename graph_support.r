@@ -579,22 +579,66 @@ do_time_summary_plot = function() {
   mdata <- melt(data, id=c("mode"),measure=graphTimeStats)
   cdata <- cast(mdata, mode~variable, sum, margins="grand_col")
   
-  for (statstr in graphTimeStats) {
-    cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
-  }
+  #for (statstr in graphTimeStats) {
+  #  cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
+  #}
+  mcdata = melt(cdata);
+  mcdata = subset(mcdata, variable != "(all)")
+
+  # construct plot
+  #p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
+  p <- ggplot(mcdata,aes(x=mode,y=value,fill=factor(variable)))
+  p = p + geom_bar(stat="identity", width=.5)
+
+  #p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
+  p = p + scale_fill_hue(labels=graphTimeLabels)
+
+  p = p + theme_bw()
+
+  #p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(axis.title.x=element_blank())
+  p = p + ylab("Time")
+  p = p + guides(fill = guide_legend(title=NULL,reverse=TRUE))
+
+  p;
+  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
+  rm(mdata)
+  rm(cdata)
+}
+
+### Instruction summary plot
+do_instruction_summary_plot = function() {
+  cat("plotting (inst_summary)\n")
+  trace =  paste(client_type,"instruction_summary",sep="_")
+  title = paste("Instruction Summary")
+  file_name = paste(trace, output_filetype, sep=".")
+
+  # reformat data
+  mdata <- melt(data, id=c("mode"),measure=graphInstructionStats)
+  cdata <- cast(mdata, mode~variable, sum, margins="grand_col")
+  print(cdata);
+
+  #for (statstr in graphInstructionStats) {
+  #  cdata[[statstr]] = cdata[[statstr]] / cdata[["(all)"]]
+  #}
+  mcdata = melt(cdata);
+  mcdata = subset(mcdata, variable != "(all)")
   
   # construct plot
-  p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
+  #p <- ggplot(melt(cdata),aes(x=mode,y=value,fill=factor(variable)))
+  p <- ggplot(mcdata,aes(x=mode,y=value,fill=factor(variable)))
   p = p + geom_bar(stat="identity", width=.5)
   
-  p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
+  #p = p + scale_fill_grey(labels=graphTimeLabels,start = 0.2, end = 0.8)
+  p = p + scale_fill_hue(labels=graphInstructionLabels)
   
   p = p + theme_bw()
   
-  p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
+  #p = p + scale_y_continuous(breaks=c(0.0,0.5,1.0), labels=c("0%","50%","100%"))
   p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
   p = p + theme(axis.title.x=element_blank())
-  p = p + ylab("Verification Time")
+  p = p + ylab("Instruction Count")
   p = p + guides(fill = guide_legend(title=NULL,reverse=TRUE))
   
   p;
@@ -602,6 +646,7 @@ do_time_summary_plot = function() {
   rm(mdata)
   rm(cdata)
 }
+
 
 ### Boxplot
 do_box_plot = function(y_axis) {

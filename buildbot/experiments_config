@@ -17,11 +17,11 @@ EXPERIMENT_LIST_PARAMETERS=(
 "--use-threads=2"
 "--use-threads=8"
 "--use-threads=8"
-"-max-k-extension=256 --use-threads=1"
-"-max-k-extension=256 --use-threads=2"
-"-max-k-extension=256 --use-threads=8"
-"--use-threads=1"
-"--use-threads=8"
+"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=1 "
+"-max-k-extension=256 --use-threads=2 -basic-block-event-flag=1 "
+"-max-k-extension=256 --use-threads=8 -basic-block-event-flag=1 "
+"--use-threads=1 -basic-block-event-flag=1 "
+"--use-threads=8 -basic-block-event-flag=1 "
 )
 
 CLIVER_PARAMETERS="-i parallel"
