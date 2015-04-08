@@ -66,6 +66,10 @@ DEBUG_SEARCHER=0
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
 
+# HMM parameters
+HMM_FRAG_CLUSTER_SZ=20
+HMM_MSG_CLUSTER_SZ=20
+
 # Global Variables
 CLIVER_JOBS=()
 
@@ -186,6 +190,7 @@ bc_parameters()
 initialize_cliver()
 {
   CLIVER_BIN="$KLEE_ROOT/bin/klee -cliver "
+  HMM_TRAIN_BIN="$KLEE_ROOT/bin/hmmtrain "
 
   if test ${SPECIAL_OUTPUT_DIR+defined}; then
     BASE_OUTPUT_DIR=$DATA_DIR/$SPECIAL_OUTPUT_DIR/$(basename $BC_FILE .bc)
@@ -535,6 +540,111 @@ do_training_verification()
   done
 }
 
+do_hmm_verification()
+{
+  CLIVER_MODE=${CLIVER_MODE#"hmm-"}
+
+  if [[ $(expr match $CLIVER_MODE "self") -gt 0 ]]; then
+    NCROSS_MODE="self"
+    CLIVER_MODE=${CLIVER_MODE#"self-"}
+  elif [[ $(expr match $CLIVER_MODE "check") -gt 0 ]]; then
+    NCROSS_MODE="check"
+    CLIVER_MODE=${CLIVER_MODE#"check-"}
+  elif [[ $(expr match $CLIVER_MODE "ncross") -gt 0 ]]; then
+    NCROSS_MODE="ncross"
+    CLIVER_MODE=${CLIVER_MODE#"ncross-"}
+  elif [[ $(expr match $CLIVER_MODE "all") -gt 0 ]]; then
+    NCROSS_MODE="all"
+    CLIVER_MODE=${CLIVER_MODE#"all-"}
+  else
+    echo "Error: invalid mode $CLIVER_MODE"
+    exit 1
+  fi
+
+  leval echo "CLIVER_MODE=$CLIVER_MODE"
+
+  declare -a training_dirs=( $TRAINING_DIR/* )
+  local num_dirs=${#training_dirs[@]}
+
+  indices="$(seq 0 $(($num_dirs - 1)))"
+
+  # Check that we trained on the same bc file used for verification
+  #check_equiv_training_bc
+
+  for i in $indices; do
+    leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
+
+    local ktest_file="${training_dirs[$i]}/socket_000.ktest"
+    local ktest_basename=$(basename ${training_dirs[$i]})
+    local cliver_params="$(cliver_parameters) "
+
+    cliver_params+="-socket-log $ktest_file "
+    cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
+    cliver_params+="-cliver-mode=$CLIVER_MODE "
+    cliver_params+="-use-hmm "
+
+    case $BC_MODE in
+      xpilot*)
+        cliver_params+="-use-recv-processing-flag "
+        ;;
+    esac
+
+    ## hmm directory setup
+    local hmm_dir="${CLIVER_OUTPUT_DIR}/hmm_${ktest_basename}"
+    echo "hmmdir: ${hmm_dir}"
+    leval mkdir -p ${hmm_dir}
+    local tpath_list_file="${hmm_dir}/input_list.txt"
+    local hmm_file="${hmm_dir}/hmm.txt"
+
+    ### make training file
+    for k in $indices; do
+      if [[ $NCROSS_MODE == "ncross" ]] ; then
+        if [ $i != $k ]; then
+          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+        fi 
+        # enable to support self-training checks during verificiation
+        #if [ $i == $k ]; then
+        #  cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        #fi 
+      elif [[ $NCROSS_MODE == "self" ]] ; then
+        if [ $i == $k ]; then
+          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      elif [[ $NCROSS_MODE == "check" ]] ; then
+        if [ $i != $k ]; then
+          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+        fi 
+        if [ $i == $k ]; then
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        fi 
+      elif [[ $NCROSS_MODE == "all" ]] ; then
+        find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+      fi
+    done
+
+    ## extract session prefix
+    local session=$(basename ${training_dirs[$i]})
+    ## get index of session (digits at end of string)
+    local session_index=${session##*[[:punct:]|[:alpha:]]}
+    ## get session prefix
+    local session_prefix=${session:0:$((${#session}-${#session_index}))}
+
+    ## execute hmm training
+    leval ${HMM_TRAIN_BIN} -v ${tpath_list_file} ${session_prefix} ${HMM_FRAG_CLUSTER_SZ} ${HMM_MSG_CLUSTER_SZ} ${hmm_dir} ${hmm_file}
+
+    ## add training file path to parameters
+    cliver_params+="-hmm-training-file=${hmm_file} "
+
+    ## add bc file to parameters
+    cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
+
+    ## execute cliver
+    run_cliver $cliver_params
+
+  done
+}
+
 ###############################################################################
 
 on_exit()
@@ -743,6 +853,10 @@ main()
 
     ncross* )
       do_ncross_verification
+      ;;
+
+    hmm* )
+      do_hmm_verification
       ;;
 
     verify* )
