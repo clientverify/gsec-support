@@ -45,8 +45,7 @@ xpilot-ng-x11-klee
 CLIENT_LIST_KTEST=(
 #/playpen/buildbot/data/network/openssl/gmail-subset
 #/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2_100
-#/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
-data/network/xpilot-ng-x11/xpilot_2000_10
+/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
 )
 
 # list of extra paramters specific to each client type
