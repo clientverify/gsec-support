@@ -1423,7 +1423,8 @@ main()
     echo "====--update--===="
     # update all
     update_wllvm
-    update_openssl
+    manage_openssl update
+    manage_openssl opt
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm
