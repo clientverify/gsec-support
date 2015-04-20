@@ -444,7 +444,12 @@ do_ncross_verification()
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
-    cliver_params+="-use-clustering "
+
+    if [[ $NCROSS_MODE == "self" ]] ; then
+      cliver_params+="-use-self-training "
+    else 
+      cliver_params+="-use-clustering "
+    fi
 
     case $BC_MODE in
       xpilot*)
