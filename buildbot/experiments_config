@@ -5,31 +5,34 @@
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-naive 
+#naive 
 training
 self-mjaccard-kprefix
+#hmm-ncross-mjaccard-kprefix
 #ncross-mjaccard-kprefix
 self-edit-dist-kprefix-row
-ncross-edit-dist-kprefix-row
+#ncross-edit-dist-kprefix-row
 )
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-naive-1 
+#naive-1 
 training
 self-pj-1
+#hmm-pj-1
 #ed-pj-1
 self-ed-1
-ed-ed-1
+#ed-ed-1
 )
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-"--use-threads=1"
+#"--use-threads=1"
 "--use-threads=1"
 "-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 #"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 "-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 )
 
@@ -37,21 +40,25 @@ CLIVER_PARAMETERS="-i parallel"
 
 # list of client types
 CLIENT_LIST=(
-#openssl-klee
+openssl-klee
 xpilot-ng-x11-klee
 )
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-#/playpen/buildbot/data/network/openssl/gmail-subset
-#/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2_100
+/playpen/buildbot/data/network/openssl/ktest
 /playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
 )
 
 # list of extra paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
-#""
 ""
+""
+)
+
+CLIENT_LIST_R_BIN_WIDTH=(
+100
+100
 )
 
 # data locations

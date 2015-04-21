@@ -144,7 +144,7 @@ do_plots()
   for (( j=0; j<${num_clients}; ++j ));
   do
     client=${CLIENT_LIST[$j]}
-    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${EXPERIMENT_LIST_NAMES[@]}
+    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${CLIENT_LIST_R_BIN_WIDTH[$j]} ${EXPERIMENT_LIST_NAMES[@]}
   done
 }
 
