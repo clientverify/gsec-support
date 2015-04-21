@@ -19,7 +19,8 @@ if (length(args) > 0) {
   root_dir = args[1]
 }
 
-arg_modes=args[-1]
+binwidth=args[2]
+arg_modes=args[-2]
 
 ###############################################################################
 # Create output dirs
@@ -39,7 +40,6 @@ client_type = parse_client_type()
 
 selected_modes = arg_modes
 selected_modes_alt_names = arg_modes
-binwidth=10
 
 num_threads=64
 
@@ -65,7 +65,7 @@ skipcolnames = c('Bin','trace','RoundNumber')
 # plot data that is numeric and non-zero
 plotnames = c()
 for (col in colnames(data)) {
-  if (is.numeric(data[[col]]) && sum(data[[col]]) != 0) {
+  if (is.numeric(data[[col]]) && sum(is.numeric(data[[col]])) != 0) {
     if (! is.element(col,skipcolnames)) {
       plotnames = c(plotnames, col)
     }
