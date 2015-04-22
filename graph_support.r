@@ -362,6 +362,21 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       min_size <<- length(tmp_data[,1])
     }
 
+    # compute verifier delay
+    v = vector("numeric",len)
+    v[1] = 0
+    for (j in seq(2, len)) {
+      ts = tmp_data$SocketEventTimeStamp
+      v_delay = (v[j-1] + tmp_data$RoundRealTime) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+      if (v_delay < 0) {
+        debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
+        v_delay = 0;
+      }
+      v[j] = v_delay;
+    }
+    tmp_data$VerifierDelayTime = v
+
+
     # add data to global data list
     #all_data[[length(all_data) + 1]] <<- tmp_data
     data <<- rbind(data, tmp_data)
