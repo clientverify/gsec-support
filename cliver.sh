@@ -67,8 +67,8 @@ PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
 
 # HMM parameters
-HMM_FRAG_CLUSTER_SZ=20
-HMM_MSG_CLUSTER_SZ=20
+HMM_FRAG_CLUSTER_SZ=100
+HMM_MSG_CLUSTER_SZ=100
 
 # Global Variables
 CLIVER_JOBS=()
@@ -614,7 +614,7 @@ do_hmm_verification()
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
-          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+          #cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "check" ]] ; then
         if [ $i != $k ]; then
