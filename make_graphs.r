@@ -19,7 +19,7 @@ if (length(args) > 0) {
   root_dir = args[1]
 }
 
-binwidth=args[2]
+binwidth=as.numeric(args[2])
 arg_modes=args[-2]
 
 ###############################################################################
