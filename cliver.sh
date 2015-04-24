@@ -636,7 +636,7 @@ do_hmm_verification()
     local session_prefix=${session:0:$((${#session}-${#session_index}))}
 
     ## execute hmm training
-    leval ${HMM_TRAIN_BIN} -v ${tpath_list_file} ${session_prefix} ${HMM_FRAG_CLUSTER_SZ} ${HMM_MSG_CLUSTER_SZ} ${hmm_dir} ${hmm_file}
+    leval ${HMM_TRAIN_BIN} -v -f ${tpath_list_file} ${session_prefix} ${HMM_FRAG_CLUSTER_SZ} ${HMM_MSG_CLUSTER_SZ} ${hmm_dir} ${hmm_file}
 
     ## add training file path to parameters
     cliver_params+="-hmm-training-file=${hmm_file} "
