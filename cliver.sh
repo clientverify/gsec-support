@@ -120,7 +120,7 @@ openssl_parameters()
   local PORT="4433"
   local bc_file_opts=""
 
-  bc_file_opts+=" s_client -msg -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt"
+  bc_file_opts+=" s_client -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt"
 
   ## Use this to add extra BC parameters from the commandline
   if test ${CLIVER_BC_PARAMS+defined}; then
