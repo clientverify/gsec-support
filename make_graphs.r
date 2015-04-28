@@ -105,6 +105,9 @@ results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
 plotheight = max(default_plotheight,length(unique(data$trace))*heightscalefactor)
 results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
 results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+x_axis <- "SocketEventSize"
+results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+x_axis <- "RoundNumber"
 results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
 #results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 

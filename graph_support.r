@@ -58,7 +58,6 @@ heightscalefactor = 0.75
 heightscalefactor = 0.5
 plotwidth = default_plotwidth
 plotheight = default_plotheight
-#x_axis = "Message"
 x_axis = "RoundNumber"
 num_threads=1
 #output_filetype="eps"
@@ -330,6 +329,9 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
     tmp_data = read.csv(file_name)
 
+    ## Remove last 2 round of data (finish cost)
+    tmp_data = subset(tmp_data, RoundNumber < (max(tmp_data$RoundNumber)-1))
+
     # length of rows, not cols
     len = length(tmp_data[,1])
 
@@ -362,14 +364,31 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       min_size <<- length(tmp_data[,1])
     }
 
+    # change absolute timestamps to relative
+    tmp_data$SocketEventTimestamp = (tmp_data$SocketEventTimestamp - tmp_data$SocketEventTimestamp[1])
+    #tmp_data$SocketEventTimestamp = pmax(tmp_data$SocketEventTimestamp, rep(0, len))
+
+    # Fix non-monotonic SocketEventTimeStamps
+    max_ts <- 0
+    for (j in seq(len)) {
+      ts <- tmp_data$SocketEventTimestamp[j]
+      if (ts >= max_ts) {
+        max_ts <- ts
+      } else {
+        debug_printf("Delay: %s, Round: %i out of order, %f, %f", file_name, j, ts, max_ts)
+        tmp_data$SocketEventTimestamp[j] <- max_ts
+        max_ts <- ts
+      }
+    }
+
     # compute verifier delay
     v = vector("numeric",len)
     v[1] = 0
     for (j in seq(2, len)) {
-      ts = tmp_data$SocketEventTimeStamp
-      v_delay = (v[j-1] + tmp_data$RoundRealTime) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+      v_delay = (v[j-1] + tmp_data$RoundRealTime[j]) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+      debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
       if (v_delay < 0) {
-        debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
+        #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
         v_delay = 0;
       }
       v[j] = v_delay;
@@ -449,8 +468,8 @@ do_line_plot = function(y_axis) {
   # construct plot
   #p = ggplot(mdata, aes_string(x=x_axis, y=y_axis))
   p = ggplot(data, aes_string(x=x_axis, y=y_axis))
-  #p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5) 
-  p = p + geom_line(aes(colour=factor(mode)),size=0.5)
+  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
+  #p = p + geom_line(aes(colour=factor(mode)),size=0.5)
   p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
   p = p + scale_y_continuous()
   p = p + ggtitle(title) + theme(legend.position="bottom")

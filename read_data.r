@@ -80,3 +80,5 @@ graphInstructionLabels = graphInstructionStats
 ## Trim data by start and min Messages
 ##data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
 
+## Remove first round of data (startup cost)
+data = subset(data, RoundNumber > 1)
