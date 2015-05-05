@@ -41,6 +41,10 @@ BC_MODE="tetrinet"
 KTEST_DIR=""
 XARGS_MAX_PROCS=0 # for running in parallel mode with xargs
 
+HMM_PREFIX="hmm_"
+HMM_TRAINING_MODE="ncross"
+HMM_TRAIN_FLAGS=" -f -v -m Ruzicka -t mJaccard -d exact "
+
 # Default cliver options
 CLIVER_BIN_FILE="cliver"
 CLIVER_MODE="training"
@@ -67,8 +71,8 @@ PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
 
 # HMM parameters
-HMM_FRAG_CLUSTER_SZ=100
-HMM_MSG_CLUSTER_SZ=100
+HMM_FRAG_CLUSTER_SZ=512
+HMM_MSG_CLUSTER_SZ=6000
 
 # Global Variables
 CLIVER_JOBS=()
@@ -331,6 +335,7 @@ run_cliver()
 
 do_training()
 {
+  lecho "Training"
   for i in $KTEST_DIR/*ktest; do
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
@@ -427,6 +432,10 @@ do_ncross_verification()
   leval echo "CLIVER_MODE=$CLIVER_MODE"
 
   declare -a training_dirs=( $TRAINING_DIR/* )
+
+  # remove any subdirectories that are hmm data
+  local training_dirs=(${training_dirs[@]//*${HMM_PREFIX}*})
+
   local num_dirs=${#training_dirs[@]}
 
   indices="$(seq 0 $(($num_dirs - 1)))"
@@ -435,7 +444,7 @@ do_ncross_verification()
   #check_equiv_training_bc
 
   for i in $indices; do
-    leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
+    lecho "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
@@ -445,11 +454,11 @@ do_ncross_verification()
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
 
-    if [[ $NCROSS_MODE == "self" ]] ; then
-      cliver_params+="-use-self-training "
-    else 
+    #if [[ $NCROSS_MODE == "self" ]] ; then
+    #  cliver_params+="-use-self-training "
+    #else
       cliver_params+="-use-clustering "
-    fi
+    #fi
 
     case $BC_MODE in
       xpilot*)
@@ -468,8 +477,8 @@ do_ncross_verification()
         #fi 
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
-          #cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
-          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+          cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
+          #cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
         fi 
       elif [[ $NCROSS_MODE == "check" ]] ; then
         if [ $i != $k ]; then
@@ -503,6 +512,10 @@ do_training_verification()
   leval echo "CLIVER_MODE=$CLIVER_MODE"
 
   declare -a training_dirs=( $TRAINING_DIR/* )
+
+  # remove any subdirectories that are hmm data
+  local training_dirs=(${training_dirs[@]//*${HMM_PREFIX}*})
+
   local num_dirs=${#training_dirs[@]}
   indices="$(seq 0 $(($num_dirs - 1)))"
 
@@ -523,9 +536,6 @@ do_training_verification()
   for i in $ktest_indices; do
     leval echo "validating ${ktest_files[$i]} with $(($num_dirs -1)) training sets"
 
-    #local ktest_file="${ktest_dirs[$i]}/socket_000.ktest"
-    #local ktest_basename=$(basename ${ktest_dirs[$i]})
-
     local ktest_file="${ktest_files[$i]}"
     local ktest_basename=$(basename ${ktest_files[$i]})
     
@@ -542,6 +552,77 @@ do_training_verification()
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
     run_cliver $cliver_params
+  done
+}
+
+do_hmm_training()
+{
+  # training types: all tpath files, n-cross (n=1), self
+
+  # Read all subdirectories in the training dir
+  declare -a training_dirs=( $TRAINING_DIR/* )
+
+  # remove any subdirectories that are old hmm data
+  local training_dirs=(${training_dirs[@]//*${HMM_PREFIX}*})
+  local num_dirs=${#training_dirs[@]}
+  indices="$(seq 0 $(($num_dirs - 1)))"
+
+  # Check that we trained on the same bc file used for verification
+  #check_equiv_training_bc
+
+  # Iterate through each training set (only once for "all" mode)
+  for i in $indices; do
+
+    # session index is either "all" or the training set index
+    local session=$(basename ${training_dirs[$i]})
+    local session_index=${session##*[[:punct:]|[:alpha:]]}
+    local session_prefix=${session:0:$((${#session}-${#session_index}))}
+
+    if [[ ${HMM_TRAINING_MODE} == "self" ]] ; then
+      session_index="self_"${session##*[[:punct:]|[:alpha:]]}
+    elif [[ ${HMM_TRAINING_MODE} == "all" ]] ; then
+      session_index="all"
+    fi
+
+    local hmm_dir="${TRAINING_DIR}/${HMM_PREFIX}${session_index}"
+    local tpath_list_file="${hmm_dir}/input_list.txt"
+    local hmm_file="${hmm_dir}/hmm.txt"
+    leval mkdir -p ${hmm_dir}
+
+    lecho "HMM Training ($HMM_TRAINING_MODE): ${session_index}"
+
+    ### make training file
+    for k in $indices; do
+      if [[ ${HMM_TRAINING_MODE} == "ncross" ]] ; then
+        if [ $i != $k ]; then
+          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+        fi
+      elif [[ ${HMM_TRAINING_MODE} == "self" ]] ; then
+        if [ $i == $k ]; then
+          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+        fi
+      elif [[ ${HMM_TRAINING_MODE} == "all" ]] ; then
+        find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
+      fi
+    done
+
+    ## drop xpilot headers
+    hmm_xpilot_flag=
+    case $BC_MODE in
+      xpilot*)
+        hmm_xpilot_flag=-x
+        ;;
+    esac
+
+    ## execute hmm training
+    leval ${HMM_TRAIN_BIN} ${HMM_TRAIN_FLAGS} ${hmm_xpilot_flag}  \
+      ${tpath_list_file} ${session_prefix} ${HMM_FRAG_CLUSTER_SZ} \
+      ${HMM_MSG_CLUSTER_SZ} ${hmm_dir} ${hmm_file}
+
+    if [[ ${HMM_TRAINING_MODE} == "all" ]] ; then
+      break;
+    fi
+
   done
 }
 
@@ -566,9 +647,13 @@ do_hmm_verification()
     exit 1
   fi
 
-  leval echo "CLIVER_MODE=$CLIVER_MODE"
+  lecho "HMM Verification Settings: ${NCROSS_MODE} ${CLIVER_MODE} "
 
   declare -a training_dirs=( $TRAINING_DIR/* )
+
+  # remove any subdirectories that are hmm data
+  local training_dirs=(${training_dirs[@]//*${HMM_PREFIX}*})
+
   local num_dirs=${#training_dirs[@]}
 
   indices="$(seq 0 $(($num_dirs - 1)))"
@@ -577,7 +662,26 @@ do_hmm_verification()
   #check_equiv_training_bc
 
   for i in $indices; do
-    leval echo "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
+
+    local session=$(basename ${training_dirs[$i]})
+
+    # session index is either "all" or the training set index
+    local session_index=${session##*[[:punct:]|[:alpha:]]}
+    local hmmn_index=${session##*[[:punct:]|[:alpha:]]}
+
+    ## get session prefix (e.g., "xpilot_"
+    local session_prefix=${session:0:$((${#session}-${#session_index}))}
+
+    if [[ ${NCROSS_MODE} == "self" ]] ; then
+      hmm_index="self_"${session##*[[:punct:]|[:alpha:]]}
+    elif [[ ${NCROSS_MODE} == "all" ]] ; then
+      hmm_index="all"
+    fi
+
+    local hmm_dir="${TRAINING_DIR}/${HMM_PREFIX}${hmm_index}"
+    local hmm_file="${hmm_dir}/hmm.txt"
+
+    lecho "HMM Verifying: ${training_dirs[$i]} with ${hmm_file}"
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
@@ -593,50 +697,6 @@ do_hmm_verification()
         cliver_params+="-use-recv-processing-flag "
         ;;
     esac
-
-    ## hmm directory setup
-    local hmm_dir="${CLIVER_OUTPUT_DIR}/hmm_${ktest_basename}"
-    echo "hmmdir: ${hmm_dir}"
-    leval mkdir -p ${hmm_dir}
-    local tpath_list_file="${hmm_dir}/input_list.txt"
-    local hmm_file="${hmm_dir}/hmm.txt"
-
-    ### make training file
-    for k in $indices; do
-      if [[ $NCROSS_MODE == "ncross" ]] ; then
-        if [ $i != $k ]; then
-          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
-        fi 
-        # enable to support self-training checks during verificiation
-        #if [ $i == $k ]; then
-        #  cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
-        #fi 
-      elif [[ $NCROSS_MODE == "self" ]] ; then
-        if [ $i == $k ]; then
-          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
-          #cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
-        fi 
-      elif [[ $NCROSS_MODE == "check" ]] ; then
-        if [ $i != $k ]; then
-          find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
-        fi 
-        if [ $i == $k ]; then
-          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
-        fi 
-      elif [[ $NCROSS_MODE == "all" ]] ; then
-        find -L "${training_dirs[$k]}" -name '*.tpath' >> ${tpath_list_file}
-      fi
-    done
-
-    ## extract session prefix
-    local session=$(basename ${training_dirs[$i]})
-    ## get index of session (digits at end of string)
-    local session_index=${session##*[[:punct:]|[:alpha:]]}
-    ## get session prefix
-    local session_prefix=${session:0:$((${#session}-${#session_index}))}
-
-    ## execute hmm training
-    leval ${HMM_TRAIN_BIN} -v -f ${tpath_list_file} ${session_prefix} ${HMM_FRAG_CLUSTER_SZ} ${HMM_MSG_CLUSTER_SZ} ${hmm_dir} ${hmm_file}
 
     ## add training file path to parameters
     cliver_params+="-hmm-training-file=${hmm_file} "
@@ -681,6 +741,24 @@ usage()
   echo -e "\t-n \t\t\t\t\t(dry run)"
   echo -e "\t-s \t\t\t\t\t(silent)"
   echo -e "\t-h \t\t\t\t\t(help/usage)"
+}
+
+###############################################################################
+
+run_parallel_jobs()
+{
+  if [ $USE_PARALLEL -eq 1 ]; then
+    num_jobs=${#CLIVER_JOBS[@]}
+
+    lecho "Executing ${num_jobs} jobs in parallel"
+
+    # Execute all the cliver jobs in parallel using xargs
+    for (( i=0; i<${num_jobs}; ++i)) ;
+    do
+      echo "${CLIVER_JOBS[$i]} > ${PARALLEL_LOG_DIR}/${i}.log 2>&1" ;
+    done | ## execute in parallel with xargs
+      ( xargs -I{} --max-procs ${XARGS_MAX_PROCS} bash -c '{ {}; }' )
+  fi
 }
 
 ###############################################################################
@@ -748,7 +826,7 @@ main()
             ;;
         esac
         ;;
- 
+
       j)
         XARGS_MAX_PROCS=$OPTARG
         ;;
@@ -846,55 +924,59 @@ main()
 
     self* )
       do_ncross_verification
+      run_parallel_jobs
       ;;
 
     check* )
       do_ncross_verification
+      run_parallel_jobs
       ;;
 
     all* )
       do_ncross_verification
+      run_parallel_jobs
       ;;
 
     ncross* )
       do_ncross_verification
+      run_parallel_jobs
       ;;
 
     hmm* )
       do_hmm_verification
+      run_parallel_jobs
       ;;
 
     verify* )
       do_training_verification
+      run_parallel_jobs
       ;;
 
     training )
+      # set up training jobs
       do_training
+      # run to generate tpath files
+      run_parallel_jobs
+      # run hmmtrain on generated tpath files
+      HMM_TRAINING_MODE="all"
+      do_hmm_training
+      HMM_TRAINING_MODE="self"
+      do_hmm_training
+      HMM_TRAINING_MODE="ncross"
+      do_hmm_training
       ;;
 
     edit*)
       do_verification
+      run_parallel_jobs
       ;;
 
     naive*)
       do_verification
+      run_parallel_jobs
       ;;
 
   esac
-
-  if [ $USE_PARALLEL -eq 1 ]; then
-    num_jobs=${#CLIVER_JOBS[@]}
-
-    lecho "Executing ${num_jobs} jobs in parallel"
-
-    # Execute all the cliver jobs in parallel using xargs
-    for (( i=0; i<${num_jobs}; ++i)) ;
-    do
-      echo "${CLIVER_JOBS[$i]} > ${PARALLEL_LOG_DIR}/${i}.log 2>&1" ;
-    done | ## execute in parallel with xargs
-      ( xargs -I{} --max-procs ${XARGS_MAX_PROCS} bash -c '{ {}; }' )
-
-  fi
 
   if [ $USE_LSF -eq 0 ]; then
     lecho "${PROG}: elapsed time: $(elapsed_time $start_time)"
