@@ -72,7 +72,7 @@ EXTRA_CLIVER_OPTIONS=""
 
 # HMM parameters
 HMM_FRAG_CLUSTER_SZ=512
-HMM_MSG_CLUSTER_SZ=6000
+HMM_MSG_CLUSTER_SZ=64
 
 # Global Variables
 CLIVER_JOBS=()
@@ -335,10 +335,11 @@ run_cliver()
 
 do_training()
 {
-  lecho "Training"
+  lecho "==== Training Verification ===="
   for i in $KTEST_DIR/*ktest; do
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
+    lecho "${ktest_basename}"
 
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -394,10 +395,12 @@ check_equiv_training_bc()
 
 do_verification()
 {
+  lecho "==== Naive Verification ===="
   for i in $KTEST_DIR/*ktest; do
-
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
+
+    lecho "${ktest_basename}"
 
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -429,7 +432,7 @@ do_ncross_verification()
     exit 1
   fi
 
-  leval echo "CLIVER_MODE=$CLIVER_MODE"
+  lecho "==== Cluster/Edit Distance Verification ${NCROSS_MODE} ${CLIVER_MODE} ===="
 
   declare -a training_dirs=( $TRAINING_DIR/* )
 
@@ -444,11 +447,12 @@ do_ncross_verification()
   #check_equiv_training_bc
 
   for i in $indices; do
-    lecho "Cross validating ${training_dirs[$i]} with $(($num_dirs -1)) training sets"
 
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
+
+    lecho "${ktest_basename}"
 
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -509,8 +513,6 @@ do_training_verification()
     exit 1
   fi
 
-  leval echo "CLIVER_MODE=$CLIVER_MODE"
-
   declare -a training_dirs=( $TRAINING_DIR/* )
 
   # remove any subdirectories that are hmm data
@@ -534,11 +536,11 @@ do_training_verification()
   done
 
   for i in $ktest_indices; do
-    leval echo "validating ${ktest_files[$i]} with $(($num_dirs -1)) training sets"
-
     local ktest_file="${ktest_files[$i]}"
     local ktest_basename=$(basename ${ktest_files[$i]})
     
+    lecho "${ktest_basename}"
+
     local cliver_params="$(cliver_parameters) "
 
     cliver_params+="-socket-log $ktest_file "
@@ -558,6 +560,8 @@ do_training_verification()
 do_hmm_training()
 {
   # training types: all tpath files, n-cross (n=1), self
+
+  lecho "==== HMM Training: $HMM_TRAINING_MODE ===="
 
   # Read all subdirectories in the training dir
   declare -a training_dirs=( $TRAINING_DIR/* )
@@ -584,12 +588,13 @@ do_hmm_training()
       session_index="all"
     fi
 
+    lecho "${HMM_PREFIX}${session_index}"
+
     local hmm_dir="${TRAINING_DIR}/${HMM_PREFIX}${session_index}"
     local tpath_list_file="${hmm_dir}/input_list.txt"
     local hmm_file="${hmm_dir}/hmm.txt"
     leval mkdir -p ${hmm_dir}
 
-    lecho "HMM Training ($HMM_TRAINING_MODE): ${session_index}"
 
     ### make training file
     for k in $indices; do
@@ -647,7 +652,7 @@ do_hmm_verification()
     exit 1
   fi
 
-  lecho "HMM Verification Settings: ${NCROSS_MODE} ${CLIVER_MODE} "
+  lecho "==== HMM Verification ${NCROSS_MODE} ${CLIVER_MODE} ===="
 
   declare -a training_dirs=( $TRAINING_DIR/* )
 
@@ -667,7 +672,7 @@ do_hmm_verification()
 
     # session index is either "all" or the training set index
     local session_index=${session##*[[:punct:]|[:alpha:]]}
-    local hmmn_index=${session##*[[:punct:]|[:alpha:]]}
+    local hmm_index=${session##*[[:punct:]|[:alpha:]]}
 
     ## get session prefix (e.g., "xpilot_"
     local session_prefix=${session:0:$((${#session}-${#session_index}))}
@@ -681,11 +686,11 @@ do_hmm_verification()
     local hmm_dir="${TRAINING_DIR}/${HMM_PREFIX}${hmm_index}"
     local hmm_file="${hmm_dir}/hmm.txt"
 
-    lecho "HMM Verifying: ${training_dirs[$i]} with ${hmm_file}"
-
     local ktest_file="${training_dirs[$i]}/socket_000.ktest"
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
+
+    lecho "${ktest_basename} ${hmm_file}"
 
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -715,6 +720,7 @@ do_hmm_verification()
 on_exit()
 {
   if [ $ERROR_EXIT -eq 1 ]; then
+    lecho "Elapsed time: $(elapsed_time $start_time)"
     lecho "Error"
   fi
   if [ $ERROR_EXIT -eq 0 ]; then
