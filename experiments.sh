@@ -128,6 +128,7 @@ copy_results()
       pattern="cliver.stats"
       for file in $( find -L ${client_data_path}/${data_id} -name $pattern); do
         stats_file="$(basename $(dirname $file) ).csv"
+        lecho "Stats: Lines: $(wc -l $file)"
         leval cp ${file} ${stats_dir}/${stats_file}
       done
     done
@@ -214,6 +215,11 @@ load_config()
 
   # check that the exp config arrays are of equal length
   if [ "$num_experiments" -ne "$expListOutputLen" ]; then
+    echo "${PROG}: EXPERIMENT_LIST* vars not equal lengths"
+    exit
+  fi
+
+  if [ "$num_experiments" -ne "$exp_extra_params_len" ]; then
     echo "${PROG}: EXPERIMENT_LIST* vars not equal lengths"
     exit
   fi
