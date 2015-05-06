@@ -325,12 +325,11 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
   for (file in list.files(path=data_path)) {
     file_name = paste(data_path,file,sep="/")
-    debug_printf("Reading: %s", file_name)
 
     tmp_data = read.csv(file_name)
 
-    ## Remove last 2 round of data (finish cost)
-    tmp_data = subset(tmp_data, RoundNumber < (max(tmp_data$RoundNumber)-1))
+    # Remove last 2 round of data (finish cost)
+    tmp_data = subset(tmp_data, RoundNumber < (max(tmp_data$RoundNumber)-2))
 
     # length of rows, not cols
     len = length(tmp_data[,1])
@@ -375,7 +374,7 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       if (ts >= max_ts) {
         max_ts <- ts
       } else {
-        debug_printf("Delay: %s, Round: %i out of order, %f, %f", file_name, j, ts, max_ts)
+        debug_printf("Fixing Net timestamp: %s, Round: %i out of order, %f, %f", file_name, j, ts, max_ts)
         tmp_data$SocketEventTimestamp[j] <- max_ts
         max_ts <- ts
       }
@@ -386,7 +385,7 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     v[1] = 0
     for (j in seq(2, len)) {
       v_delay = (v[j-1] + tmp_data$RoundRealTime[j]) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
-      debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
+      #debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
       if (v_delay < 0) {
         #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
         v_delay = 0;
@@ -394,6 +393,21 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       v[j] = v_delay;
     }
     tmp_data$VerifierDelayTime = v
+
+    # compute verifier delay (minus solvertime)
+    v = vector("numeric",len)
+    v[1] = 0
+    for (j in seq(2, len)) {
+      v_delay = (v[j-1] + (tmp_data$RoundRealTime[j] - tmp_data$SolverTime[j])) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+      #debug_printf("SolverDelay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
+      if (v_delay < 0) {
+        #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
+        v_delay = 0;
+      }
+      v[j] = v_delay;
+    }
+    tmp_data$VerifierMinusSolverDelayTime = v
+
 
 
     # add data to global data list
@@ -409,6 +423,7 @@ read_csv_data = function() {
     data_path = paste(root_dir, data_dir, data_mode_dir, sep="/")
 
     data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
+    cat(data_path, "\n")
 
     if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
       for (data_date_dir in data_date_dirs[seq(1)]) {
