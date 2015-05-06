@@ -855,7 +855,7 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=0 "
   local release_tag=""
 
   local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
@@ -1124,7 +1124,8 @@ config_and_build_openssl()
   openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
-  openssl_config_options+="-d " # compile with debugging symbols
+  openssl_config_options+="-DOPENSSL_NO_ERR"
+  #openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1423,7 +1424,8 @@ main()
     echo "====--update--===="
     # update all
     update_wllvm
-    update_openssl
+    manage_openssl update
+    manage_openssl opt
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm

@@ -4,39 +4,65 @@
 # equivalent number of elements
 
 # list of modes to run cliver.sh
-EXPERIMENT_LIST=(naive naive naive training ncross-edit-dist-kprefix-row ncross-edit-dist-kprefix-row ncross-edit-dist-kprefix-row self-edit-dist-kprefix-row self-edit-dist-kprefix-row
+EXPERIMENT_LIST=(
+training
+naive 
+naive 
+self-mjaccard-kprefix
+self-edit-dist-kprefix-row
+self-approx-edit-dist
+#hmm-self-mjaccard-kprefix
+#hmm-self-edit-dist-kprefix-row
 )
 
 # list of output tags
-EXPERIMENT_LIST_NAMES=(naive-1 naive-2 naive-8 training ed-256-1 ed-256-2 ed-256-8 self-1 self-8
+EXPERIMENT_LIST_NAMES=(
+training
+naive-1 
+naive-2
+self-pj-1
+self-ed-1
+self-aed-1
+#hmm-self-pj-1
+#hmm-self-ed-1
 )
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
 "--use-threads=1"
+"--use-threads=1"
 "--use-threads=2"
-"--use-threads=8"
-"--use-threads=8"
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=1 "
-"-max-k-extension=256 --use-threads=2 -basic-block-event-flag=1 "
-"-max-k-extension=256 --use-threads=8 -basic-block-event-flag=1 "
-"--use-threads=1 -basic-block-event-flag=1 "
-"--use-threads=8 -basic-block-event-flag=1 "
+"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 )
 
 CLIVER_PARAMETERS="-i parallel"
 
 # list of client types
-CLIENT_LIST=(openssl-klee xpilot-ng-x11-klee)
+CLIENT_LIST=(
+openssl-klee
+xpilot-ng-x11-klee
+)
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-/playpen/buildbot/data/network/openssl/gmail-subset
-/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2_100
+/playpen/buildbot/data/network/openssl/ktest-timefix
+/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
 )
 
 # list of extra paramters specific to each client type
-CLIENT_LIST_PARAMETERS=("" "")
+CLIENT_LIST_PARAMETERS=(
+""
+""
+)
+
+CLIENT_LIST_R_BIN_WIDTH=(
+100
+100
+)
 
 # data locations
 RESULTS_LOCATION="data/results"

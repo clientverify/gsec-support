@@ -30,13 +30,19 @@ for (col in colnames(data)) {
 graphTimeStats = c()
 for (col in colnames(data)) {
   if (grepl("Time", col)) {
-    if (! grepl("RoundUser", col)) {
-      if (! grepl("RoundSys", col)) {
-        graphTimeStats = c(graphTimeStats, col)
-      }
+    if (!grepl("RoundUser", col) & !grepl("RoundSys", col)
+        & !grepl("RoundReal",col) & !grepl("Delay",col) & !grepl("Timestamp",col)) {
+      graphTimeStats = c(graphTimeStats, col)
     }
   }
 }
+
+data$KLEETime = data$RoundRealTime
+for (stat in graphTimeStats) {
+  cat("subtracting :", stat, "\n")
+  data$KLEETime = data$KLEETime - data[, stat]
+}
+graphTimeStats = c(graphTimeStats, 'KLEETime')
 graphTimeLabels = graphTimeStats
 
 graphInstructionStats = c()
@@ -80,3 +86,5 @@ graphInstructionLabels = graphInstructionStats
 ## Trim data by start and min Messages
 ##data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
 
+## Remove first round of data (startup cost)
+data = subset(data, RoundNumber > 1)
