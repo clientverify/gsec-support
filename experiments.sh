@@ -235,8 +235,8 @@ load_config()
     exit
   fi
 
-  lecho "Clients: ${CLIENT_LIST[@]}"
-  lecho "Experiments: ${EXPERIMENT_LIST_NAMES[@]}"
+  #lecho "Clients: ${CLIENT_LIST[@]}"
+  #lecho "Experiments: ${EXPERIMENT_LIST_NAMES[@]}"
 
   # KTest config checks
   for (( j=0; j<${num_clients}; ++j ));

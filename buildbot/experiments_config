@@ -5,36 +5,36 @@
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-training
-naive 
-naive 
-self-mjaccard-kprefix
-self-edit-dist-kprefix-row
-self-approx-edit-dist
+#training
+#naive
+#naive
+#self-mjaccard-kprefix
+#self-edit-dist-kprefix-row
+#self-approx-edit-dist
 #hmm-self-mjaccard-kprefix
 #hmm-self-edit-dist-kprefix-row
 )
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-training
-naive-1 
-naive-2
-self-pj-1
-self-ed-1
-self-aed-1
+#training
+#naive-1
+#naive-2
+#self-pj-1
+#self-ed-1
+#self-aed-1
 #hmm-self-pj-1
 #hmm-self-ed-1
 )
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-"--use-threads=1"
-"--use-threads=1"
-"--use-threads=2"
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"--use-threads=1"
+#"--use-threads=1"
+#"--use-threads=2"
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 #"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 #"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
 )
@@ -43,25 +43,25 @@ CLIVER_PARAMETERS="-i parallel"
 
 # list of client types
 CLIENT_LIST=(
-openssl-klee
-xpilot-ng-x11-klee
+#openssl-klee
+#xpilot-ng-x11-klee
 )
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-/playpen/buildbot/data/network/openssl/ktest-timefix
-/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
+#/playpen/buildbot/data/network/openssl/ktest-timefix
+#/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
 )
 
 # list of extra paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
-""
-""
+#""
+#""
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
-100
-100
+#100
+#100
 )
 
 # data locations
