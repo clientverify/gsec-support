@@ -5,38 +5,39 @@
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-training
 naive 
 naive 
-self-mjaccard-kprefix
-self-edit-dist-kprefix-row
-self-approx-edit-dist
-#hmm-self-mjaccard-kprefix
-#hmm-self-edit-dist-kprefix-row
+naive
+naive
 )
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-training
-naive-1 
-naive-2
-self-pj-1
-self-ed-1
-self-aed-1
-#hmm-self-pj-1
-#hmm-self-ed-1
+IDDFS
+IDDFS-dropS2C
+IDDFS-nAES
+IDDFS-nAES-dropS2C
 )
+
+# EXPERIMENT_LIST parameters
+KLEE_DEBUG_OPTS="--final-distance=0 --debug-socket=0 --debug-execution-tree=0 --output-istats=0 --use-call-paths=0 "
+KLEE_OPTS=" --use-threads=1 "
+TRAIN_OPTS=""
+NAIVE_OPTS=""
+VERIFY_OPTS="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
+ED_OPTS="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
+HMM_OPTS=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
+
+#OpenSSL specific options
+DROP_S2C="--only-verify-first-s2c=14 "
+NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-"--use-threads=1"
-"--use-threads=1"
-"--use-threads=2"
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
-#"-max-k-extension=256 --use-threads=1 -basic-block-event-flag=0 "
+" ${KLEE_OPTS} ${NAIVE_OPTS} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
 )
 
 CLIVER_PARAMETERS="-i parallel"
@@ -44,23 +45,19 @@ CLIVER_PARAMETERS="-i parallel"
 # list of client types
 CLIENT_LIST=(
 openssl-klee
-xpilot-ng-x11-klee
 )
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
 /playpen/buildbot/data/network/openssl/ktest-timefix
-/playpen/buildbot/data/network/xpilot-ng-x11/xpilot_2000_10
 )
 
 # list of extra paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
 ""
-""
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
-100
 100
 )
 
