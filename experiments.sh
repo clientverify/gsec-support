@@ -82,10 +82,15 @@ run_experiments()
 
       ktest_dir=${CLIENT_LIST_KTEST[$j]}
 
+      bitcode_params=
+      if [ -n "${CLIENT_LIST_BITCODE_PARAMETERS[$j]}" ]; then
+        bitcode_params="-l \"${CLIENT_LIST_BITCODE_PARAMETERS[$j]}\""
+      fi
+
       client_params=${CLIENT_LIST_PARAMETERS[$j]}
       extra_params=" -x \"${client_params} ${exp_params}\" "
       
-      cliver_command="${CLIVERSH} -s -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput ${CLIVER_PARAMETERS} $extra_params "
+      cliver_command="${CLIVERSH} -s -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput ${CLIVER_PARAMETERS} ${bitcode_params} $extra_params "
       lecho "EXEC: ${cliver_command}"
       eval ${cliver_command}
     done
@@ -122,7 +127,7 @@ copy_results()
       data_id=$(readlink ${client_data_path}/${data_tag})
 
       # stats directory will all of the experiment data (past and present)
-      stats_dir=${RESULTS_LOCATION}/$client/data/$expOutput/$data_id
+      stats_dir=${RESULTS_LOCATION}/$client/data/${data_tag}/$expOutput/$data_id
       leval mkdir -p ${stats_dir}
 
       pattern="cliver.stats"
@@ -144,8 +149,12 @@ do_plots()
 
   for (( j=0; j<${num_clients}; ++j ));
   do
-    client=${CLIENT_LIST[$j]}
-    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${CLIENT_LIST_R_BIN_WIDTH[$j]} ${EXPERIMENT_LIST_NAMES[@]}
+    local client=${CLIENT_LIST[$j]}
+
+    # the symlink created by cliver.sh is set to $data_tag
+    local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
+
+    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${data_tag} ${CLIENT_LIST_R_BIN_WIDTH[$j]} ${EXPERIMENT_LIST_NAMES[@]}
   done
 }
 
@@ -158,11 +167,13 @@ generate_plot_pdf()
 
   for (( j=0; j<${num_clients}; ++j ));
   do
-    client=${CLIENT_LIST[$j]}
-    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    # the symlink created by cliver.sh is set to $data_tag
+    local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
+
+    local client=${CLIENT_LIST[$j]}
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/${data_tag}/* -type d -prune -exec ls -d {} \; | tail -1)
     RECENT=$(basename ${RECENT_FULL_PATH})
-    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
-    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
+    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${data_tag}/${RECENT}
     leval ./gsec-support/make_plot_pdf.sh ${PLOT_DIR}
   done
 }
@@ -176,12 +187,15 @@ generate_plot_html()
 
   for (( j=0; j<${num_clients}; ++j ));
   do
+    # the symlink created by cliver.sh is set to $data_tag
+    local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
+
     client=${CLIENT_LIST[$j]}
-    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/* -type d -prune -exec ls -d {} \; | tail -1)
+    RECENT_FULL_PATH=$(find ${RESULTS_LOCATION}/${client}/plots/${data_tag}/* -type d -prune -exec ls -d {} \; | tail -1)
     RECENT=$(basename ${RECENT_FULL_PATH})
 
-    HTML_DIR=${RESULTS_LOCATION}/${client}/plots
-    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${RECENT}
+    PLOT_DIR=${RESULTS_LOCATION}/${client}/plots/${data_tag}/${RECENT}
+    HTML_DIR=${RESULTS_LOCATION}/${client}/plots/${data_tag}/
     htmlfile=${HTML_DIR}/$RECENT.html
     jquery="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.js"
     jsdir="http://cs.unc.edu/~rac/js/galleria"
@@ -227,10 +241,12 @@ load_config()
   num_clients=${#CLIENT_LIST[@]}
   clientListKtestLen=${#CLIENT_LIST_KTEST[@]}
   client_extra_params_len=${#CLIENT_LIST_PARAMETERS[@]}
+  client_bitcode_params_len=${#CLIENT_LIST_BITCODE_PARAMETERS[@]}
 
   # check that the client config arrays are of equal length
   if [ "$num_clients" -ne "$clientListKtestLen" ] ||
-     [  "$num_clients" -ne "$client_extra_params_len" ]; then
+     [ "$num_clients" -ne "$client_extra_params_len" ] ||
+     [ "$num_clients" -ne "$client_bitcode_params_len" ]; then
     echo "${PROG}: CLIENT_LIST* vars not equal lengths"
     exit
   fi
