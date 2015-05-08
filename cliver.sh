@@ -69,6 +69,7 @@ DEBUG_SEARCHER=0
 
 PRINT_OBJECT_BYTES=0
 EXTRA_CLIVER_OPTIONS=""
+EXTRA_BITCODE_OPTIONS=""
 
 # HMM parameters
 HMM_FRAG_CLUSTER_SZ=512
@@ -110,6 +111,7 @@ xpilot_parameters()
   local GEOMETRY="800x600+100+100"
   local bc_file_opts=""
 
+  bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
   bc_file_opts+=" -join -texturedWalls no -texturedDecor no -texturedObjects no "
   bc_file_opts+=" -fullColor no -geometry $GEOMETRY "
   bc_file_opts+=" -keyTurnLeft a -keyTurnRight d -keyThrust w localhost "
@@ -124,7 +126,8 @@ openssl_parameters()
   local PORT="4433"
   local bc_file_opts=""
 
-  bc_file_opts+=" s_client -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt"
+  bc_file_opts+=" s_client -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt "
+  bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
 
   ## Use this to add extra BC parameters from the commandline
   if test ${CLIVER_BC_PARAMS+defined}; then
@@ -740,6 +743,7 @@ usage()
   echo -e "\t-b [\"\"]\t\t\t\t\t(name of ktest dir in data/network/[client-type]/ dir)"
   echo -e "\t-k [\"\"]\t\t\t\t\t(full path to ktest directory)"
   echo -e "\t-x [\"\"]\t\t\t\t\t(additional cliver options)"
+  echo -e "\t-l [\"\"]\t\t\t\t\t(additional cLient binary options)"
   echo -e "\t-d [0|1|2]\t\t\t\t(debug level)"
   echo -e "\t-m [gigabytes]\t\t\t\t(maximum memory usage)"
   echo -e "\t-p [heapprofile|heaplocal|heapcheck]\t(memory profiling options)"
@@ -771,7 +775,7 @@ run_parallel_jobs()
 
 main() 
 {
-  while getopts "b:k:t:o:c:x:i:j:p:d:r:m:nshvf" opt; do
+  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:nshvf" opt; do
     case $opt in
 
       b)
@@ -835,6 +839,10 @@ main()
 
       j)
         XARGS_MAX_PROCS=$OPTARG
+        ;;
+
+      l)
+        EXTRA_BITCODE_OPTIONS+="$OPTARG"
         ;;
 
       p)
