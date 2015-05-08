@@ -19,17 +19,25 @@ if (length(args) > 0) {
   root_dir = args[1]
 }
 
-binwidth=as.numeric(args[2])
-arg_modes=args[-2]
+# data tag
+tag=args[2]
+
+# binwidth for boxplot graphfs
+binwidth=as.numeric(args[3])
+
+## modes to graph
+arg_modes=args[-1:-3]
 
 ###############################################################################
 # Create output dirs
 ###############################################################################
 
-data_dir="data"
-output_dir="plots"
+data_name="data"
+output_name="plots"
 
-save_dir = paste(root_dir, output_dir, format(Sys.time(),"%F-%R"), sep="/")
+data_dir = paste(root_dir, data_name, tag, sep="/")
+save_dir = paste(root_dir, output_name, tag, format(Sys.time(),"%F-%R"), sep="/")
+
 dir.create(save_dir, recursive=TRUE)
 
 ###############################################################################
@@ -78,6 +86,10 @@ for (col in colnames(data)) {
   }
 }
 
+################################################################################
+## Create different types of plots over the stat variables
+################################################################################
+
 if (length(selected_modes) != 0) {
  mode_params = selected_modes_alt_names
  y_params = c("RoundRealTime")
@@ -92,10 +104,6 @@ if (length(selected_modes) != 0) {
  results = mclapply(params, do_box_alt_log_plot, mc.cores=num_threads)
  results = mclapply(params, do_box_alt_plot, mc.cores=num_threads)
 }
-
-################################################################################
-## Create different types of plots over the stat variables
-################################################################################
 
 plotwidth = default_plotwidth
 plotheight = default_plotheight
@@ -126,6 +134,16 @@ plotheight = default_plotheight
 plotwidth = default_plotwidth*0.75
 do_time_summary_plot()
 do_instruction_summary_plot()
-#
+
 ################################################################################
-#
+
+if (tag == "heartbleed") {
+  debug_printf("tag specific plots")
+  plotwidth = default_plotwidth
+  plotheight = default_plotheight
+  data=subset(data, mode == "IDDFS")
+  if (nrow(data) > 0) {
+    do_line_plot("RoundRealTime")
+  }
+  #quit(status=0)
+}

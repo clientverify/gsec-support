@@ -45,19 +45,29 @@ CLIVER_PARAMETERS="-i parallel"
 # list of client types
 CLIENT_LIST=(
 openssl-klee
+openssl-klee
 )
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
 /playpen/buildbot/data/network/openssl/ktest-timefix
+/playpen/buildbot/data/network/openssl/heartbleed
 )
 
-# list of extra paramters specific to each client type
+# list of extra klee paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
+""
 ""
 )
 
+# list of extra bitcode paramters specific to each client type (params for actual client binary)
+CLIENT_LIST_BITCODE_PARAMETERS=(
+""
+" -heartbeat "
+)
+
 CLIENT_LIST_R_BIN_WIDTH=(
+100
 100
 )
 

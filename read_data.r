@@ -45,6 +45,13 @@ for (stat in graphTimeStats) {
 graphTimeStats = c(graphTimeStats, 'KLEETime')
 graphTimeLabels = graphTimeStats
 
+
+data$ExtraInstructionCount = data$InstructionCount - (data$ValidPathInstructionCountPassOne + data$ValidPathInstructionCount)
+
+#sdata= subset(data, ExtraInstructionCount < 0)
+#print(sdata)
+#quit(status=1)
+
 graphInstructionStats = c()
 for (col in colnames(data)) {
   if (grepl("InstructionCount", col)) {

@@ -220,7 +220,7 @@ get_mode_str = function(mode_id) {
 
 read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
-  data_path = paste(root_dir, data_dir, data_mode_dir, data_date_dir, sep="/")
+  data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
   
   for (file in list.files(path=data_path)) {
     file_name = paste(data_path,file,sep="/")
@@ -304,9 +304,9 @@ read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
 read_all_data = function() {
   
-  for (data_mode_dir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
+  for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
     
-    data_path = paste(root_dir, data_dir, data_mode_dir, sep="/")
+    data_path = paste(data_dir, data_mode_dir, sep="/")
     
     data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
     
@@ -321,7 +321,7 @@ read_all_data = function() {
 
 read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
-  data_path = paste(root_dir, data_dir, data_mode_dir, data_date_dir, sep="/")
+  data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
 
   for (file in list.files(path=data_path)) {
     file_name = paste(data_path,file,sep="/")
@@ -418,9 +418,10 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
 read_csv_data = function() {
 
-  for (data_mode_dir in dir(paste(root_dir,data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
+  debug_printf("Reading: %s", paste(data_dir,sep="/"))
+  for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
 
-    data_path = paste(root_dir, data_dir, data_mode_dir, sep="/")
+    data_path = paste(data_dir, data_mode_dir, sep="/")
 
     data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
     cat(data_path, "\n")
@@ -483,8 +484,8 @@ do_line_plot = function(y_axis) {
   # construct plot
   #p = ggplot(mdata, aes_string(x=x_axis, y=y_axis))
   p = ggplot(data, aes_string(x=x_axis, y=y_axis))
-  p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
-  #p = p + geom_line(aes(colour=factor(mode)),size=0.5)
+  #p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
+  p = p + geom_line(aes(colour=factor(mode)),size=0.5)
   p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
   p = p + scale_y_continuous()
   p = p + ggtitle(title) + theme(legend.position="bottom")
