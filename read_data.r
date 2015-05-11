@@ -16,6 +16,7 @@ read_csv_data()
 
 # Retrace integer factors to string names
 for (i in seq(length(modes))) {
+  cat(i, "\n")
   data$mode[data$mode == i] <- get_mode_str(i)
 }
 
@@ -47,6 +48,10 @@ graphTimeLabels = graphTimeStats
 
 
 data$ExtraInstructionCount = data$InstructionCount - (data$ValidPathInstructionCountPassOne + data$ValidPathInstructionCount)
+
+data$RoundRealTimeOpt = data$RoundRealTime - data$BindingsSolveTime
+
+data$RoundRealTimePerInst = data$RoundRealTime / data$InstructionCount
 
 #sdata= subset(data, ExtraInstructionCount < 0)
 #print(sdata)
@@ -95,3 +100,9 @@ graphInstructionLabels = graphInstructionStats
 
 ## Remove first round of data (startup cost)
 data = subset(data, RoundNumber > 1)
+
+## Convert socket event size data from bytes to kilobytes
+data$SocketEventSize = data$SocketEventSize / 1024
+data$BW= data$BW / 1024
+data$BWs2c= data$BWs2c / 1024
+data$BWc2s= data$BWc2s / 1024

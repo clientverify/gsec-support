@@ -90,6 +90,61 @@ for (col in colnames(data)) {
 ## Create different types of plots over the stat variables
 ################################################################################
 
+################################################################################
+if (tag == "ktest-timefix" | tag == "ktest-single-1") {
+  #rename(data, c("RoundRealTime"="Verification","VerifierDelayTime"="Delay"))
+  names(data)[names(data)=="RoundRealTime"] <- "Verification"
+  names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
+  names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
+
+  debug_printf("tag specific plots")
+  plotwidth = default_plotwidth*0.75
+  plotheight = default_plotheight*0.75
+  #use_title <- FALSE
+  #x_axis <- "SocketEventSize"
+  #do_line_alt_plot("Verification")
+  #x_axis <- "SocketEventTimestamp"
+  #do_line_alt_plot("Verification")
+  #do_line_alt_plot("Delay")
+
+  do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verify Time (s)",xlab="Message Size (KB)")
+
+  x="factor(ArrivalBin)"
+  xlab="Arrival Time (s)"
+  y_axis_list = c("Verification", "Delay", "MessageSize")
+  ylab_list = c("Verify Time (s)", "Verify Delay (s)", "Message Size (KB)")
+  for (i in seq(length(y_axis_list))) {
+    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",   plot_data=subset(data, trace == 1))
+    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="AllButTrace1",plot_data=subset(data, trace != 1))
+    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="AllTraces",      plot_data=data)
+    do_line_group_plot(y_axis_list[i],x="SocketEventTimestamp",ylab=ylab_list[i],xlab="Arrival Time (s)",plot_data=subset(data, mode=="IDDFS-nAES"))
+  }
+
+  x = "SocketEventTimestamp"
+  xlab = "Arrival Time (s)"
+
+  min_y = as.integer(floor(min(data[["BW"]])))
+  max_y = as.integer(ceiling(max(data[["BW"]])))
+  plot_data = subset(data, mode=="IDDFS-nAES")
+  do_line_group_plot("BW",   x, ylab="Cumulative Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWs2c",x, ylab="Cumulative S2C Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWc2s",x, ylab="Cumulative C2S Data (KB)", xlab=xlab,plot_data=plot_data,min_y=min_y,max_y=max_y)
+
+  #results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+  #results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
+  #quit(status=0)
+} else if (tag == "heartbleed") {
+  debug_printf("tag specific plots")
+  plotwidth = default_plotwidth
+  plotheight = default_plotheight
+  do_line_plot("RoundRealTime")
+  #data=subset(data, mode == "IDDFS")
+  #if (nrow(data) > 0) {
+  #  do_line_plot("RoundRealTime")
+  #}
+  #quit(status=0)
+} else {
+
 if (length(selected_modes) != 0) {
  mode_params = selected_modes_alt_names
  y_params = c("RoundRealTime")
@@ -135,15 +190,4 @@ plotwidth = default_plotwidth*0.75
 do_time_summary_plot()
 do_instruction_summary_plot()
 
-################################################################################
-
-if (tag == "heartbleed") {
-  debug_printf("tag specific plots")
-  plotwidth = default_plotwidth
-  plotheight = default_plotheight
-  data=subset(data, mode == "IDDFS")
-  if (nrow(data) > 0) {
-    do_line_plot("RoundRealTime")
-  }
-  #quit(status=0)
 }

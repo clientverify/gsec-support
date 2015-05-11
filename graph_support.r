@@ -52,6 +52,8 @@ timestamp_colnames = c("Index","Direction","Bytes","Timestamp")
 min_size=.Machine$integer.max
 start_Message = 2
 binwidth=20
+binwidth_time=30
+time_scale=1000000
 default_plotwidth=6
 default_plotheight=6
 heightscalefactor = 0.75
@@ -64,6 +66,7 @@ num_threads=1
 output_filetype="png"
 timestamp_pattern = "*_client_socket.log"
 data_dir="data"
+use_title=FALSE
 
 ### Global Vars
 timestamps <- NULL
@@ -398,7 +401,7 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     v = vector("numeric",len)
     v[1] = 0
     for (j in seq(2, len)) {
-      v_delay = (v[j-1] + (tmp_data$RoundRealTime[j] - tmp_data$SolverTime[j])) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+      v_delay = (v[j-1] + (tmp_data$RoundRealTime[j] - tmp_data$BindingsSolveTime[j])) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
       #debug_printf("SolverDelay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
       if (v_delay < 0) {
         #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
@@ -408,7 +411,48 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     }
     tmp_data$VerifierMinusSolverDelayTime = v
 
+    # Set timestamp bin number
+    tmp_data$ArrivalBin = rep(0, len)
+    #for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
+    for (j in seq(len)) {
+      t = tmp_data$SocketEventTimestamp[j] / time_scale
+      tmp_data$ArrivalBin[j] = binwidth_time * floor(t / binwidth_time)
+    }
 
+    # compute cumulative bandwidth
+    tmp_data$BWs2c = rep(0, len)
+    tmp_data$BWc2s = rep(0, len)
+    tmp_data$BW = rep(0, len)
+    for (j in seq(len)) {
+      if (j == 1) prev = j
+      else prev = j-1
+      tmp_data$BWs2c[j] = tmp_data$BWs2c[prev]
+      tmp_data$BWc2s[j] = tmp_data$BWc2s[prev]
+      tmp_data$BW[j]    = tmp_data$BW[prev] + tmp_data$SocketEventSize[j]
+      if (tmp_data$SocketEventType[j] == 0) {
+        tmp_data$BWc2s[j] = tmp_data$BWc2s[j] + tmp_data$SocketEventSize[j]
+      } else {
+        tmp_data$BWs2c[j] = tmp_data$BWs2c[j] + tmp_data$SocketEventSize[j]
+      }
+    }
+
+    # compute verification times to associate with socket event size
+    tmp_data$VerifyTimeForSize = rep(0, len)
+    for (j in seq(len)) {
+      if (j == 1) prev = j
+      else prev = j-1
+      if (j == len) nxt = j
+      else nxt = j+1
+      if (tmp_data$SocketEventType[j] == 0 & tmp_data$SocketEventType[prev] == 0) {
+      #if (tmp_data$SocketEventType[j] == 0) {
+        tmp_data$VerifyTimeForSize[j] = tmp_data$RoundRealTime[j]
+      } else if (tmp_data$SocketEventType[j] == 1 & tmp_data$SocketEventType[nxt] == 1) {
+      #} else if (tmp_data$SocketEventType[j] == 1) {
+        tmp_data$VerifyTimeForSize[j] = tmp_data$RoundRealTime[nxt]
+      } else {
+        tmp_data$VerifyTimeForSize[j] = 0
+      }
+    }
 
     # add data to global data list
     #all_data[[length(all_data) + 1]] <<- tmp_data
@@ -440,36 +484,46 @@ read_csv_data = function() {
 ###############################################################################
 
 ### Jittered point plot of data
-do_point_plot = function(y_axis) {
-  cat("plotting: (point), ",x_axis," vs ",y_axis,"\n")
+do_point_plot = function(y,x=x_axis,ylab="",xlab="") {
+  cat("plotting: (point), ",x," vs ",y,"\n")
  
   # remove zero values
-  mdata = data[match.fun('!=')(data[[y_axis]], 0), ]
+  mdata = data[match.fun('!=')(data[[y]], 0), ]
   
   if (length(mdata[,1]) == 0)
     return
   
   # vars
-  #trace = paste(client_type,"point",paste(x_axis,"vs",y_axis,sep=""),sep="_")
-  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"point",sep="_")
-  title = paste(x_axis,"vs",y_axis, sep=" ")
+  trace = paste(paste(x,"vs",y,sep=""),client_type,"point",sep="_")
+  title = paste(x,"vs",y, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
+  # default labels
+  if (ylab == "") ylab = paste(y,"(s)")
+  if (xlab == "") xlab = x
+
   # construct plot
-  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
-  p = p + geom_jitter(aes(colour=factor(mode),linetype=factor(mode)),size=1)
-  p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
+  p = ggplot(mdata, aes_string(x=x, y=y))
+  #p = p + geom_jitter(aes(colour=factor(mode),shape=factor(mode)),size=1)
+  #p = p + geom_point(aes(colour=factor(mode),shape=factor(mode)),size=1)
+  p = p + geom_point(aes(colour=factor(SocketEventType),shape=factor(SocketEventType)),size=2.0)
+  #p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y,"(s)"))
+  p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + scale_y_continuous()
-  p = p + ggtitle(title) + theme(legend.position="bottom")
-  p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+  #p = p + theme(legend.position="bottom")
+  #p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows),
+  #               shape = guide_legend(title=NULL, nrow = legend_rows))
+  p = p + theme(legend.position="none")
+  if (use_title)
+    p = p + ggtitle(title)
   
   p;  
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
  
 ### Line plot of data
-do_line_plot = function(y_axis) {
-  cat("plotting: (line), ",x_axis," vs ",y_axis,"\n")
+do_line_plot = function(y_axis,plot_x_axis=x_axis) {
+  cat("plotting: (line), ",plot_x_axis," vs ",y_axis,"\n")
  
   # remove zero values
   #mdata = data[match.fun('!=')(data[[y_axis]], 0), ]
@@ -477,45 +531,101 @@ do_line_plot = function(y_axis) {
   #  return
   
   # vars
-  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"line",sep="_")
-  title = paste(x_axis,"vs",y_axis, sep=" ")
+  trace = paste(paste(plot_x_axis,"vs",y_axis,sep=""),client_type,"line",sep="_")
+  title = paste(plot_x_axis,"vs",y_axis, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
   # construct plot
-  #p = ggplot(mdata, aes_string(x=x_axis, y=y_axis))
-  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
+  #p = ggplot(mdata, aes_string(x=plot_x_axis, y=y_axis))
+  p = ggplot(data, aes_string(x=plot_x_axis, y=y_axis))
   #p = p + geom_line(aes(colour=factor(mode),linetype=factor(mode)),size=0.5)
   p = p + geom_line(aes(colour=factor(mode)),size=0.5)
   p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
   p = p + scale_y_continuous()
-  p = p + ggtitle(title) + theme(legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows))
+  p = p + theme(legend.position="bottom")
+  if (use_title)
+    p = p + ggtitle(title)
                     
   p;  
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
 
 ### Alt. Line plot of data
-do_line_alt_plot = function(y_axis) {
-  cat("plotting: (alt line), ",x_axis," vs ",y_axis,"\n")
+do_line_alt_plot = function(y_axis,plot_x_axis=x_axis) {
+  cat("plotting: (alt line), ",plot_x_axis," vs ",y_axis,"\n")
  
   # vars
-  trace = paste(paste(x_axis,"vs",y_axis,sep=""),client_type,"line","alt",sep="_")
-  title = paste(x_axis,"vs",y_axis, sep=" ")
+  trace = paste(paste(plot_x_axis,"vs",y_axis,sep=""),client_type,"line","alt",sep="_")
+  title = paste(plot_x_axis,"vs",y_axis, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
  
   # construct plot
-  #p = ggplot(data, aes_string(x=x_axis, y=y_axis))
-  p = ggplot(data, aes_string(x=x_axis, y=y_axis))
-  p = p + geom_jitter(size=1)
-  p = p + facet_grid(mode ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
+  #p = ggplot(data, aes_string(x=plot_x_axis, y=y_axis))
+  p = ggplot(data, aes_string(x=plot_x_axis, y=y_axis))
+  #p = p + geom_jitter(size=1)
+  p = p + geom_point(size=1)
+  p = p + facet_grid(mode ~ .) + theme_bw() + ylab(paste(y_axis," Time (s)"))
   p = p + scale_y_continuous()
-  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  if (use_title)
+    p = p + ggtitle(title)
+
+  p;
+  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
+}
+
+### Alt. Line plot of data
+do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",plot_data=data,min_y=0,max_y=0) {
+  #cat("plotting: (group line), ", x, " vs ", y, "\n")
+  debug_printf("plotting: (group line) %s vs %s", x, y)
+
+  # vars
+  trace = paste(paste(x,"vs",y,sep=""),client_type,"line","group",sep="_")
+  title = paste(x,"vs",y, sep=" ")
+  file_name = paste(trace, output_filetype, sep=".")
+
+  # default labels
+  if (ylab == "") ylab = paste(y,"(s)")
+  if (xlab == "") xlab = x
+
+  # construct plot
+  p = ggplot(plot_data, aes_string(x=x, y=y))
+  p = p + geom_line(aes(colour=factor(trace)),size=0.5)
+  #p = p + facet_grid(mode ~ .) + theme_bw() + ylab(ylab) + xlab(xlab)
+  p = p + theme_bw() + ylab(ylab) + xlab(xlab)
+  p = p + scale_y_continuous()
+  #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(legend.position="none")
+
+  if (min_y != max_y) {
+    # yscale based on all data
+    #min_y = as.integer(floor(min(data[[y]])))
+    #max_y = as.integer(ceiling(max(data[[y]])))
+
+    # yscale based on all subset data
+    #min_y = as.integer(floor(min(mdata[[y]])))
+    #max_y = as.integer(ceiling(max(mdata[[y]])))
+
+    limits_y = c(min_y, max_y)
+
+    breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
+    #breaks_y = (0:5)*diff(floor(limits_y))/5
+
+    #cat(y," min: ", min(data[[y]])," ", min_y, "\n")
+    #cat(y," max: ", max(data[[y]])," ", max_y, "\n")
+
+    p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+  }
+
+  if (use_title)
+    p = p + ggtitle(title)
                     
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
+
 
 
 ### Logscale line plot of data
@@ -534,9 +644,11 @@ do_logscale_line_plot = function(y_axis) {
   p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y_axis,"(s)"))
   p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
                         labels = trans_format("log10", math_format(10^.x)))
-  p = p + ggtitle(title) + theme(legend.position="bottom")
+  p = p + theme(legend.position="bottom")
   #p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows))
+  if (use_title)
+    p = p + ggtitle(title)
   
   p;  
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
@@ -558,8 +670,10 @@ do_histogram_plot = function(y_axis) {
   p = p + theme_bw() + facet_grid(trace ~ .) 
   p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
                         labels = trans_format("log10", math_format(10^.x)))
-  p = p + ggtitle(title) + theme(legend.position="bottom")
+  p = p + theme(legend.position="bottom")
   p = p + guides(colour = guide_legend(title=NULL, nrow = legend_rows), linetype = guide_legend(title=NULL, nrow = legend_rows))
+  if (use_title)
+    p = p + ggtitle(title)
 
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
@@ -579,7 +693,9 @@ do_summary_plot = function(y_axis) {
   p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
   p = p + facet_grid(trace ~ .) + theme_bw()
   p = p + stat_summary(fun.y="sum", geom="bar", fill="white", colour="gray")
-  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  if (use_title)
+    p = p + ggtitle(title)
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
@@ -596,7 +712,9 @@ do_mean_plot = function(y_axis) {
   p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
   p = p + stat_summary(fun.y="mean", geom="bar", fill="white", colour="gray") 
   p = p + facet_grid(trace ~ .) + theme_bw()
-  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  if (use_title)
+    p = p + ggtitle(title)
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
@@ -613,7 +731,9 @@ do_max_plot = function(y_axis) {
   p <- ggplot(data, aes_string(x="mode", y=y_axis)) 
   p = p + stat_summary(fun.y="max", geom="bar", fill="white", colour="gray") 
   p = p + facet_grid(trace ~ .) + theme_bw()
-  p = p + ggtitle(title) + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
+  if (use_title)
+    p = p + ggtitle(title)
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
@@ -699,20 +819,44 @@ do_instruction_summary_plot = function() {
 
 
 ### Boxplot
-do_box_plot = function(y_axis) {
-  cat("plotting (boxplot of): ",x_axis,", ",y_axis,"\n")
+do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=data) {
+  cat("plotting (boxplot of): ",x,", ",y,"\n")
 
   # vars
-  #trace =  paste(client_type,"boxplot_bar",y_axis,sep="_")
-  trace =  paste(y_axis,client_type,"boxplot_bar",sep="_")
-  title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
+  trace =  paste(y,client_type,"boxplot_bar",tag,sep="_")
+  title = paste("Boxplot of",y,"over",min_size,"Messages",tag,sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
+  # default labels
+  if (ylab == "") ylab = paste(y,"(s)")
+  if (xlab == "") xlab = "Message"
+
   # construct plot
-  p <- ggplot(data, aes_string(x="factor(Bin)", y=y_axis))
+  p <- ggplot(plot_data, aes_string(x=x, y=y))
   p = p + geom_boxplot()
-  p = p + facet_grid(mode ~ .) + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message")
+  p = p + facet_grid(mode ~ .) + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
+
+  # yscale based on all data
+  min_y = as.integer(floor(min(data[[y]])))
+  max_y = as.integer(ceiling(max(data[[y]])))
+
+  # yscale based on all subset data
+  #min_y = as.integer(floor(min(mdata[[y]])))
+  #max_y = as.integer(ceiling(max(mdata[[y]])))
+
+  limits_y = c(min_y, max_y)
+
+  #breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
+  breaks_y = (0:5)*diff(floor(limits_y))/5
+
+  #cat(y," min: ", min(data[[y]])," ", min_y, "\n")
+  #cat(y," max: ", max(data[[y]])," ", max_y, "\n")
+
+  p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+
+  if (use_title)
+    p = p + ggtitle(title)
   
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
@@ -780,7 +924,8 @@ do_box_alt_plot = function(params) {
   p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
   p = p + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message Bin")
   p = p + theme(axis.text.x=element_text(angle=45))
-  p = p + ggtitle(title)
+  if (use_title)
+    p = p + ggtitle(title)
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
   rm(mdata)
@@ -821,7 +966,8 @@ do_box_alt_log_plot = function(params) {
 
   p = p + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message Bin")
   p = p + theme(axis.text.x=element_text(angle=45))
-  p = p + ggtitle(title)
+  if (use_title)
+    p = p + ggtitle(title)
   p;
 
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
