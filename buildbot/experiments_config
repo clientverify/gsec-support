@@ -13,8 +13,8 @@ naive
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-#IDDFS
-#IDDFS-dropS2C
+IDDFS
+IDDFS-dropS2C
 IDDFS-nAES
 IDDFS-nAES-dropS2C
 )
@@ -34,8 +34,8 @@ NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-#" ${KLEE_OPTS} ${NAIVE_OPTS} "
-#" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
 " ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} "
 " ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
 )
