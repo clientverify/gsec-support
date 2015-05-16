@@ -5,8 +5,8 @@
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-#naive
-#naive
+naive
+naive
 naive
 naive
 )
