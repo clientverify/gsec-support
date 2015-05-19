@@ -102,6 +102,7 @@ graphInstructionLabels = graphInstructionStats
 data = subset(data, RoundNumber > 1)
 
 ## Convert socket event size data from bytes to kilobytes
+data$SocketEventSizeBytes = data$SocketEventSize
 data$SocketEventSize = data$SocketEventSize / 1024
 data$BW= data$BW / 1024
 data$BWs2c= data$BWs2c / 1024

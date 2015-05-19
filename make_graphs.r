@@ -96,6 +96,7 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   names(data)[names(data)=="RoundRealTime"] <- "Verification"
   names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
   names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
+  names(data)[names(data)=="SocketEventSizeBytes"] <- "MessageSizeBytes"
 
   debug_printf("tag specific plots")
   plotwidth = default_plotwidth*0.75
@@ -107,17 +108,55 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   #do_line_alt_plot("Verification")
   #do_line_alt_plot("Delay")
 
-  do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verify Time (s)",xlab="Message Size (KB)")
+  plotwidth = default_plotwidth*0.6
+  plotheight = default_plotheight*0.6
+  do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)")
+  plotwidth = default_plotwidth*0.75
+  plotheight = default_plotheight*0.75
 
+  # Average stats
+  for (m in selected_modes) {
+    pdata = subset(data,mode == m)
+    pdata_prefix_rounds = subset(data, mode == m & MessageSizeBytes == 5)
+    round_count = nrow(pdata) - nrow(pdata_prefix_rounds)
+    printf("Rounds %s: %d %d %d", m, nrow(pdata), nrow(pdata_prefix_rounds), round_count)
+    printf("Total Verification time (s) for mode %s: %f", m, sum(pdata$Verification))
+    printf("Avg Verification time (ms) for mode %s: %f", m, (sum(pdata$Verification)/round_count)*1000)
+  }
+
+  plotheight = default_plotheight*0.5
   x="factor(ArrivalBin)"
   xlab="Arrival Time (s)"
-  y_axis_list = c("Verification", "Delay", "MessageSize")
-  ylab_list = c("Verify Time (s)", "Verify Delay (s)", "Message Size (KB)")
+
+  y_axis_list = c("Verification", "Delay")
+  ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
+  for (m in selected_modes) {
+    pdata = subset(data, mode == m)
+    for (i in seq(length(y_axis_list))) {
+      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE)
+      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE)
+      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllTraces",sep="_"),   plot_data=pdata,grid=FALSE)
+    }
+  }
+
+  x_alt="SocketEventTimestamp"
+  for (m in selected_modes) {
+    pdata = subset(data, mode == m)
+    for (i in seq(length(y_axis_list))) {
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE)
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE)
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllTraces",sep="_"),   plot_data=pdata,grid=FALSE)
+      #do_line_group_plot(y_axis_list[i],x="SocketEventTimestamp",ylab=ylab_list[i],xlab=",plot_data=pdata)
+      #do_line_group_plot(y_axis_list[i],x=x_alt,ylab=ylab_list[i],xlab=xlab,plot_data=data)
+    }
+  }
+
+  y_axis_list = c("Verification", "Delay")
+  ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
   for (i in seq(length(y_axis_list))) {
-    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",   plot_data=subset(data, trace == 1))
-    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="AllButTrace1",plot_data=subset(data, trace != 1))
-    do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag="AllTraces",      plot_data=data)
-    do_line_group_plot(y_axis_list[i],x="SocketEventTimestamp",ylab=ylab_list[i],xlab="Arrival Time (s)",plot_data=subset(data, mode=="IDDFS-nAES"))
+    do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",  plot_data=subset(data, trace == 1), grid=FALSE, with_points=FALSE)
+    do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="AllButTrace1",plot_data=subset(data, trace != 1), grid=FALSE, with_points=FALSE)
+    do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="AllTraces",   plot_data=data, grid=FALSE,with_points=FALSE)
   }
 
   x = "SocketEventTimestamp"
@@ -126,13 +165,14 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   min_y = as.integer(floor(min(data[["BW"]])))
   max_y = as.integer(ceiling(max(data[["BW"]])))
   plot_data = subset(data, mode=="IDDFS-nAES")
-  do_line_group_plot("BW",   x, ylab="Cumulative Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
-  do_line_group_plot("BWs2c",x, ylab="Cumulative S2C Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
-  do_line_group_plot("BWc2s",x, ylab="Cumulative C2S Data (KB)", xlab=xlab,plot_data=plot_data,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BW",   x, ylab="Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWs2c",x, ylab="Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWc2s",x, ylab="Data (KB)", xlab=xlab,plot_data=plot_data,min_y=min_y,max_y=max_y)
+  plotheight = default_plotheight*0.75
 
   #results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
   #results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
-  #quit(status=0)
+
 } else if (tag == "heartbleed") {
   debug_printf("tag specific plots")
   plotwidth = default_plotwidth

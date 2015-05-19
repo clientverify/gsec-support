@@ -80,8 +80,8 @@ data <- NULL
 ###############################################################################
 
 printf <- function(...) invisible(print(sprintf(...)))
-debug_printf <- function(...) invisible(print(sprintf(...)))
-#debug_printf <- function(...) {}
+#debug_printf <- function(...) invisible(print(sprintf(...)))
+debug_printf <- function(...) {}
 
 ###############################################################################
 ### Function: Read Timestamp data
@@ -461,14 +461,12 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 }
 
 read_csv_data = function() {
-
   debug_printf("Reading: %s", paste(data_dir,sep="/"))
   for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
 
     data_path = paste(data_dir, data_mode_dir, sep="/")
 
     data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
-    cat(data_path, "\n")
 
     if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
       for (data_date_dir in data_date_dirs[seq(1)]) {
@@ -506,7 +504,11 @@ do_point_plot = function(y,x=x_axis,ylab="",xlab="") {
   p = ggplot(mdata, aes_string(x=x, y=y))
   #p = p + geom_jitter(aes(colour=factor(mode),shape=factor(mode)),size=1)
   #p = p + geom_point(aes(colour=factor(mode),shape=factor(mode)),size=1)
+
   p = p + geom_point(aes(colour=factor(SocketEventType),shape=factor(SocketEventType)),size=2.0)
+  p = p + scale_colour_grey(start=0.0,end=0.5)
+  #p = p + geom_point(aes(shape=factor(SocketEventType)),size=2.0)
+
   #p = p + facet_grid(trace ~ .) + theme_bw() + ylab(paste(y,"(s)"))
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + scale_y_continuous()
@@ -577,12 +579,19 @@ do_line_alt_plot = function(y_axis,plot_x_axis=x_axis) {
 }
 
 ### Alt. Line plot of data
-do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",plot_data=data,min_y=0,max_y=0) {
+do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=data,min_y=0,max_y=0,grid=FALSE,with_points=FALSE) {
   #cat("plotting: (group line), ", x, " vs ", y, "\n")
   debug_printf("plotting: (group line) %s vs %s", x, y)
 
   # vars
-  trace = paste(paste(x,"vs",y,sep=""),client_type,"line","group",sep="_")
+
+  if (tag != "")
+    group_name = paste("group",tag,sep="_")
+  else
+    group_name = "group"
+
+  trace = paste(paste(x,"vs",y,sep=""),client_type,"line",group_name,sep="_")
+  trace = paste(paste(x,"vs",y,sep=""),client_type,"line",group_name,sep="_")
   title = paste(x,"vs",y, sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -590,10 +599,15 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",plot_data=data,min_y
   if (ylab == "") ylab = paste(y,"(s)")
   if (xlab == "") xlab = x
 
+  plot_data$group = interaction(plot_data$mode, plot_data$trace)
+
   # construct plot
   p = ggplot(plot_data, aes_string(x=x, y=y))
-  p = p + geom_line(aes(colour=factor(trace)),size=0.5)
-  #p = p + facet_grid(mode ~ .) + theme_bw() + ylab(ylab) + xlab(xlab)
+  p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
+  #if (with_points) p = p + geom_point(aes(colour=factor(group),shape=factor(group)), alpha=1/2)
+  if (with_points) p = p + geom_point(aes(shape=factor(group)), alpha=1/2)
+  #p = p + geom_point(aes(colour=factor(group)), shape=19, alpha=1/4) + geom_smooth(aes(colour=factor(group)),level=0.99,se=FALSE)
+  if (grid) p = p + facet_grid(mode ~ .)
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + scale_y_continuous()
   #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
@@ -610,7 +624,7 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",plot_data=data,min_y
 
     limits_y = c(min_y, max_y)
 
-    breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
+    breaks_y = (0:5)*diff(floor(limits_y/5)*5)/5
     #breaks_y = (0:5)*diff(floor(limits_y))/5
 
     #cat(y," min: ", min(data[[y]])," ", min_y, "\n")
@@ -819,7 +833,7 @@ do_instruction_summary_plot = function() {
 
 
 ### Boxplot
-do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=data) {
+do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=data, grid=TRUE) {
   cat("plotting (boxplot of): ",x,", ",y,"\n")
 
   # vars
@@ -834,7 +848,8 @@ do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=d
   # construct plot
   p <- ggplot(plot_data, aes_string(x=x, y=y))
   p = p + geom_boxplot()
-  p = p + facet_grid(mode ~ .) + theme_bw() + ylab(ylab) + xlab(xlab)
+  if (grid) p = p + facet_grid(mode ~ .)
+  p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
 
   # yscale based on all data
@@ -847,8 +862,10 @@ do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=d
 
   limits_y = c(min_y, max_y)
 
-  #breaks_y = (0:5)*diff(floor(limits_y/50)*50)/5
-  breaks_y = (0:5)*diff(floor(limits_y))/5
+  if (max_y > 5)
+    breaks_y = (0:5)*diff(floor(limits_y/5)*5)/5
+  else
+    breaks_y = (0:5)*diff(floor(limits_y))/5
 
   #cat(y," min: ", min(data[[y]])," ", min_y, "\n")
   #cat(y," max: ", max(data[[y]])," ", max_y, "\n")
