@@ -190,7 +190,7 @@ initialize_lsf()
 ###  Get the current git branch name
 git_current_branch()
 {
-  git status | head -n 1 | awk '{ printf $4 }'
+  git rev-parse --abbrev-ref HEAD
 }
 
 ###  Elapsed time utility
