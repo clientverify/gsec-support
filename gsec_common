@@ -29,7 +29,7 @@ GHMM="ghmm"
 # Repository Branches
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="openssl-llvm34"
+KLEE_BRANCH="parallel"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
