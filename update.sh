@@ -793,7 +793,7 @@ make_klee()
   local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   #local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
   #local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
-  local klee_cflags="-I${GLIBC_INCLUDE_PATH}"
+  local klee_cflags="-I${GLIBC_INCLUDE_PATH} -I$OPENSSL_ROOT/include "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     # compile with pretty colors!
