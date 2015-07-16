@@ -1229,6 +1229,44 @@ manage_openssl()
   necho "[Done]\n"
 }
 
+###############################################################################
+
+manage_testclientserver()
+{
+  necho "$TESTCLIENTSERVER \t"
+  case $1 in
+    install)
+      check_dirs $TESTCLIENTSERVER || { return 0; }
+
+      cd $ROOT_DIR"/src"
+      leval mkdir $TESTCLIENTSERVER
+
+      ## KLEE needs to be installed
+      necho "[Copying] "
+      leval cp ./$KLEE/test/Cliver/ClientServer.c ./$TESTCLIENTSERVER
+      leval cp ./$KLEE/test/Cliver/KTestSocket.inc ./$TESTCLIENTSERVER
+
+      cd $ROOT_DIR"/src/$TESTCLIENTSERVER"
+      local srcfile="ClientServer.c"
+      local compile_flags="-B/usr/lib/x86_64-linux-gnu $srcfile -DKTEST=\"\\\"./$TESTCLIENTSERVER.ktest\\\"\" -I$ROOT_DIR\"/src/klee/include\" "
+
+      necho "[Compiling] "
+      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} -emit-llvm -c $compile_flags -o $TESTCLIENTSERVER.bc
+
+      local TESTCC=gcc
+      if test ${ALTCC+defined}; then
+        TESTCC=$ALTCC
+      fi
+      necho "[Compiling] "
+      leval ${TESTCC} $compile_flags -o $TESTCLIENTSERVER
+      ;;
+
+    update)
+      ;;
+
+  esac
+  necho "[Done]\n"
+}
 
 ###############################################################################
 
