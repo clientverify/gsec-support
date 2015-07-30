@@ -1190,6 +1190,10 @@ manage_openssl()
       # Build two versions of openssl, to support cliver and lli
       config_and_build_openssl "-DKLEE" "-klee"
       config_and_build_openssl " " "-run"
+
+      # run opt on two versions of openssl, to support cliver and lli
+      build_optimized_openssl_bitcode "-klee"
+      build_optimized_openssl_bitcode "-run"
       ;;
 
     update)
@@ -1217,14 +1221,13 @@ manage_openssl()
         # Build two versions of openssl, to support cliver and lli
         config_and_build_openssl "-DKLEE" "-klee"
         config_and_build_openssl " " "-run"
+
+        # run opt on two versions of openssl, to support cliver and lli
+        build_optimized_openssl_bitcode "-klee"
+        build_optimized_openssl_bitcode "-run"
       fi
       ;;
 
-    opt*)
-      # runt opt on two versions of openssl, to support cliver and lli
-      build_optimized_openssl_bitcode "-klee"
-      build_optimized_openssl_bitcode "-run"
-      ;;
   esac
   necho "[Done]\n"
 }
@@ -1245,20 +1248,25 @@ manage_testclientserver()
       necho "[Copying] "
       leval cp ./$KLEE/test/Cliver/ClientServer.c ./$TESTCLIENTSERVER
       leval cp ./$KLEE/test/Cliver/KTestSocket.inc ./$TESTCLIENTSERVER
+      leval cp ./$KLEE/lib/Basic/KTest.cpp ./$TESTCLIENTSERVER
 
       cd $ROOT_DIR"/src/$TESTCLIENTSERVER"
       local srcfile="ClientServer.c"
-      local compile_flags="-B/usr/lib/x86_64-linux-gnu $srcfile -DKTEST=\"\\\"./$TESTCLIENTSERVER.ktest\\\"\" -I$ROOT_DIR\"/src/klee/include\" "
-
-      necho "[Compiling] "
-      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} -emit-llvm -c $compile_flags -o $TESTCLIENTSERVER.bc
+      local native_compile_flags="-B/usr/lib/x86_64-linux-gnu KTest.cpp $srcfile -DKTEST=\"\\\"./$TESTCLIENTSERVER.ktest\\\"\" -I$ROOT_DIR\"/src/klee/include\" "
+      local bc_compile_flags=" $srcfile -I$ROOT_DIR\"/src/klee/include\" -DKLEE -DCLIENT -emit-llvm -c "
 
       local TESTCC=gcc
       if test ${ALTCC+defined}; then
         TESTCC=$ALTCC
       fi
+
       necho "[Compiling] "
-      leval ${TESTCC} $compile_flags -o $TESTCLIENTSERVER
+      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
+      leval ${TESTCC} $native_compile_flags -o $TESTCLIENTSERVER
+
+      necho "[Installing] "
+      leval cp $TESTCLIENTSERVER $ROOT_DIR/local/bin/
+      leval cp $TESTCLIENTSERVER.bc $ROOT_DIR/local/bin/
       ;;
 
     update)
@@ -1426,7 +1434,7 @@ main()
     #install_ghmm
     manage_openssl install
     install_klee
-    manage_openssl opt
+    manage_testclientserver install
     install_zlib
     install_expat
     install_tetrinet
@@ -1447,7 +1455,6 @@ main()
         ;;
       openssl)
         manage_openssl update
-        manage_openssl opt
         ;;
       llvm)
         update_llvm
