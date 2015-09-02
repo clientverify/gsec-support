@@ -1125,10 +1125,7 @@ config_and_build_openssl()
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
   openssl_config_options+="-DOPENSSL_NO_ERR "
-
-  if [ $BUILD_DEBUG -eq 1 ]; then
-      openssl_config_options+="-d " # compile with debugging symbols
-  fi
+  #openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
