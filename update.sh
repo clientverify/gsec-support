@@ -252,7 +252,7 @@ install_boost()
 
   #BJAM_OPTIONS=" --without-regex -j$MAKE_THREADS"
   #BJAM_OPTIONS="--build-type=complete --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
-  BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
+  BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS debug-symbols=on "
 
   if test ${ALTCC+defined}; then
     echo "using gcc : $ALTCCVERSION : /usr/bin/$ALTCC ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
@@ -563,13 +563,7 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
-
-  #if [ $BUILD_DEBUG -eq 1 ]; then
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-  #else
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-  #fi
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 DEBUG_SYMBOLS=1 "
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
@@ -619,11 +613,11 @@ update_llvm()
       build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
     else
       necho "[Compiling Release] "
-      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 "
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
 
       necho "[Installing Release] "
       mkdir -p $LLVM_ROOT
-      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 install"
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 install"
     fi
   fi
   necho "[Done]\n"
@@ -855,10 +849,10 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 DISABLE_THREADS=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 DEBUG_SYMBOLS=1 "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 DISABLE_THREADS=1 "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local debug_tag=""
 
   #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
@@ -1261,8 +1255,8 @@ manage_testclientserver()
       fi
 
       necho "[Compiling] "
-      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
-      leval ${TESTCC} $native_compile_flags -o $TESTCLIENTSERVER
+      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} -g ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
+      leval ${TESTCC} $native_compile_flags -g -o $TESTCLIENTSERVER
 
       necho "[Installing] "
       leval cp $TESTCLIENTSERVER $ROOT_DIR/local/bin/
