@@ -27,7 +27,7 @@ OPENSSL="openssl"
 GHMM="ghmm"
 TESTCLIENTSERVER="testclientserver"
 
-# Repository Branches
+# Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="parallel"
@@ -35,11 +35,12 @@ TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
 UCLIBC_BRANCH="cloud9-support"
+GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
 GIT_DIR="/cliver"
-GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
+GOOGLE_PERFTOOLS_GIT="https://github.com/gperftools/gperftools.git"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="https://github.com/robbycochran/whole-program-llvm.git"
 STP_REV=940
@@ -56,7 +57,6 @@ GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
 PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
-GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
 UDIS86_PACKAGE="$UDIS86.tar.gz"
 LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
 SPARSEHASH_PACKAGE="$SPARSEHASH.tar.gz"
