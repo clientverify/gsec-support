@@ -1299,7 +1299,7 @@ main()
     case $opt in
       a)
         #lecho "Forcing alternative gcc"
-        #set_alternate_gcc
+        set_alternate_gcc
         lecho "Building klee with AddressSanitizer"
         USE_ASAN=1
         ;;
@@ -1361,6 +1361,7 @@ main()
         ;;
    
       t)
+        set_alternate_gcc
         lecho "Building klee with ThreadSanitizer"
         USE_TSAN=1
         ;;
