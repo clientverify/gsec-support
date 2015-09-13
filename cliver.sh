@@ -85,10 +85,13 @@ parse_ktest_filename()
 
 testclientserver_parameters()
 {
-  # FORMAT: testclientserver_"messageCount"_"basketSize"_"encrypted{0,1}
-  local message_count=$(parse_ktest_filename $1 2)
-  local basket_size=$(parse_ktest_filename $1 3)
-  local encrypted=$(parse_ktest_filename $1 4)
+  # FORMAT: testclientserver_"index"_"messageCount"_"basketSize"_"encrypted{0,1}
+  local index=$(parse_ktest_filename $1 2)
+  local message_count=$(parse_ktest_filename $1 3)
+  local basket_size=$(parse_ktest_filename $1 4)
+  local encrypted=$(parse_ktest_filename $1 5)
+  local bc_file_opts=""
+  bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
   bc_file_opts+=" -m ${message_count} -b ${basket_size} -e ${encrypted} "
   printf "%s" "$bc_file_opts"
 }
