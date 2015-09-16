@@ -1210,10 +1210,6 @@ manage_openssl()
       # Build two versions of openssl, to support cliver and lli
       config_and_build_openssl "-DKLEE" "-klee"
       config_and_build_openssl " " "-run"
-
-      # run opt on two versions of openssl, to support cliver and lli
-      build_optimized_openssl_bitcode "-klee"
-      build_optimized_openssl_bitcode "-run"
       ;;
 
     update)
@@ -1246,6 +1242,11 @@ manage_openssl()
         build_optimized_openssl_bitcode "-klee"
         build_optimized_openssl_bitcode "-run"
       fi
+      ;;
+    opt*)
+      # run opt on two versions of openssl, to support cliver and lli
+      build_optimized_openssl_bitcode "-klee"
+      build_optimized_openssl_bitcode "-run"
       ;;
 
   esac
@@ -1456,6 +1457,7 @@ main()
     #install_ghmm
     manage_openssl install
     install_klee
+    manage_openssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
     install_zlib
     install_expat
@@ -1492,7 +1494,6 @@ main()
     # update all
     update_wllvm
     manage_openssl update
-    manage_openssl opt
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm
