@@ -432,7 +432,33 @@ install_uclibc_git()
   leval make 
 
   necho "[Done]\n"
+}
 
+# Facebook C++ Library
+install_folly()
+{
+  necho "$FOLLY\t\t\t"
+  check_dirs $FOLLY|| { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone  $FOLLY_GIT
+  cd $ROOT_DIR/src/$FOLLY
+  leval git checkout tags/$FOLLY_TAG -b $FOLLY_TAG
+
+  necho "[Configuring] "
+  cd $ROOT_DIR/src/$FOLLY/folly
+  leval autoreconf -ivf
+  leval ./configure --with-boolt=$BOOST_ROOT --prefix=$FOLLY_ROOT
+
+  necho "[Compiling] "
+  leval make -j $MAKE_THREADS
+
+  necho "[Installing] "
+  mkdir -p $FOLLY_ROOT
+  leval make install
+
+  necho "[Done]\n"
 }
 
 install_llvmgcc_bin()
@@ -1422,6 +1448,7 @@ main()
     install_wllvm
     install_google_perftools
     install_boost
+    install_folly
     install_uclibc_git
     install_ncurses
     install_stp

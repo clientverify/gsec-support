@@ -26,6 +26,7 @@ XPILOT_NATIVE_PREFIX="x86-"
 OPENSSL="openssl"
 GHMM="ghmm"
 TESTCLIENTSERVER="testclientserver"
+FOLLY="folly"
 
 # Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
@@ -36,6 +37,7 @@ XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
 UCLIBC_BRANCH="cloud9-support"
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
+FOLLY_TAG="v0.57.0"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -52,6 +54,7 @@ XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 UCLIBC_GIT="$GIT_HOST:$GIT_DIR/$UCLIBC.git"
 OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
+FOLLY_GIT="https://github.com/facebook/folly.git"
 
 # Tarball locations
 PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
@@ -116,6 +119,7 @@ initialize_root_directories()
   XPILOT_ROOT="$ROOT_DIR/local"
   OPENSSL_ROOT="$ROOT_DIR/local"
   GHMM_ROOT="$ROOT_DIR/local"
+  FOLLY_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
 }
 
