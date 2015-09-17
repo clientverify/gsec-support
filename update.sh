@@ -449,7 +449,7 @@ install_folly()
   necho "[Configuring] "
   cd $ROOT_DIR/src/$FOLLY/folly
   leval autoreconf -ivf
-  leval ./configure --with-boolt=$BOOST_ROOT --prefix=$FOLLY_ROOT
+  leval ./configure --with-boost=$BOOST_ROOT --prefix=$FOLLY_ROOT
 
   necho "[Compiling] "
   leval make -j $MAKE_THREADS
