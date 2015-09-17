@@ -252,7 +252,7 @@ install_boost()
 
   #BJAM_OPTIONS=" --without-regex -j$MAKE_THREADS"
   #BJAM_OPTIONS="--build-type=complete --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
-  BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS"
+  BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS debug-symbols=on "
 
   if test ${ALTCC+defined}; then
     echo "using gcc : $ALTCCVERSION : /usr/bin/$ALTCC ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
@@ -345,12 +345,12 @@ install_google_perftools()
 {
   necho "$GOOGLE_PERFTOOLS\t\t"
   check_dirs $GOOGLE_PERFTOOLS || { return 0; }
-  get_package $GOOGLE_PERFTOOLS_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$GOOGLE_PERFTOOLS"
 
-  #necho "[Cloning] "
-  #leval svn co $GOOGLE_PERFTOOLS_SVN $ROOT_DIR/src/$GOOGLE_PERFTOOLS
-  #cd $ROOT_DIR/src/$GOOGLE_PERFTOOLS
-  #leval ./autogen.sh
+  necho "[Cloning] "
+  leval git clone $GOOGLE_PERFTOOLS_GIT $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  cd $ROOT_DIR/src/$GOOGLE_PERFTOOLS
+  leval git checkout tags/$GOOGLE_PERFTOOLS_TAG -b $GOOGLE_PERFTOOLS_TAG
+  leval ./autogen.sh
 
   mkdir -p $ROOT_DIR/build/$GOOGLE_PERFTOOLS
   cd $ROOT_DIR/build/$GOOGLE_PERFTOOLS
@@ -432,7 +432,33 @@ install_uclibc_git()
   leval make 
 
   necho "[Done]\n"
+}
 
+# Facebook C++ Library
+install_folly()
+{
+  necho "$FOLLY\t\t\t"
+  check_dirs $FOLLY|| { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone  $FOLLY_GIT
+  cd $ROOT_DIR/src/$FOLLY
+  leval git checkout tags/$FOLLY_TAG -b $FOLLY_TAG
+
+  necho "[Configuring] "
+  cd $ROOT_DIR/src/$FOLLY/folly
+  leval autoreconf -ivf
+  leval ./configure --with-boost=$BOOST_ROOT --prefix=$FOLLY_ROOT
+
+  necho "[Compiling] "
+  leval make -j $MAKE_THREADS
+
+  necho "[Installing] "
+  mkdir -p $FOLLY_ROOT
+  leval make install
+
+  necho "[Done]\n"
 }
 
 install_llvmgcc_bin()
@@ -563,13 +589,7 @@ build_llvm ()
   mkdir -p $ROOT_DIR/build/$LLVM
   cd $ROOT_DIR"/build/$LLVM"
 
-  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
-
-  #if [ $BUILD_DEBUG -eq 1 ]; then
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-  #else
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-  #fi
+  LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 DEBUG_SYMBOLS=1 "
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
@@ -619,11 +639,11 @@ update_llvm()
       build_llvm "ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 install"
     else
       necho "[Compiling Release] "
-      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 "
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 "
 
       necho "[Installing Release] "
       mkdir -p $LLVM_ROOT
-      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0 install"
+      build_llvm "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 install"
     fi
   fi
   necho "[Done]\n"
@@ -855,10 +875,10 @@ build_klee()
 {
   mkdir -p $KLEE_ROOT
 
-  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 DISABLE_THREADS=1 "
+  local release_build_options="ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 DISABLE_TIMER_STATS=1 DEBUG_SYMBOLS=1 "
   local release_tag=""
 
-  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 DISABLE_THREADS=1 "
+  local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local debug_tag=""
 
   #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
@@ -1217,18 +1237,65 @@ manage_openssl()
         # Build two versions of openssl, to support cliver and lli
         config_and_build_openssl "-DKLEE" "-klee"
         config_and_build_openssl " " "-run"
+
+        # run opt on two versions of openssl, to support cliver and lli
+        build_optimized_openssl_bitcode "-klee"
+        build_optimized_openssl_bitcode "-run"
       fi
       ;;
-
     opt*)
-      # runt opt on two versions of openssl, to support cliver and lli
+      # run opt on two versions of openssl, to support cliver and lli
       build_optimized_openssl_bitcode "-klee"
       build_optimized_openssl_bitcode "-run"
       ;;
+
   esac
   necho "[Done]\n"
 }
 
+###############################################################################
+
+manage_testclientserver()
+{
+  necho "$TESTCLIENTSERVER \t"
+  case $1 in
+    install)
+      check_dirs $TESTCLIENTSERVER || { return 0; }
+
+      cd $ROOT_DIR"/src"
+      leval mkdir $TESTCLIENTSERVER
+
+      ## KLEE needs to be installed
+      necho "[Copying] "
+      leval cp ./$KLEE/test/Cliver/ClientServer.c ./$TESTCLIENTSERVER
+      leval cp ./$KLEE/test/Cliver/KTestSocket.inc ./$TESTCLIENTSERVER
+      leval cp ./$KLEE/lib/Basic/KTest.cpp ./$TESTCLIENTSERVER
+
+      cd $ROOT_DIR"/src/$TESTCLIENTSERVER"
+      local srcfile="ClientServer.c"
+      local native_compile_flags="-B/usr/lib/x86_64-linux-gnu KTest.cpp $srcfile -DKTEST=\"\\\"./$TESTCLIENTSERVER.ktest\\\"\" -I$ROOT_DIR\"/src/klee/include\" "
+      local bc_compile_flags=" $srcfile -I$ROOT_DIR\"/src/klee/include\" -DKLEE -DCLIENT -emit-llvm -c "
+
+      local TESTCC=gcc
+      if test ${ALTCC+defined}; then
+        TESTCC=$ALTCC
+      fi
+
+      necho "[Compiling] "
+      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} -g ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
+      leval ${TESTCC} $native_compile_flags -g -o $TESTCLIENTSERVER
+
+      necho "[Installing] "
+      leval cp $TESTCLIENTSERVER $ROOT_DIR/local/bin/
+      leval cp $TESTCLIENTSERVER.bc $ROOT_DIR/local/bin/
+      ;;
+
+    update)
+      ;;
+
+  esac
+  necho "[Done]\n"
+}
 
 ###############################################################################
 
@@ -1259,7 +1326,7 @@ main()
     case $opt in
       a)
         #lecho "Forcing alternative gcc"
-        #set_alternate_gcc
+        set_alternate_gcc
         lecho "Building klee with AddressSanitizer"
         USE_ASAN=1
         ;;
@@ -1321,6 +1388,7 @@ main()
         ;;
    
       t)
+        set_alternate_gcc
         lecho "Building klee with ThreadSanitizer"
         USE_TSAN=1
         ;;
@@ -1381,6 +1449,7 @@ main()
     install_wllvm
     install_google_perftools
     install_boost
+    install_folly
     install_uclibc_git
     install_ncurses
     install_stp
@@ -1388,7 +1457,8 @@ main()
     #install_ghmm
     manage_openssl install
     install_klee
-    manage_openssl opt
+    manage_openssl opt # 'opt' requires klee to be installed
+    manage_testclientserver install
     install_zlib
     install_expat
     install_tetrinet
@@ -1409,7 +1479,6 @@ main()
         ;;
       openssl)
         manage_openssl update
-        manage_openssl opt
         ;;
       llvm)
         update_llvm
@@ -1425,7 +1494,6 @@ main()
     # update all
     update_wllvm
     manage_openssl update
-    manage_openssl opt
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm

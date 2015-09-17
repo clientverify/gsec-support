@@ -83,6 +83,19 @@ parse_ktest_filename()
   eval "basename $1 .ktest | awk -F_ '{ printf \$$2 }'"
 }
 
+testclientserver_parameters()
+{
+  # FORMAT: testclientserver_"index"_"messageCount"_"basketSize"_"encrypted{0,1}
+  local index=$(parse_ktest_filename $1 2)
+  local message_count=$(parse_ktest_filename $1 3)
+  local basket_size=$(parse_ktest_filename $1 4)
+  local encrypted=$(parse_ktest_filename $1 5)
+  local bc_file_opts=""
+  bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
+  bc_file_opts+=" -m ${message_count} -b ${basket_size} -e ${encrypted} "
+  printf "%s" "$bc_file_opts"
+}
+
 tetrinet_parameters()
 {
   # FORMAT: $MODE"_"$i"_"$INPUT_GEN_TYPE"_"$ptype"_"$rate"_"$MAX_ROUND"_"$PLAYER_NAME"_"$SERVER_ADDRESS
@@ -176,6 +189,13 @@ initialize_bc()
       BC_FILE="$XPILOT_ROOT/bin/${BC_MODE}.bc"
       TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
       ;;
+    testclientserver*)
+      if [ -z "$KTEST_DIR" ] ; then
+        KTEST_DIR="$DATA_DIR/network/testclientserver/$DATA_TAG"
+      fi
+      BC_FILE="$XPILOT_ROOT/bin/${BC_MODE}.bc"
+      TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
+      ;;
   esac
 }
 
@@ -190,6 +210,9 @@ bc_parameters()
       ;;
     xpilot*)
       xpilot_parameters $1
+      ;;
+    testclientserver*)
+      testclientserver_parameters $1
       ;;
   esac
 }
@@ -297,6 +320,9 @@ cliver_parameters()
       ;;
     openssl*)
       cliver_params+="-cloud9-posix-runtime "
+      ;;
+    testclientserver*)
+      cliver_params+="-posix-runtime "
       ;;
   esac
 

@@ -25,8 +25,10 @@ XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 OPENSSL="openssl"
 GHMM="ghmm"
+TESTCLIENTSERVER="testclientserver"
+FOLLY="folly"
 
-# Repository Branches
+# Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
 KLEE_BRANCH="parallel"
@@ -34,11 +36,13 @@ TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
 UCLIBC_BRANCH="cloud9-support"
+GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
+FOLLY_TAG="v0.57.0"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
 GIT_DIR="/cliver"
-GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
+GOOGLE_PERFTOOLS_GIT="https://github.com/gperftools/gperftools.git"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="https://github.com/robbycochran/whole-program-llvm.git"
 STP_REV=940
@@ -50,12 +54,12 @@ XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 UCLIBC_GIT="$GIT_HOST:$GIT_DIR/$UCLIBC.git"
 OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
+FOLLY_GIT="https://github.com/facebook/folly.git"
 
 # Tarball locations
 PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
-GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
 UDIS86_PACKAGE="$UDIS86.tar.gz"
 LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
 SPARSEHASH_PACKAGE="$SPARSEHASH.tar.gz"
@@ -115,6 +119,7 @@ initialize_root_directories()
   XPILOT_ROOT="$ROOT_DIR/local"
   OPENSSL_ROOT="$ROOT_DIR/local"
   GHMM_ROOT="$ROOT_DIR/local"
+  FOLLY_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
 }
 
@@ -251,10 +256,10 @@ set_alternate_gcc_old()
 
 set_alternate_gcc()
 {
-  ALTCCVERSION=4.9
-  ALTCC=gcc-4.9
-  ALTCXX=g++-4.9
-  GXX_INCLUDE_DIR="/usr/include/c++/4.9"
+  ALTCCVERSION=5
+  ALTCC=gcc-5
+  ALTCXX=g++-5
+  GXX_INCLUDE_DIR="/usr/include/c++/5"
   lecho "Using gcc version $(gcc-fullversion $ALTCC) instead of $(gcc-fullversion)"
 }
 
