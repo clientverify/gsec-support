@@ -997,13 +997,13 @@ main()
       do_training
       # run to generate tpath files
       run_parallel_jobs
-      # run hmmtrain on generated tpath files
-      HMM_TRAINING_MODE="all"
-      do_hmm_training
-      HMM_TRAINING_MODE="self"
-      do_hmm_training
-      HMM_TRAINING_MODE="ncross"
-      do_hmm_training
+      ## run hmmtrain on generated tpath files
+      #HMM_TRAINING_MODE="all"
+      #do_hmm_training
+      #HMM_TRAINING_MODE="self"
+      #do_hmm_training
+      #HMM_TRAINING_MODE="ncross"
+      #do_hmm_training
       ;;
 
     edit*)
