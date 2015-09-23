@@ -184,10 +184,15 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   #}
   #quit(status=0)
 } else {
+names(data)[names(data)=="RoundRealTime"] <- "Time"
+names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
+names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
+names(data)[names(data)=="SocketEventSizeBytes"] <- "MessageSizeBytes"
+
 
 if (length(selected_modes) != 0) {
  mode_params = selected_modes_alt_names
- y_params = c("RoundRealTime")
+ y_params = c("Time","Delay")
  params = list()
  for (m in seq(length(mode_params))) {
   for (y in seq(length(y_params))) {
