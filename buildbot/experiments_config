@@ -3,73 +3,70 @@
 # note: list variables with the equivalent prefixes should have
 # equivalent number of elements
 
+
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
+training 
+ncross-edit-dist-kprefix-row 
 naive
-naive
-naive
+ncross-edit-dist-kprefix-row
 naive
 )
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-IDDFS
-IDDFS-dropS2C
-IDDFS-nAES
-IDDFS-nAES-dropS2C
+training
+ed-8
+n-8
+ed-1
+n-1
 )
 
-# EXPERIMENT_LIST parameters
-KLEE_DEBUG_OPTS="--final-distance=0 --debug-socket=0 --debug-execution-tree=0 --output-istats=0 --use-call-paths=0 "
-KLEE_OPTS=" --use-threads=1 "
-TRAIN_OPTS=""
-NAIVE_OPTS=""
-VERIFY_OPTS="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
-ED_OPTS="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
-HMM_OPTS=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
-
-#OpenSSL specific options
-DROP_S2C="--only-verify-first-s2c=14 "
-NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
+KLEE_OPTS=" "
+#VERIFY_OPTS+=" -lock-free-searcher=0 -buffered-searcher-size=0 "
+VERIFY_OPTS=" -skip-printf -print-stats=0 "
+VERIFY_OPTS+=" -max-k-extension=64 -cluster-size=65536 "
 
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-" ${KLEE_OPTS} ${NAIVE_OPTS} "
-" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
-" ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} "
-" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
+"--use-threads=24 ${KLEE_OPTS} ${VERIFY_OPTS} "
+"--use-threads=8 ${KLEE_OPTS} ${VERIFY_OPTS} "
+"--use-threads=8 ${KLEE_OPTS} ${VERIFY_OPTS} "
+"--use-threads=1 ${KLEE_OPTS} ${VERIFY_OPTS} "
+"--use-threads=1 ${KLEE_OPTS} ${VERIFY_OPTS} "
 )
 
-CLIVER_PARAMETERS="-i parallel"
+#CLIVER_PARAMETERS="-i parallel -j 8 "
+#CLIVER_PARAMETERS=" -v "
+CLIVER_PARAMETERS=""
 
 # list of client types
 CLIENT_LIST=(
-openssl-klee
-openssl-klee
+xpilot-ng-x11-klee
+tetrinet-klee
 )
 
-# location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-/playpen/buildbot/data/network/openssl/ktest-timefix
-/playpen/buildbot/data/network/openssl/heartbleed
+/playpen/buildbot/data/network/xpilot-ng-x11/NDSS2013V2
+/playpen/buildbot/data/network/tetrinet-klee/NDSS2013V2
 )
 
-# list of extra klee paramters specific to each client type
+# list of extra paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
-""
+"" 
 ""
 )
-
-# list of extra bitcode paramters specific to each client type (params for actual client binary)
-CLIENT_LIST_BITCODE_PARAMETERS=(
-""
-" -heartbeat "
-)
-
 CLIENT_LIST_R_BIN_WIDTH=(
-100
-100
+100 
+10
+)
+
+CLIENT_LIST_BITCODE_PARAMETERS=(
+"" 
+""
 )
 
 # data locations
 RESULTS_LOCATION="data/results"
+
+
