@@ -868,12 +868,16 @@ build_klee_helper()
       leval make "$options" VERBOSE=1 test
     fi
 
-    necho "[Unittesting$tag] "
-    make_klee "LD_LIBRARY_PATH=${BOOST_ROOT}/lib ${options} ENABLE_SHARED=0 unittests "
+    if [[ $options != *SANITIZER* ]]; then
+      necho "[Unittesting$tag] "
+      make_klee "LD_LIBRARY_PATH=${BOOST_ROOT}/lib ${options} ENABLE_SHARED=0 unittests "
+    fi
   fi
 
-  necho "[Installing$tag] "
-  make_klee "$options install"
+  if [[ $options != *SANITIZER* ]]; then
+    necho "[Installing$tag] "
+    make_klee "$options install"
+  fi
 
   if [ ${#tag} -gt 0 ]; then
     leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
@@ -890,10 +894,8 @@ build_klee()
   local debug_build_options="ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0 DISABLE_TIMER_STATS=0 "
   local debug_tag=""
 
-  #local optimized_build_options=" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_TCMALLOC=1 DISABLE_TIMER_STATS=1 "
-  #local optimized_tag="-opt"
-
-  #build_klee_helper "$optimized_build_options" "$optimized_tag"
+  local single_thread_build_options="DISABLE_THREADS=1 "
+  local single_thread_tag="-st"
 
   # ThreadSanitizer and AddressSanitizer don't work with tcmalloc
   if [ $USE_TSAN -eq 0 ] && [ $USE_ASAN -eq 0 ]; then
@@ -902,8 +904,14 @@ build_klee()
   fi
 
   if [ $BUILD_DEBUG -eq 1 ]; then
+    build_klee_helper "$debug_build_options$single_thread_build_options" "$debug_tag$single_thread_tag"
     build_klee_helper "$debug_build_options" "$debug_tag"
   else
+    if [ $SKIP_TESTS -eq 0 ]; then
+      build_klee_helper "$release_build_options ENABLE_ADDRESS_SANITIZER=1" "${release_tag}-asan"
+      build_klee_helper "$release_build_options ENABLE_THREAD_SANITIZER=1" "${release_tag}-tsan"
+    fi
+    build_klee_helper "$release_build_options$single_thread_build_options" "$release_tag$single_thread_tag"
     build_klee_helper "$release_build_options" "$release_tag"
   fi
 }
