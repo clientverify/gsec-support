@@ -784,6 +784,13 @@ config_klee()
    KLEE_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
+  if [ $BUILD_DEBUG -eq 1 ]; then
+   KLEE_CONFIG_OPTIONS+="--with-runtime=Debug+Asserts"
+  else
+   KLEE_CONFIG_OPTIONS+="--with-runtime=Release"
+  fi
+
+
   leval $ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS 
 }
 
