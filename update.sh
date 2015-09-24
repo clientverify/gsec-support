@@ -874,13 +874,14 @@ build_klee_helper()
     fi
   fi
 
+  # Don't install klee asan or tsan
   if [[ $options != *SANITIZER* ]]; then
     necho "[Installing$tag] "
     make_klee "$options install"
-  fi
 
-  if [ ${#tag} -gt 0 ]; then
-    leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
+    if [ ${#tag} -gt 0 ]; then
+      leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
+    fi
   fi
 }
 
