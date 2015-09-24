@@ -758,7 +758,9 @@ install_stp()
 
 config_klee()
 {
-  cd $ROOT_DIR/src/$KLEE
+  mkdir -p $ROOT_DIR/build/$KLEE
+  cd $ROOT_DIR/build/$KLEE
+
   KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
 
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
@@ -790,7 +792,8 @@ make_klee()
   local TARGET=""
   if [[ $# -ge 1 ]]; then TARGET=$1; fi
 
-  cd $ROOT_DIR/src/klee
+  mkdir -p $ROOT_DIR/build/$KLEE
+  cd $ROOT_DIR/build/$KLEE
 
   local make_options=""
   local env_options=""
@@ -848,7 +851,6 @@ build_klee_helper()
   make_klee "$options"
 
   if [ $SKIP_TESTS -eq 0 ]; then
-    cd $ROOT_DIR/src/klee
 
     necho "[Testing$tag] "
     if [ $USE_TSAN -eq 1 ]; then
