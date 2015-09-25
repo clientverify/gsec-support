@@ -669,6 +669,27 @@ install_llvm()
   necho "[Done]\n"
 }
 
+install_minisat()
+{
+  necho "$MINISAT\t\t\t"
+  check_dirs $MINISAT || { return 0; }
+
+  necho "[Cloning] "
+  cd $ROOT_DIR"/src"
+  leval git clone --branch $MINISAT_BRANCH $MINISAT_GIT
+
+  necho "[Compiling] "
+  mkdir -p $ROOT_DIR/build/$MINISAT
+  cd $ROOT_DIR/build/$MINISAT
+  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$MINISAT_ROOT $ROOT_DIR/src/$MINISAT
+  leval make VERBOSE=1 -j $MAKE_THREADS
+
+  necho "[Installing] "
+  leval make install
+
+  necho "[Done]\n"
+}
+
 install_stp_git()
 {
   necho "$STP\t\t\t"
@@ -676,13 +697,13 @@ install_stp_git()
 
   necho "[Cloning] "
   cd $ROOT_DIR"/src"
-  leval git clone $STP_GIT
+  leval git clone --branch $STP_BRANCH $STP_GIT
 
   necho "[Compiling] "
   mkdir -p $ROOT_DIR/build/$STP
   cd $ROOT_DIR/build/$STP
-  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF $ROOT_DIR/src/$STP
-  leval make -j $MAKE_THREADS
+  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT -DBUILD_SHARED_LIBS:BOOL=ON -DENABLE_PYTHON_INTERFACE:BOOL=OFF $ROOT_DIR/src/$STP
+  leval make VERBOSE=1 -j $MAKE_THREADS
 
   necho "[Installing] "
   leval make install
@@ -777,6 +798,7 @@ make_klee()
 
   make_options+="-j $MAKE_THREADS "
   make_options+="ENABLE_GOOGLE_PROFILER=1 "
+  make_options+="VERBOSE=1 "
 
   if test ${ALTCC+defined}; then
    make_options+="CC=$ALTCC CXX=$ALTCXX "
@@ -1383,8 +1405,9 @@ main()
     install_boost
     install_uclibc_git
     install_ncurses
-    install_stp
-    #install_stp_git
+    install_minisat
+    #install_stp
+    install_stp_git
     #install_ghmm
     manage_openssl install
     install_klee
