@@ -24,7 +24,7 @@ SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
 SKIP_TESTS=0
-INSTALL_LLVMGCC_BIN=1
+INSTALL_CLANG_BIN=1
 USE_LLVM29=0
 USE_TSAN=0
 USE_ASAN=0
@@ -80,27 +80,6 @@ get_package()
     leval tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   elif [ $PACKAGE_TYPE == "xz" ]; then
     leval tar $TAR_OPTIONS -xvf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST
-  else
-    echo "[Error invalid package type] "
-    rm $LOCAL_DEST/$PACKAGE
-    exit
-  fi
-
-  rm $LOCAL_DEST/$PACKAGE
-}
-
-check_dirs()
-{
-  if [ -e $ROOT_DIR/src/$1 ] ||
-     [ -e $ROOT_DIR/build/$1 ] ||
-     [ -e $1 ] ; then
-    if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
-      echo "[Skipping] (Already exists, integrity unconfirmed) "
-      return 1
-    else
-      echo "[Error checking dirs] "
-      exit
-    fi
   else
     echo "[Error invalid package type] "
     rm $LOCAL_DEST/$PACKAGE
@@ -206,7 +185,7 @@ install_zlib_llvm()
   cd $ROOT_DIR/src/$ZLIB-llvm
 
   necho "[Configuring] "
-  ZLIB_LLVM_OPTIONS="CC=$LLVMGCC_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
+  ZLIB_LLVM_OPTIONS="CC=$CLANG_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
   leval $ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT 
 
   necho "[Compiling] "
@@ -426,7 +405,7 @@ install_uclibc_git()
   cd $ROOT_DIR/src/$UCLIBC
 
   necho "[Configuring] "
-  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
+  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$CLANG_ROOT/bin/$LLVM_CC --make-llvm-lib
 
   necho "[Compiling] "
   leval make 
@@ -435,11 +414,11 @@ install_uclibc_git()
 
 }
 
-install_llvmgcc_bin()
+install_clang_bin()
 {
-  necho "$LLVMGCC_BIN\t"
-  check_dirs "$LLVMGCC_ROOT/bin/$LLVM_CC" || { return 0; }
-  get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
+  necho "$CLANG_VERSION\t"
+  check_dirs "$CLANG_ROOT/bin/$LLVM_CC" || { return 0; }
+  get_package $CLANG_BIN_PACKAGE $PACKAGE_DIR $CLANG_ROOT
   necho "[Done]\n"
 }
 
@@ -764,8 +743,8 @@ config_klee()
 
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$CLANG_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$CLANG_ROOT/bin/$LLVM_CC "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
@@ -966,7 +945,7 @@ build_tetrinet()
 {
   TETRINET_MAKE_OPTIONS="NCURSES_DIR=${NCURSES_ROOT} "
   TETRINET_MAKE_OPTIONS+="PREFIX=${TETRINET_ROOT} "
-  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${LLVMGCC_ROOT}/bin/${LLVM_CC}\" "
+  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${CLANG_ROOT}/bin/${LLVM_CC}\" "
   TETRINET_MAKE_OPTIONS+="LLVMCOMPILER_FLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
   TETRINET_MAKE_OPTIONS+="LLVMLINKER=\"${LLVM_ROOT}/bin/${LLVM_LD}\" "
 
@@ -1061,7 +1040,7 @@ config_and_build_xpilot_with_wllvm()
 
   export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DXLIB_ILLEGAL_ACCESS -D__GNUC__ ${llvm_compiler_options} "
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
@@ -1156,7 +1135,7 @@ config_and_build_openssl()
 
   export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
   MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
@@ -1387,8 +1366,8 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
 
-    if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
-      install_llvmgcc_bin
+    if [ $INSTALL_CLANG_BIN -eq 1 ]; then
+      install_clang_bin
     else
       install_llvmgcc_from_source
     fi
