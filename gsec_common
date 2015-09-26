@@ -4,6 +4,7 @@
 LLVM="llvm"
 CLANG_VERSION="clang+llvm-3.4.2"
 LLVM_CC="clang"
+LLVM_CXX="clang++"
 LLVM_LD="llvm-link"
 WLLVM="whole-program-llvm"
 KLEE="klee"

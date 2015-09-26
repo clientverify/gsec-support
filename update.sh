@@ -681,7 +681,11 @@ install_stp_git()
   necho "[Compiling] "
   mkdir -p $ROOT_DIR/build/$STP
   cd $ROOT_DIR/build/$STP
-  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT -DBUILD_SHARED_LIBS:BOOL=ON -DENABLE_PYTHON_INTERFACE:BOOL=OFF $ROOT_DIR/src/$STP
+  leval cmake \
+      -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT \
+      -DBUILD_SHARED_LIBS:BOOL=OFF \
+      -DENABLE_PYTHON_INTERFACE:BOOL=OFF \
+      $ROOT_DIR/src/$STP
   leval make VERBOSE=1 -j $MAKE_THREADS
 
   necho "[Installing] "
@@ -744,17 +748,13 @@ config_klee()
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-llvmcc=$CLANG_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$CLANG_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$CLANG_ROOT/bin/$LLVM_CXX "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
   fi
 
-  # stp r940
   KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
-  
-  # stp git upstream
-  #KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
 
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
