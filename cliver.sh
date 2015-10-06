@@ -126,7 +126,7 @@ openssl_parameters()
   local PORT="4433"
   local bc_file_opts=""
 
-  bc_file_opts+=" s_client -no_special_cmds -CAfile $OPENSSL_CERTS_DIR/TA.crt "
+  bc_file_opts+=" s_client -no_special_cmds "
   bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
 
   ## Use this to add extra BC parameters from the commandline

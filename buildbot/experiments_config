@@ -32,7 +32,7 @@ HMM_OPTS=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers
 DROP_S2C="--only-verify-first-s2c=14 "
 NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
-# list of extra paramters specific to each experiment type
+# list of extra parameters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
 " ${KLEE_OPTS} ${NAIVE_OPTS} "
 " ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
@@ -45,29 +45,26 @@ CLIVER_PARAMETERS="-i parallel"
 # list of client types
 CLIENT_LIST=(
 openssl-klee
-openssl-klee
 )
 
 # location of directories holding ktest files for experiments
+# note: the basename is used to name the experiment
 CLIENT_LIST_KTEST=(
-/playpen/buildbot/data/network/openssl/ktest-timefix
-/playpen/buildbot/data/network/openssl/heartbleed
+/playpen/buildbot/data/network/openssl/cve-2015-0205
 )
 
-# list of extra klee paramters specific to each client type
+# list of extra klee parameters specific to each client type
 CLIENT_LIST_PARAMETERS=(
 ""
-""
 )
 
-# list of extra bitcode paramters specific to each client type (params for actual client binary)
+# list of extra bitcode parameters specific to each client type (params for actual client binary)
+CERT_DIR=/playpen/buildbot/data/network/openssl/cve-2015-0205/certs
 CLIENT_LIST_BITCODE_PARAMETERS=(
-""
-" -heartbeat "
+" -cert ${CERT_DIR}/c_ee.pem -cipher DH-RSA-AES128-GCM-SHA256 -CAfile ${CERT_DIR}/ta.pem -key ${CERT_DIR}/c_dhkey.pem "
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
-100
 100
 )
 

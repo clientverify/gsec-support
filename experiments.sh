@@ -126,7 +126,7 @@ copy_results()
       # the symlink created by cliver.sh will point to dir named $data_id
       data_id=$(readlink ${client_data_path}/${data_tag})
 
-      # stats directory will all of the experiment data (past and present)
+      # stats directory with all of the experiment data (past and present)
       stats_dir=${RESULTS_LOCATION}/$client/data/${data_tag}/$expOutput/$data_id
       leval mkdir -p ${stats_dir}
 
