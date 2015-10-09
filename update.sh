@@ -525,7 +525,14 @@ config_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic --enable-libffi "
+  LLVM_CONFIG_OPTIONS+="--enable-shared --enable-pic --enable-libffi "
+
+  # Uncomment the following to enable LLVM debug build (slow and large)
+  #if [ $BUILD_DEBUG -eq 1 ]; then
+  #  LLVM_CONFIG_OPTIONS+="--enable-debug-symbols --disable-optimized "
+  #else
+    LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions "
+  #fi
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
