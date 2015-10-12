@@ -25,6 +25,7 @@ XPILOT="xpilot"
 XPILOT_LLVM_PREFIX="llvm-"
 XPILOT_NATIVE_PREFIX="x86-"
 OPENSSL="openssl"
+OPENSSH="openssh"
 GHMM="ghmm"
 
 # Repository Branches/Tags
@@ -34,6 +35,7 @@ KLEE_BRANCH="cliver"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
+OPENSSH_BRANCH="cliver"
 UCLIBC_BRANCH="cloud9-support"
 MINISAT_BRANCH="cliver-20150925" # actually a tag, not a branch
 STP_BRANCH="cliver-20150925"     # actually a tag, not a branch
@@ -53,6 +55,7 @@ TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
 UCLIBC_GIT="$GIT_HOST:$GIT_DIR/$UCLIBC.git"
 OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
+OPENSSH_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSH}.git"
 GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
 
 # Tarball locations
@@ -117,6 +120,7 @@ initialize_root_directories()
   EXPAT_ROOT="$ROOT_DIR/local"
   XPILOT_ROOT="$ROOT_DIR/local"
   OPENSSL_ROOT="$ROOT_DIR/local"
+  OPENSSH_ROOT="$ROOT_DIR/local"
   GHMM_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
 }
