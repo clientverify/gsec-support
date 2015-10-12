@@ -19,6 +19,7 @@ FORCE_COMPILATION=0
 FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
 BUILD_DEBUG=0
+BUILD_DEBUG_ALL=0
 BUILD_LOCAL=0 # build local code, don't checkout from git
 SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
@@ -527,12 +528,12 @@ config_llvm ()
   LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
   LLVM_CONFIG_OPTIONS+="--enable-shared --enable-pic --enable-libffi "
 
-  # Uncomment the following to enable LLVM debug build (slow and large)
-  #if [ $BUILD_DEBUG -eq 1 ]; then
-  #  LLVM_CONFIG_OPTIONS+="--enable-debug-symbols --disable-optimized "
-  #else
+  # Note: the LLVM debug build is slow and very large (400 MB)
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    LLVM_CONFIG_OPTIONS+="--enable-debug-symbols --disable-optimized "
+  else
     LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions "
-  #fi
+  fi
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -550,12 +551,6 @@ build_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 "
-
-  #if [ $BUILD_DEBUG -eq 1 ]; then
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=0 "
-  #else
-  #  LLVM_MAKE_OPTIONS+="ENABLE_OPTIMIZED=1 "
-  #fi
 
   leval make $LLVM_MAKE_OPTIONS $TARGET 
 }
@@ -1133,7 +1128,12 @@ config_and_build_openssl()
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
   openssl_config_options+="-DOPENSSL_NO_ERR "
-  #openssl_config_options+="-d " # compile with debugging symbols
+
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    # Warning: this adds not only debug symbols to OpenSSL, but also extra
+    # debug code like a custom malloc(). Cliver will be much slower.
+    openssl_config_options+="-d " # compile with debugging symbols
+  fi
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1263,7 +1263,7 @@ main()
 {
   echo
   echo "====--configuration--===="
-  while getopts ":afkcivsb:r:j:dltn" opt; do
+  while getopts ":afkcivsb:r:j:dDltn" opt; do
     case $opt in
       a)
         #lecho "Forcing alternative gcc"
@@ -1278,10 +1278,16 @@ main()
         ;;
    
       d)
-        lecho "Building debug version"
+        lecho "Building (mostly) debug version"
         BUILD_DEBUG=1
         ;;
- 
+
+      D)
+        lecho "Building completely debug version"
+        BUILD_DEBUG=1
+        BUILD_DEBUG_ALL=1
+        ;;
+
       l)
         lecho "Compiling with local changes"
         BUILD_LOCAL=1
