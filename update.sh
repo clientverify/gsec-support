@@ -1276,9 +1276,15 @@ config_and_build_openssh()
   necho "[Compiling${tag}] "
   leval make $make_options
 
+  # Note: this takes forever, and uses specific hard-coded ports.  Therefore,
+  # only one instance of OpenSSH "make tests" can be run on the machine at any
+  # point in time.
   if [ $SKIP_TESTS -eq 0 ]; then
     necho "[Testing] "
-    leval make tests  # Note: this takes forever
+    local RETRY=180 # keep retrying for about 3 hours (6 builds)
+    leval lockfile-create --use-pid --retry $RETRY --lock-name $OPENSSH_LOCKFILE
+    leval make tests
+    leval lockfile-remove --lock-name $OPENSSH_LOCKFILE
   fi
 
   necho "[Installing${tag}] "
@@ -1366,6 +1372,7 @@ on_exit()
 {
   if [ $ERROR_EXIT -eq 1 ]; then
     lecho "Error"
+    lockfile-remove --lock-name $OPENSSH_LOCKFILE > /dev/null 2>&1
     if ! [ $VERBOSE_OUTPUT -eq 1 ]; then
       if test ${LOG_FILE+defined}; then
         necho "\n\n"

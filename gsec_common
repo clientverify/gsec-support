@@ -92,6 +92,7 @@ LSF_QUEUE="day"
 XLIB_DIR="gsec-support/Xlibs"
 GLIBC_INCLUDE_PATH=/usr/include/x86_64-linux-gnu    # works on Ubuntu 12.04
 GLIBC_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu        # works on Ubuntu 12.04
+OPENSSH_LOCKFILE=/tmp/openssh_make_tests.lock
 
 initialize_root_directories() 
 {
