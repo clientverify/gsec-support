@@ -73,6 +73,9 @@ skipcolnames = c('Bin','trace','RoundNumber','Queries')
 # plot data that is numeric and non-zero
 plotnames = c()
 for (col in colnames(data)) {
+  if (is.element(col, skipcolnames)) {
+    next
+  }
   if (is.numeric(data[[col]]) && sum(as.numeric(data[[col]])) == 0) {
     cat("Sums to 0: ", col, "\n")
   }
@@ -80,9 +83,7 @@ for (col in colnames(data)) {
     cat("Not numeric: ", col, "\n")
   }
   if (is.numeric(data[[col]]) && sum(as.numeric(data[[col]])) != 0) {
-    if (! is.element(col,skipcolnames)) {
-      plotnames = c(plotnames, col)
-    }
+    plotnames = c(plotnames, col)
   }
 }
 
@@ -91,7 +92,7 @@ for (col in colnames(data)) {
 ################################################################################
 
 ################################################################################
-if (tag == "ktest-timefix" | tag == "ktest-single-1") {
+if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "cve-2015-0205") {
   #rename(data, c("RoundRealTime"="Verification","VerifierDelayTime"="Delay"))
   names(data)[names(data)=="RoundRealTime"] <- "Verification"
   names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
