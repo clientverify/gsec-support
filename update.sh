@@ -1154,6 +1154,11 @@ config_and_build_openssl()
   necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
+  if [ $FORCE_CLEAN -eq 1 ]; then
+    necho "[Cleaning] "
+    leval make clean
+  fi
+
   necho "[Compiling${tag}] "
   leval make $make_options depend
   leval make $make_options
@@ -1272,6 +1277,11 @@ config_and_build_openssh()
   necho "[Configuring${tag}] "
   leval autoreconf -i
   leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
+
+  if [ $FORCE_CLEAN -eq 1 ]; then
+    necho "[Cleaning] "
+    leval make clean
+  fi
 
   necho "[Compiling${tag}] "
   leval make $make_options
