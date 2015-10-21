@@ -1263,6 +1263,8 @@ config_and_build_openssh()
     config_env+="CFLAGS=\"-g\" " # compile with debugging symbols
   fi
 
+  llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
+
   local make_options=""
   make_options+="-j $MAKE_THREADS " # parallel build
   #make_options+="CC=wllvm "
