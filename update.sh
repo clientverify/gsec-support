@@ -1203,7 +1203,7 @@ manage_openssl()
       leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
 
       # Build two versions of openssl, to support cliver and lli
-      config_and_build_openssl "-DKLEE" "-klee"
+      config_and_build_openssl "-DKLEE " "-klee"
       config_and_build_openssl " " "-run"
       ;;
 
@@ -1230,7 +1230,7 @@ manage_openssl()
         fi
 
         # Build two versions of openssl, to support cliver and lli
-        config_and_build_openssl "-DKLEE" "-klee"
+        config_and_build_openssl "-DKLEE " "-klee"
         config_and_build_openssl " " "-run"
       fi
       ;;
@@ -1276,14 +1276,14 @@ config_and_build_openssh()
   PATH_ORIGINAL="${PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring${tag}] "
-  leval autoreconf -i
-  leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
-
   if [ $FORCE_CLEAN -eq 1 ]; then
     necho "[Cleaning] "
     leval make clean
   fi
+
+  necho "[Configuring${tag}] "
+  leval autoreconf -i
+  leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
 
   necho "[Compiling${tag}] "
   leval make $make_options
@@ -1335,7 +1335,7 @@ manage_openssh()
 
       # Build only one version. Later we might need 2 versions in order to
       # support cliver and lli, like OpenSSL.
-      config_and_build_openssh "-DKLEE" "-klee"
+      config_and_build_openssh "-DKLEE " "-klee"
       #config_and_build_openssh " " "-run"
       ;;
 
@@ -1363,7 +1363,7 @@ manage_openssh()
 
         # Build only one version. Later we might need 2 versions in order to
         # support cliver and lli, like OpenSSL.
-        config_and_build_openssh "-DKLEE" "-klee"
+        config_and_build_openssh "-DKLEE " "-klee"
         #config_and_build_openssh " " "-run"
       fi
       ;;
