@@ -868,20 +868,18 @@ build_klee_helper()
       leval make "$options" VERBOSE=1 test
     fi
 
+    # skipping unittests for sanitizer versions because of linking errors
     if [[ $options != *SANITIZER* ]]; then
       necho "[Unittesting$tag] "
       make_klee "LD_LIBRARY_PATH=${BOOST_ROOT}/lib ${options} ENABLE_SHARED=0 unittests "
     fi
   fi
 
-  # Don't install klee asan or tsan
-  if [[ $options != *SANITIZER* ]]; then
-    necho "[Installing$tag] "
-    make_klee "$options install"
+  necho "[Installing$tag] "
+  make_klee "$options install"
 
-    if [ ${#tag} -gt 0 ]; then
-      leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
-    fi
+  if [ ${#tag} -gt 0 ]; then
+    leval cp "$KLEE_ROOT/bin/$klee" "$KLEE_ROOT/bin/$klee$tag"
   fi
 }
 
@@ -898,13 +896,18 @@ build_klee()
   local single_thread_build_options="DISABLE_THREADS=1 "
   local single_thread_tag="-st"
 
-  # ThreadSanitizer and AddressSanitizer don't work with tcmalloc
+  ## ThreadSanitizer and AddressSanitizer don't work with tcmalloc
   if [ $USE_TSAN -eq 0 ] && [ $USE_ASAN -eq 0 ]; then
     release_build_options+="ENABLE_TCMALLOC=1 "
     debug_build_options+="ENABLE_TCMALLOC=1 "
   fi
 
   if [ $BUILD_DEBUG -eq 1 ]; then
+    if [ $SKIP_TESTS -eq 0 ]; then
+      build_klee_helper "$debug_build_options ENABLE_ADDRESS_SANITIZER=1" "${debug_tag}-asan"
+      build_klee_helper "$debug_build_options ENABLE_THREAD_SANITIZER=1" "${debug_tag}-tsan"
+    fi
+
     build_klee_helper "$debug_build_options$single_thread_build_options" "$debug_tag$single_thread_tag"
     build_klee_helper "$debug_build_options" "$debug_tag"
   else
@@ -912,6 +915,7 @@ build_klee()
       build_klee_helper "$release_build_options ENABLE_ADDRESS_SANITIZER=1" "${release_tag}-asan"
       build_klee_helper "$release_build_options ENABLE_THREAD_SANITIZER=1" "${release_tag}-tsan"
     fi
+
     build_klee_helper "$release_build_options$single_thread_build_options" "$release_tag$single_thread_tag"
     build_klee_helper "$release_build_options" "$release_tag"
   fi
