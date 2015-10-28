@@ -30,7 +30,7 @@ GHMM="ghmm"
 # Repository Branches/Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="master"
+KLEE_BRANCH="cliver"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="cve_2015_0205"
