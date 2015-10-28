@@ -253,7 +253,7 @@ install_boost()
   BJAM_OPTIONS=" --without-python --build-dir=$ROOT_DIR/build/$BOOST -j$MAKE_THREADS debug-symbols=on "
 
   if test ${ALTCC+defined}; then
-    echo "using gcc : $ALTCCVERSION : /usr/bin/$ALTCC ; " >> $ROOT_DIR/src/$BOOST/tools/build/v2/user-config.jam
+    echo "using gcc : $ALTCCVERSION : /usr/bin/$ALTCC ; " >> $ROOT_DIR/src/$BOOST/tools/build/user-config.jam
     BJAM_OPTIONS+=" --toolset=$ALTCC "
   fi
 
