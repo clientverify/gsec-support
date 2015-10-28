@@ -1252,24 +1252,18 @@ config_and_build_openssh()
 
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
-  #openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
-  openssh_config_options+="--without-openssl "
+  openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
 
   local config_env=""
   config_env+="CC=wllvm "
-  local cflags_for_config=""
-  cflags_for_config="-DCLIVER "
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
-    cflags_for_config+="-g " # compile with debugging symbols
+    config_env+="CFLAGS=\"-g\" " # compile with debugging symbols
   fi
 
-  cflags_for_config+=""
-  config_env+="CFLAGS=\"${cflags_for_config}\" "
-
-  #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
+  llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
 
   local make_options=""
   make_options+="-j $MAKE_THREADS " # parallel build
