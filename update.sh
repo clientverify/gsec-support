@@ -1310,7 +1310,7 @@ config_and_build_openssh()
 
   necho "[Installing${tag}] "
   mkdir -p $OPENSSH_ROOT
-  leval make install
+  leval make install-nokeys
   leval extract-bc $OPENSSH_ROOT/bin/ssh
   leval cp $OPENSSH_ROOT/bin/ssh.bc $OPENSSH_ROOT/bin/ssh${tag}.bc
 
