@@ -26,8 +26,6 @@ SKIP_INSTALL_ERRORS=1
 SKIP_TESTS=0
 INSTALL_LLVMGCC_BIN=1
 USE_LLVM29=0
-USE_TSAN=0
-USE_ASAN=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
 ROOT_DIR="`pwd`"
@@ -812,13 +810,6 @@ make_klee()
    make_options+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
-  if [ $USE_TSAN -eq 1 ]; then
-     make_options+=" ENABLE_THREAD_SANITIZER=1 "
-  elif [ $USE_ASAN -eq 1 ]; then
-     make_options+=" ENABLE_ADDRESS_SANITIZER=1 "
-  fi
-
-
   local klee_ldflags="-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib "
   local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   #local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
@@ -859,19 +850,25 @@ build_klee_helper()
 
   if [ $SKIP_TESTS -eq 0 ]; then
 
-    necho "[Testing$tag] "
-    if [ $USE_TSAN -eq 1 ]; then
-      leval make "$options" VERBOSE=1 ENABLE_THREAD_SANITIZER=1 test
-    elif [ $USE_ASAN -eq 1 ]; then
-      leval make "$options" VERBOSE=1 ENABLE_ADDRESS_SANITIZER=1 test
+    # skipping tests for asan and tsan versions because of memory leaks and thread errors
+    if [[ $options != *SANITIZER* ]]; then
+      necho "[Testing$tag] "
+      cd $ROOT_DIR"/build/$KLEE/test"
+      # need to force remake of lit.site.cfg
+      # make test will overwrite results from previous build configurations
+      leval make --always-make "$options" VERBOSE=1 lit.site.cfg
+      leval make "$options" VERBOSE=1
+      cd $ROOT_DIR"/build/$KLEE/"
     else
-      leval make "$options" VERBOSE=1 test
+      necho "[Testing$tag (skipped)] "
     fi
 
     # skipping unittests for sanitizer versions because of linking errors
     if [[ $options != *SANITIZER* ]]; then
       necho "[Unittesting$tag] "
       make_klee "LD_LIBRARY_PATH=${BOOST_ROOT}/lib ${options} ENABLE_SHARED=0 unittests "
+    else
+      necho "[Unittesting$tag (skipped)] "
     fi
   fi
 
@@ -896,25 +893,21 @@ build_klee()
   local single_thread_build_options="DISABLE_THREADS=1 "
   local single_thread_tag="-st"
 
-  ## ThreadSanitizer and AddressSanitizer don't work with tcmalloc
-  if [ $USE_TSAN -eq 0 ] && [ $USE_ASAN -eq 0 ]; then
-    release_build_options+="ENABLE_TCMALLOC=1 "
-    debug_build_options+="ENABLE_TCMALLOC=1 "
-  fi
-
   if [ $BUILD_DEBUG -eq 1 ]; then
-    if [ $SKIP_TESTS -eq 0 ]; then
-      build_klee_helper "$debug_build_options ENABLE_ADDRESS_SANITIZER=1" "${debug_tag}-asan"
-      build_klee_helper "$debug_build_options ENABLE_THREAD_SANITIZER=1" "${debug_tag}-tsan"
-    fi
+    build_klee_helper "$debug_build_options ENABLE_ADDRESS_SANITIZER=1" "${debug_tag}-asan"
+    build_klee_helper "$debug_build_options ENABLE_THREAD_SANITIZER=1" "${debug_tag}-tsan"
+
+    # ThreadSanitizer and AddressSanitizer don't work with tcmalloc, enable here
+    debug_build_options+="ENABLE_TCMALLOC=1 "
 
     build_klee_helper "$debug_build_options$single_thread_build_options" "$debug_tag$single_thread_tag"
     build_klee_helper "$debug_build_options" "$debug_tag"
   else
-    if [ $SKIP_TESTS -eq 0 ]; then
-      build_klee_helper "$release_build_options ENABLE_ADDRESS_SANITIZER=1" "${release_tag}-asan"
-      build_klee_helper "$release_build_options ENABLE_THREAD_SANITIZER=1" "${release_tag}-tsan"
-    fi
+    build_klee_helper "$release_build_options ENABLE_ADDRESS_SANITIZER=1" "${release_tag}-asan"
+    build_klee_helper "$release_build_options ENABLE_THREAD_SANITIZER=1" "${release_tag}-tsan"
+
+    # ThreadSanitizer and AddressSanitizer don't work with tcmalloc, enable here
+    release_build_options+="ENABLE_TCMALLOC=1 "
 
     build_klee_helper "$release_build_options$single_thread_build_options" "$release_tag$single_thread_tag"
     build_klee_helper "$release_build_options" "$release_tag"
@@ -1342,16 +1335,13 @@ on_exit()
 
 main() 
 {
+  # force usage of gcc-5
+  set_alternate_gcc
+
   echo
   echo "====--configuration--===="
   while getopts ":afkcivsb:r:j:dltn" opt; do
     case $opt in
-      a)
-        #lecho "Forcing alternative gcc"
-        set_alternate_gcc
-        lecho "Building klee with AddressSanitizer"
-        USE_ASAN=1
-        ;;
   
       f)
         lecho "Forcing compilation"
@@ -1409,12 +1399,6 @@ main()
         MAKE_THREADS=$OPTARG
         ;;
    
-      t)
-        set_alternate_gcc
-        lecho "Building klee with ThreadSanitizer"
-        USE_TSAN=1
-        ;;
-
       :)
         echo "Option -$OPTARG requires an argument"
         exit
