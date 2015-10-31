@@ -37,7 +37,8 @@ leval ln -sfT $RUN_PREFIX $BASE_OUTPUT_DIR/$DATA_TAG
 
 ################################################################################
 
-thread_counts=(1 2 4 8 16 24)
+#thread_counts=(1 2 4 8 16 32)
+thread_counts=(32 16 8 4 2 1)
 search_types=(nurs:covnew bfs dfs)
 #bc_files=(echo.bc printf.bc)
 bc_files=(printf.bc)
@@ -45,17 +46,18 @@ bc_files=(printf.bc)
 bc_dir="/playpen/rac/coreutils/src/coreutils-6.11/obj-llvm/src/"
 #bc_cmds=("--sym-args 0 2 5 --sym-args 0 1 10 --sym-files 2 10" "--sym-args 0 4 5 --sym-args 0 1 10")
 bc_cmds=("--sym-args 0 4 5 --sym-args 0 1 10")
+max_time=1800
 max_time=600
 klee_bin=klee
 #klee_bin=klee-st
 
-klee_options=" --use-forked-solver=0 --only-output-states-covering-new  --optimize --libc=uclibc --cloud9-posix-runtime "
-klee_options+="--force-parallel-searcher --use-batching-search=1 --batch-time=1 "
-klee_options+=" --output-istats=1 --use-call-paths=0 --no-output "
+#klee_options=" --use-forked-solver=0 --only-output-states-covering-new  --optimize --libc=uclibc --cloud9-posix-runtime "
+#klee_options+="--force-parallel-searcher --use-batching-search=1 --batch-time=5 "
+#klee_options+=" --output-istats=1 --use-call-paths=0 --no-output "
 stats_file="coreutils.csv"
 ################################################################################
 
-run_exp()
+runexp()
 {
   STATS_OUTPUT=$KLEE_OUTPUT_DIR/$stats_file
   echo "bc,search,threads,instructions,paths,tests" | tee -a $STATS_OUTPUT
@@ -69,7 +71,7 @@ run_exp()
         bc_cmd=${bc_cmds[$i]}
         exp_name="${bc_name}-${thread_count}-$search_type"
         output_dir=$KLEE_OUTPUT_DIR/$exp_name
-        leval ./local/bin/${klee_bin} --output-dir=$output_dir --max-time=${max_time} --watchdog --search=${search_type} --use-threads=${thread_count}  ${klee_options} ${bc_dir}/${bc_file} ${bc_cmd}
+        leval ./local/bin/${klee_bin} --output-dir=$output_dir --max-time=${max_time} --search=${search_type} --use-threads=${thread_count}  ${klee_options} ${bc_dir}/${bc_file} ${bc_cmd}
         instructions=$(grep "total instructions" ${output_dir}/info | awk -F=  '{print $2}')
         paths=$(grep "completed paths" ${output_dir}/info | awk -F=  '{print $2}')
         tests=$(grep "generated tests" ${output_dir}/info | awk -F=  '{print $2}')
@@ -80,12 +82,16 @@ run_exp()
   done
 }
 
-klee_options=" --use-forked-solver=0 --only-output-states-covering-new  --optimize --libc=uclibc --cloud9-posix-runtime "
-klee_options+="--force-parallel-searcher --use-batching-search=1 --batch-time=1 "
-klee_options+=" --output-istats=1 --use-call-paths=0 --no-output "
+klee_options=" --use-forked-solver=0 --dump-states-on-halt=0 --only-output-states-covering-new  --optimize --libc=uclibc --cloud9-posix-runtime "
+#klee_options+="--force-parallel-searcher --use-batching-search=1 --batch-time=5 "
+klee_options+="--force-parallel-searcher --use-per-thread-batching-search=1 "
+#klee_options+=" --output-stats=0 --output-istats=1 --use-call-paths=0 --no-output "
+klee_options+=" --use-call-paths=0 --no-output "
+klee_options+=" -istats-write-interval=30 --stats-write-interval=30 "
+#klee_options+=" --watchdog "
 #search_types=(nurs:covnew bfs dfs)
-search_types=(nurs:covnew)
-run_exp
+search_types=(nurs:covnew bfs dfs)
+runexp
 
 #klee_options=" --use-forked-solver=0 --only-output-states-covering-new  --optimize --libc=uclibc --cloud9-posix-runtime "
 #klee_options+="--force-parallel-searcher --use-batching-search=1 --batch-time=1 "
