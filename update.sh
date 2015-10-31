@@ -857,7 +857,7 @@ build_klee_helper()
       # need to force remake of lit.site.cfg
       # make test will overwrite results from previous build configurations
       leval make --always-make "$options" VERBOSE=1 lit.site.cfg
-      leval make "$options" VERBOSE=1
+      leval make "$options" VERBOSE=1 
       cd $ROOT_DIR"/build/$KLEE/"
     else
       necho "[Testing$tag (skipped)] "
@@ -1335,9 +1335,6 @@ on_exit()
 
 main() 
 {
-  # force usage of gcc-5
-  set_alternate_gcc
-
   echo
   echo "====--configuration--===="
   while getopts ":afkcivsb:r:j:dltn" opt; do
@@ -1420,11 +1417,13 @@ main()
     esac
   done
 
-  if [ $USE_LLVM29 -eq 0 ]; then
-    check_gcc_version
-  else
-    check_gcc_version_old
-  fi
+  if [ $USE_LLVM29 -eq 1 ]; then
+    lecho "Using LLVM 2.9 and llvm-gcc-4.2"
+    lecho "NOT SUPPORTED" ; exit
+  fi  
+  
+  # force usage of gcc-5
+  set_alternate_gcc
 
   lecho "Compiling with $(max_threads) threads"
 
