@@ -31,7 +31,7 @@ FOLLY="folly"
 # Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="parallel"
+KLEE_BRANCH="parallel-rc-thesis"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
