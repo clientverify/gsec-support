@@ -174,6 +174,12 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   #results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
   #results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
 
+  ## HACK undo name change for later stats
+  names(data)[names(data)=="Verification"] <- "RoundRealTime"
+  names(data)[names(data)=="Delay"] <- "VerifierDelayTime"
+  names(data)[names(data)=="MessageSize"] <- "SocketEventSize"
+  names(data)[names(data)=="MessageSizeBytes"] <- "SocketEventSizeBytes"
+
 } else if (tag == "heartbleed") {
   debug_printf("tag specific plots")
   plotwidth = default_plotwidth
@@ -185,38 +191,45 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   #}
   #quit(status=0)
 } else {
-plotwidth = default_plotwidth
-plotheight = default_plotheight
-makePlots = TRUE
-makePlots = FALSE
-if(makePlots) {
-#results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
 
-#results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
-#results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
-#results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
+  ## Trim data by start and min Messages
+  #data = subset(data, RoundNumber > start_Message & RoundNumber<= as.integer(floor(min_size/binwidth))*binwidth)
+  max_round = as.integer(floor(min_size/binwidth))*binwidth
+  debug_printf("max_round=%d", max_round)
+  #data = subset(data, RoundNumber<= as.integer(floor(min_size/binwidth))*binwidth)
+  data = subset(data, RoundNumber <= (max_round + 1))
 
-results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
 
-plotheight = max(default_plotheight,length(unique(data$trace))*heightscalefactor)
-results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
-results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+  plotwidth = default_plotwidth
+  plotheight = default_plotheight
+  #results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
+  #results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
 
-#x_axis <- "SocketEventSize"
-#results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-#x_axis <- "RoundNumber"
+  #results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
+  #results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
+  #results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
+  #results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
 
-results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
+  results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
 
-#results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
+  plotheight = max(default_plotheight,length(unique(data$trace))*heightscalefactor)
+  results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
+  results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+
+  #x_axis <- "SocketEventSize"
+  #results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+  #x_axis <- "RoundNumber"
+
+  results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
+
+  #results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
+
+}
 
 plotheight = default_plotheight
 plotwidth = default_plotwidth*0.75
-do_time_summary_plot()
-do_instruction_summary_plot()
-}
+#do_time_summary_plot()
+#do_instruction_summary_plot()
 
 names(data)[names(data)=="RoundRealTime"] <- "Time"
 names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
@@ -225,86 +238,77 @@ names(data)[names(data)=="BackTrackCount"] <- "Backtracks"
 names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
 names(data)[names(data)=="SocketEventSizeBytes"] <- "MessageSizeBytes"
 
-
 if (length(selected_modes) != 0) {
- mode_params = selected_modes_alt_names
- #y_params = c("Time","Delay","InstructionCount")
- y_params = c("Time","Delay","Wait","Backtracks")
- params = list()
- for (m in seq(length(mode_params))) {
-  for (y in seq(length(y_params))) {
-   params[[length(params)+1]] = c(mode_params[[m]], y_params[[y]])
-  }
- }
-
- plotwidth = default_plotwidth
- plotheight = default_plotheight/2
- if(makePlots) {
- results = mclapply(params, do_box_alt_log_plot, mc.cores=num_threads)
- results = mclapply(params, do_box_alt_plot, mc.cores=num_threads)
- }
-
- #stat_names=c("nbr.val","min","max","median","mean","var","std.dev")
- #stat_names=c("min","max","median","mean","var","std.dev")
- stat_names=c("nbr.val", "min","max","median","mean","var","std.dev","sum")
-
- options(scipen=100)
-# options(digits=4)
-  allstats = data.frame()
-for (y in seq(length(y_params))) {
+  mode_params = selected_modes_alt_names
+  #y_params = c("Time","Delay","InstructionCount","Wait","Backtracks")
+  y_params = c("Time","Delay","InstructionCount")
+  params = list()
   for (m in seq(length(mode_params))) {
-     #params[[length(params)+1]] = c(mode_params[[m]], y_params[[y]])
-     #mdata <- melt(subset(data, mode == m), id=c(m), measure=c(y))
-     #mdata <- melt(data, id=c("mode"), measure=c(y_params[[y]]))
-     #mdata <- melt(subset(data, mode == mode_params[[m]]), id=c("mode"), measure=c(y_params[[y]]))
-     sdata <- subset(data, mode == mode_params[[m]])
-     #mdata <- cbind(sdata$Time, sdata$Delay)
-     #mdata <- sdata[c("Time","Delay")]
-     mdata <- sdata[y_params[[y]]]
-     stats <- stat.desc(mdata)
-     cat("\nMode stat: ",mode_params[[m]]," ", y_params[[y]],"\n")
-     #cat("\nMode stat: ",mode_params[[m]],"\n")
-     print(stats)
-     #print(xtable(t(stats)))
-     tstats <- t(stats)
-     tstats <- tstats[,stat_names,drop=FALSE]
-     tstats <- data.frame(t(tstats))
-     #tstats <- tstats[stat_names,]
-     names(tstats)[names(tstats)==y_params[[y]]] <- paste(mode_params[[m]], y_params[[y]] ,sep="_")
-     tstats <- t(tstats)
+    for (y in seq(length(y_params))) {
+    params[[length(params)+1]] = c(mode_params[[m]], y_params[[y]])
+    }
+  }
 
-     #len = length(tstats[,1])
-     ##tstats$mode <- rep(mode_params[[m]], len)
-     ##Mode <- rep(mode_params[[m]], len)
-     #Mode <- rep(paste(y_params[[y]], mode_params[[m]],sep=" "), len)
-     ##tstats <- cbind(rep(paste(y_params[[y]], mode_params[[m]],sep=" "), len), tstats)
-     #tstats <- cbind(Mode, tstats)
-     allstats <- rbind(allstats, tstats)
-     print(tstats)
+  plotwidth = default_plotwidth
+  plotheight = default_plotheight/2
+  results = mclapply(params, do_box_alt_log_plot, mc.cores=num_threads)
+  results = mclapply(params, do_box_alt_plot, mc.cores=num_threads)
 
-     #cat("\nMax ", y_params[[y]]," Row:\n")
-     #print(subset(sdata, eval(parse(y_params[[y]] == stats["max", y_params[[y]]]))))
+  #cat("factor Bins: ", factor(data$Bin),"\n")
 
-     cat("\nMax Time Row:\n")
-     print(subset(sdata, Time == stats["max","Time"]))
+  #stat_names=c("nbr.val","min","max","median","mean","var","std.dev")
+  stat_names=c("min","max","median","mean","var","std.dev")
+  #stat_names=c("nbr.val", "min","max","median","mean","var","std.dev","sum")
 
-     cat("\nMax Delay Row:\n")
-     print(subset(sdata, Delay == stats["max","Delay"]))
-   }
- }
- stat_table <- xtable(t(allstats))
- digits(stat_table) <- 4
- print(stat_table)
+  options(scipen=100)
+  #options(digits=4)
+  allstats = data.frame()
+  for (y in seq(length(y_params))) {
+    for (m in seq(length(mode_params))) {
+      theStat <- y_params[[y]]
+      cat("\nMode: ",mode_params[[m]]," Stat: ", theStat,"\n")
+      sdata <- subset(data, mode == mode_params[[m]])
+      mdata <- sdata[theStat]
+      stats <- stat.desc(mdata)
+      print(stats)
+      tstats <- t(stats)
+      tstats <- tstats[,stat_names,drop=FALSE]
+      tstats <- data.frame(t(tstats))
+      names(tstats)[names(tstats)==theStat] <- paste(mode_params[[m]], theStat ,sep="_")
+      tstats <- t(tstats)
 
- #print(data$Backtracks)
+      allstats <- rbind(allstats, tstats)
+      print(tstats)
 
- data_bt = subset(data, Backtracks > 1)
- data_nobt = subset(data, Backtracks <= 1)
- print(stat.desc(data_bt$Time))
- print(stat.desc(data_nobt$Time))
+      # get value of max for this stat
+      maxValue <- stats["max", theStat]
+      # matching row (if more than one take the first)
+      maxRowID = which(sdata[,c(theStat)] == maxValue)[1]
 
+      # print entire max row
+      cat("\nMax ", theStat," Row:\n")
+      print(sdata[maxRowID,])
 
-}
+      #cat("\nMax Time Row:\n")
+      #print(subset(sdata, Time == stats["max","Time"]))
+
+      #cat("\nMax Delay Row:\n")
+      #print(subset(sdata, Delay == stats["max","Delay"]))
+    }
+  }
+  stat_table <- xtable(t(allstats))
+  digits(stat_table) <- 4
+  print(stat_table)
+  save(stat_table, file=paste(save_dir, "stat_table.tex", sep="/"))
+
+  #print(data$Backtracks)
+
+  #data_bt = subset(data, Backtracks > 1)
+  #data_nobt = subset(data, Backtracks <= 1)
+  #print(stat.desc(data_bt$Time))
+  #print(stat.desc(data_nobt$Time))
+
+  write.csv(data, paste(save_dir, "processed_data.csv", sep="/"))
 
 
 }

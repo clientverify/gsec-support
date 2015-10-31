@@ -10,6 +10,8 @@ library(reshape)
 library(scales)
 library(quantreg)
 library(parallel)
+library(pastecs)
+library(xtable)
 
 ###############################################################################
 ### Configuration
@@ -50,13 +52,17 @@ timestamp_colnames = c("Index","Direction","Bytes","Timestamp")
 
 # Default parameters
 min_size=.Machine$integer.max
-start_Message = 2
+start_Message = 1
 binwidth=20
 binwidth_time=30
 time_scale=1000000
+
 default_plotwidth=6
 default_plotheight=6
-heightscalefactor = 0.75
+# Presentations (larger font)
+#default_plotwidth=4
+#default_plotheight=4
+
 heightscalefactor = 0.5
 plotwidth = default_plotwidth
 plotheight = default_plotheight
@@ -80,117 +86,117 @@ data <- NULL
 ###############################################################################
 
 printf <- function(...) invisible(print(sprintf(...)))
-#debug_printf <- function(...) invisible(print(sprintf(...)))
-debug_printf <- function(...) {}
+debug_printf <- function(...) invisible(print(sprintf(...)))
+#debug_printf <- function(...) {}
 
 ###############################################################################
 ### Function: Read Timestamp data
 ###############################################################################
 
-read_timestamps = function() {
-  trace_count = 0
-  trace_total_time = 0
-  timestamp_dir = paste(root_dir,"socketlogs",sep="/")
-  debug_printf("read_timestamps: directory: %s", timestamp_dir)
-  for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
-    # Read id number of timestamp file, format is str_#_...._client_socket.log
-    
-    debug_printf("read_timestamps: file: %s", file)
-    if (client_type == "openssl") {
-      # gmail_spdy_stream00_client_socket.log
-      trace = as.integer(substring(unlist(unlist(strsplit(file,"_"))[3]),7))
-    } else {
-      trace = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
-    }
-    debug_printf("read_timestamps: trace: %d", trace)
-    
-    tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
-    #cat("Reading ",file,", trace: ",trace, "\n")
+#read_timestamps = function() {
+#  trace_count = 0
+#  trace_total_time = 0
+#  timestamp_dir = paste(root_dir,"socketlogs",sep="/")
+#  debug_printf("read_timestamps: directory: %s", timestamp_dir)
+#  for (file in list.files(path=timestamp_dir,pattern=timestamp_pattern)) {
+#    # Read id number of timestamp file, format is str_#_...._client_socket.log
+#    
+#    debug_printf("read_timestamps: file: %s", file)
+#    if (client_type == "openssl") {
+#      # gmail_spdy_stream00_client_socket.log
+#      trace = as.integer(substring(unlist(unlist(strsplit(file,"_"))[3]),7))
+#    } else {
+#      trace = as.integer(unlist(unlist(strsplit(file,"_"))[2]))
+#    }
+#    debug_printf("read_timestamps: trace: %d", trace)
+#    
+#    tmp_timestamps = try(read.table(paste(timestamp_dir,file,sep="/"), col.names=timestamp_colnames), silent=TRUE)
+#    #cat("Reading ",file,", trace: ",trace, "\n")
+#
+#    # Extract just socket events, ktest objects with names: c2s and s2c
+#    tmp_timestamps = subset(tmp_timestamps, Direction == "c2s" | Direction == "s2c")
+#
+#    if (class(tmp_timestamps) == "try-error") {
+#      cat("try-error reading timestamp file\n")
+#    } else {
+#      trace_total_time = trace_total_time + (tmp_timestamps$Timestamp[length(tmp_timestamps[,1])] - tmp_timestamps$Timestamp[1])
+#      trace_count = trace_count + 1
+#      
+#      cat("Reading ",file,", trace: ",trace, ", time(s): ",trace_total_time,"\n")
+#      #debug_printf("Reading %s, trace: %d, time(s): %f",file,trace,trace_total_time)
+#      
+#      # Remove first row
+#      #tmp_timestamps = tmp_timestamps[c(-1),]
+#      
+#      len = length(tmp_timestamps[,1]) # length of rows, not cols
+#      debug_printf("%s : length: %d", file, len)
+#      tmp_timestamps$trace=rep(trace, len)
+#      tmp_timestamps$Message = seq(0,len-1)
+#      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
+#      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000
+#
+#      # Add timestamps to global var
+#      timestamps <<- rbind(timestamps, tmp_timestamps)
+#    }
+#  }
+#  cat("Avg Trace Length: ",(trace_total_time/trace_count)/60,"(min)\n")
+#  total_c2s_bytes = sum(subset(timestamps,Direction == "c2s")[["Bytes"]])
+#  total_c2s_count = length(subset(timestamps,Direction == "c2s")[,1]) + 1
+#  total_s2c_bytes = sum(subset(timestamps,Direction == "s2c")[["Bytes"]])
+#  total_s2c_count = length(subset(timestamps,Direction == "s2c")[,1])
+#  message_delay = trace_total_time/(total_c2s_count + total_s2c_count)
+#  message_rate = (total_c2s_count + total_s2c_count)/trace_total_time
+#  cat("Avg. Intermessage Delay: ",message_delay,"\n")
+#  cat("Message Rate: ",message_rate,"\n")
+#  cat("8 bit BW increase: ",(total_c2s_count*8)/(total_c2s_bytes*8),"\n")
+#  cat("9 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
+#  cat("11 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
+#  cat("16 bit BW increase: ",(total_c2s_count*16)/(total_c2s_bytes*8),"\n")
+#}
+#
+#adjusted_time = function(df, i) {
+#  return(df$TimeReal[i] - df$EdDistHintTime[i] - df$EdDistStatTime[i])
+#}
 
-    # Extract just socket events, ktest objects with names: c2s and s2c
-    tmp_timestamps = subset(tmp_timestamps, Direction == "c2s" | Direction == "s2c")
-
-    if (class(tmp_timestamps) == "try-error") {
-      cat("try-error reading timestamp file\n")
-    } else {
-      trace_total_time = trace_total_time + (tmp_timestamps$Timestamp[length(tmp_timestamps[,1])] - tmp_timestamps$Timestamp[1])
-      trace_count = trace_count + 1
-      
-      cat("Reading ",file,", trace: ",trace, ", time(s): ",trace_total_time,"\n")
-      #debug_printf("Reading %s, trace: %d, time(s): %f",file,trace,trace_total_time)
-      
-      # Remove first row
-      #tmp_timestamps = tmp_timestamps[c(-1),]
-      
-      len = length(tmp_timestamps[,1]) # length of rows, not cols
-      debug_printf("%s : length: %d", file, len)
-      tmp_timestamps$trace=rep(trace, len)
-      tmp_timestamps$Message = seq(0,len-1)
-      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp - rep(tmp_timestamps$Timestamp[1],len)
-      tmp_timestamps$Timestamp = tmp_timestamps$Timestamp * 1000000
-
-      # Add timestamps to global var
-      timestamps <<- rbind(timestamps, tmp_timestamps)
-    }
-  }
-  cat("Avg Trace Length: ",(trace_total_time/trace_count)/60,"(min)\n")
-  total_c2s_bytes = sum(subset(timestamps,Direction == "c2s")[["Bytes"]])
-  total_c2s_count = length(subset(timestamps,Direction == "c2s")[,1]) + 1
-  total_s2c_bytes = sum(subset(timestamps,Direction == "s2c")[["Bytes"]])
-  total_s2c_count = length(subset(timestamps,Direction == "s2c")[,1])
-  message_delay = trace_total_time/(total_c2s_count + total_s2c_count)
-  message_rate = (total_c2s_count + total_s2c_count)/trace_total_time
-  cat("Avg. Intermessage Delay: ",message_delay,"\n")
-  cat("Message Rate: ",message_rate,"\n")
-  cat("8 bit BW increase: ",(total_c2s_count*8)/(total_c2s_bytes*8),"\n")
-  cat("9 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
-  cat("11 bit BW increase: ",(total_c2s_count*9)/(total_c2s_bytes*8),"\n")
-  cat("16 bit BW increase: ",(total_c2s_count*16)/(total_c2s_bytes*8),"\n")
-}
-
-adjusted_time = function(df, i) {
-  return(df$TimeReal[i] - df$EdDistHintTime[i] - df$EdDistStatTime[i])
-}
-
-compute_delays = function(m, trace_id) {
-  df = as.data.frame(m)
-  colnames(df) = data_frame_col_names
-  
-  ts = subset(timestamps, trace == trace_id)
-  
-  df_len = length(df[,1])
-  ts_len = length(ts[,1])
-  
-  len = min(df_len, ts_len)
-  
-  #cat("Computing Delays for ", trace_id," dflen=",df_len," tslen=",ts_len," len=", len,"\n")
-  
-  v = vector("numeric",len)
-  v[1] = 0
-  
-  for (j in seq(2,len)) {
-    #if (ts$Bytes[j] != df$SocketEventSize[j]) {
-    #  cat("Bytes mismatch ",ts$Bytes[j]," ",df$SocketEventSize[j],"\n")
-    #}
-    
-    if (ts$Timestamp[j] < v[j-1]) {
-      v[j] = v[j-1] + adjusted_time(df,j)
-    } else {
-      v[j] = ts$Timestamp[j] + adjusted_time(df,j)
-    }
-    
-    delta = v[j] - v[j-1]
-    if (delta > 200*1000000) {
-     cat("Large delta ",delta," at Message ", j,"\n")
-    }
-  }
-  v = v - ts$Timestamp[seq(len)]
-
-  rm(df)
-  rm(ts)
-
-  return(v)
-}
+#compute_delays = function(m, trace_id) {
+#  df = as.data.frame(m)
+#  colnames(df) = data_frame_col_names
+#  
+#  ts = subset(timestamps, trace == trace_id)
+#  
+#  df_len = length(df[,1])
+#  ts_len = length(ts[,1])
+#  
+#  len = min(df_len, ts_len)
+#  
+#  #cat("Computing Delays for ", trace_id," dflen=",df_len," tslen=",ts_len," len=", len,"\n")
+#  
+#  v = vector("numeric",len)
+#  v[1] = 0
+#  
+#  for (j in seq(2,len)) {
+#    #if (ts$Bytes[j] != df$SocketEventSize[j]) {
+#    #  cat("Bytes mismatch ",ts$Bytes[j]," ",df$SocketEventSize[j],"\n")
+#    #}
+#    
+#    if (ts$Timestamp[j] < v[j-1]) {
+#      v[j] = v[j-1] + adjusted_time(df,j)
+#    } else {
+#      v[j] = ts$Timestamp[j] + adjusted_time(df,j)
+#    }
+#    
+#    delta = v[j] - v[j-1]
+#    if (delta > 200*1000000) {
+#     cat("Large delta ",delta," at Message ", j,"\n")
+#    }
+#  }
+#  v = v - ts$Timestamp[seq(len)]
+#
+#  rm(df)
+#  rm(ts)
+#
+#  return(v)
+#}
 
 ###############################################################################
 ### Read data files
@@ -221,106 +227,106 @@ get_mode_str = function(mode_id) {
   return("error")
 }
 
-read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
+#read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
+#
+#  data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
+#  
+#  for (file in list.files(path=data_path)) {
+#    file_name = paste(data_path,file,sep="/")
+#    debug_printf("Reading: %s", file_name)
+#    
+#    # Read number of lines in file
+#    nrows = as.integer(unlist(unlist(strsplit(system(paste("wc -l ", file_name, sep=""), intern=T)," "))[1]))
+#    ncols = length(colnames)
+#    
+#    # Read file
+#    tmp_data = try(matrix(scan(file_name,what=integer(),nmax=nrows*ncols,quiet=TRUE),nrow=nrows,ncol=ncols,byrow=TRUE), silent=FALSE)
+#    
+#    if (class(tmp_data) != "try-error") {
+#      
+#      # length of rows, not cols
+#      len = length(tmp_data[,1]) 
+#      
+#      # extract file id
+#      if (client_type == "openssl") {
+#        id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
+#      } else {
+#        id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
+#      }
+#      debug_printf("id = %d", id)
+#      
+#      cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
+#      
+#      # Add Name id 
+#      tmp_data = cbind(tmp_data, rep(id, len))
+#      
+#      # Add Mode id
+#      tmp_data = cbind(tmp_data, rep(mode_id, len))
+#              
+#      # Add Direction
+#      if (!is.null(timestamps)) {
+#        ts = subset(timestamps, trace == id)
+#        directions = as.integer(factor(ts$Direction))
+#
+#        if (length(directions) < len) {
+#          directions = c(directions, rep(0, len - length(directions)))
+#        }
+#        tmp_data = cbind(tmp_data, directions[seq(len)])
+#      } else {
+#        cat("not using direction\n")
+#        tmp_data = cbind(tmp_data, rep(0, len))
+#      }
+#
+#      # Set bin number
+#      g = c()
+#      for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
+#      tmp_data = cbind(tmp_data, g)
+#      
+#      # Add placeholder for Delay
+#      tmp_data = cbind(tmp_data, rep(0, len))
+#
+#      # Compute delay values
+#      if (!is.null(timestamps) && length(subset(timestamps, trace == id)[,1]) > 0) {
+#        delays = compute_delays(tmp_data, id)
+#        delays_len = length(delays)
+#        tmp_data = tmp_data[seq(delays_len), ]
+#        cols = length(tmp_data[1,])
+#        tmp_data[,cols] = delays
+#        
+#        tmp_data = cbind(tmp_data, delays)
+#      } else {
+#        cat("not computing delays\n")
+#        tmp_data = cbind(tmp_data, rep(0, len))
+#      }
+#
+#      if (min_size > length(tmp_data[,1])) {
+#        min_size <<- length(tmp_data[,1])
+#      }
+#           
+#      all_data[[length(all_data) + 1]] <<- tmp_data
+#      
+#    } else {
+#      cat("Error: ", file_name,'\n')
+#    }
+#  }
+#}
 
-  data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
-  
-  for (file in list.files(path=data_path)) {
-    file_name = paste(data_path,file,sep="/")
-    debug_printf("Reading: %s", file_name)
-    
-    # Read number of lines in file
-    nrows = as.integer(unlist(unlist(strsplit(system(paste("wc -l ", file_name, sep=""), intern=T)," "))[1]))
-    ncols = length(colnames)
-    
-    # Read file
-    tmp_data = try(matrix(scan(file_name,what=integer(),nmax=nrows*ncols,quiet=TRUE),nrow=nrows,ncol=ncols,byrow=TRUE), silent=FALSE)
-    
-    if (class(tmp_data) != "try-error") {
-      
-      # length of rows, not cols
-      len = length(tmp_data[,1]) 
-      
-      # extract file id
-      if (client_type == "openssl") {
-        id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
-      } else {
-        id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
-      }
-      debug_printf("id = %d", id)
-      
-      cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
-      
-      # Add Name id 
-      tmp_data = cbind(tmp_data, rep(id, len))
-      
-      # Add Mode id
-      tmp_data = cbind(tmp_data, rep(mode_id, len))
-              
-      # Add Direction
-      if (!is.null(timestamps)) {
-        ts = subset(timestamps, trace == id)
-        directions = as.integer(factor(ts$Direction))
-
-        if (length(directions) < len) {
-          directions = c(directions, rep(0, len - length(directions)))
-        }
-        tmp_data = cbind(tmp_data, directions[seq(len)])
-      } else {
-        cat("not using direction\n")
-        tmp_data = cbind(tmp_data, rep(0, len))
-      }
-
-      # Set bin number
-      g = c()
-      for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
-      tmp_data = cbind(tmp_data, g)
-      
-      # Add placeholder for Delay
-      tmp_data = cbind(tmp_data, rep(0, len))
-
-      # Compute delay values
-      if (!is.null(timestamps) && length(subset(timestamps, trace == id)[,1]) > 0) {
-        delays = compute_delays(tmp_data, id)
-        delays_len = length(delays)
-        tmp_data = tmp_data[seq(delays_len), ]
-        cols = length(tmp_data[1,])
-        tmp_data[,cols] = delays
-        
-        tmp_data = cbind(tmp_data, delays)
-      } else {
-        cat("not computing delays\n")
-        tmp_data = cbind(tmp_data, rep(0, len))
-      }
-
-      if (min_size > length(tmp_data[,1])) {
-        min_size <<- length(tmp_data[,1])
-      }
-           
-      all_data[[length(all_data) + 1]] <<- tmp_data
-      
-    } else {
-      cat("Error: ", file_name,'\n')
-    }
-  }
-}
-
-read_all_data = function() {
-  
-  for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
-    
-    data_path = paste(data_dir, data_mode_dir, sep="/")
-    
-    data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
-    
-    if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
-      for (data_date_dir in data_date_dirs[seq(1)]) {
-        mode_id = get_mode_id(data_mode_dir)
-        read_data_subdir(data_mode_dir, data_date_dir, mode_id)
-      }
-    }
-  }
-}
+#read_all_data = function() {
+#  
+#  for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
+#    
+#    data_path = paste(data_dir, data_mode_dir, sep="/")
+#    
+#    data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
+#    
+#    if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
+#      for (data_date_dir in data_date_dirs[seq(1)]) {
+#        mode_id = get_mode_id(data_mode_dir)
+#        read_data_subdir(data_mode_dir, data_date_dir, mode_id)
+#      }
+#    }
+#  }
+#}
 
 read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
@@ -333,6 +339,9 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
     # Remove last 2 round of data (finish cost)
     tmp_data = subset(tmp_data, RoundNumber < (max(tmp_data$RoundNumber)-2))
+
+    # Remove first round of data (startup cost)
+    tmp_data = subset(tmp_data, RoundNumber > 1)
 
     # length of rows, not cols
     len = length(tmp_data[,1])
@@ -364,6 +373,7 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
     if (min_size > length(tmp_data[,1])) {
       min_size <<- length(tmp_data[,1])
+      debug_printf("New min_size=%d", min_size)
     }
 
     # change absolute timestamps to relative
@@ -383,19 +393,36 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       }
     }
 
-    # compute verifier delay
-    v = vector("numeric",len)
-    v[1] = 0
+    ## compute verifier delay
+    #v = vector("numeric",len)
+    #v[1] = 0
+    #for (j in seq(2, len)) {
+    #  v_delay = (v[j-1] + tmp_data$RoundRealTime[j]) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
+    #  #debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
+    #  if (v_delay < 0) {
+    #    #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
+    #    v_delay = 0;
+    #  }
+    #  v[j] = v_delay;
+    #}
+    #tmp_data$VerifierDelayTime = v
+
+    t_arr = vector("numeric",len)
+    t_comp = vector("numeric",len)
+    t_delay = vector("numeric",len)
+    t_wait = vector("numeric",len)
+    t_arr[1] = 0
+    t_wait[1] = 0
+    t_comp[1] = tmp_data$RoundRealTime[1]
+    t_delay[1] = t_comp[1] - t_arr[1]
     for (j in seq(2, len)) {
-      v_delay = (v[j-1] + tmp_data$RoundRealTime[j]) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
-      #debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
-      if (v_delay < 0) {
-        #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
-        v_delay = 0;
-      }
-      v[j] = v_delay;
+      t_arr[j] = (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[1])
+      t_comp[j] = max(t_arr[j], t_comp[j-1]) + tmp_data$RoundRealTime[j]
+      t_delay[j] = t_comp[j] - t_arr[j]
+      t_wait[j] = max(t_arr[j] - t_comp[j-1], 0)
     }
-    tmp_data$VerifierDelayTime = v
+    tmp_data$VerifierDelayTime = t_delay
+    tmp_data$VerifierWaitTime = t_wait
 
     # compute verifier delay (minus solvertime)
     v = vector("numeric",len)
@@ -456,6 +483,11 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
     # add data to global data list
     #all_data[[length(all_data) + 1]] <<- tmp_data
+    debug_printf("id = %d: ncols_data=%d ncols=%d nrows_data=%d nrows=%d", id, ncol(data), ncol(tmp_data),nrow(data), nrow(tmp_data))
+    #cat(colnames(tmp_data), "\n")
+    #cat(colnames(data), "\n")
+
+    tmp_data$BackTrackCount <- NULL
     data <<- rbind(data, tmp_data)
   }
 }
@@ -909,17 +941,19 @@ do_box_alt_plot = function(params) {
   cat("plotting (boxplot of): ",p_mode," vs ",y_axis,"\n")
 
   mdata = subset(data, mode == p_mode)
+  #mdata = mdata[match.fun('>')(mdata[[y_axis]], 0.5), ]
 
   # vars
   #trace =  paste(client_type,"boxplot_bar_alt",y_axis,p_mode,sep="_")
-  trace =  paste(y_axis,p_mode,client_type,"boxplot_bar_alt",sep="_")
+  #trace =  paste(y_axis,p_mode,client_type,"boxplot_bar_alt",sep="_")
+  trace =  paste(client_type,p_mode,y_axis,"boxplot_bar_alt",sep="_")
   title = paste("Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   title = paste(p_mode,": Boxplot of",y_axis,"over",min_size,"Messages",sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
   # construct plot
   p <- ggplot(mdata, aes_string(x="factor(Bin)", y=y_axis))
-  p = p + geom_boxplot()
+  p = p + geom_boxplot(outlier.size=1)
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
 
   # yscale based on all data
@@ -967,19 +1001,27 @@ do_box_alt_log_plot = function(params) {
   p = p + geom_boxplot()
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
   
+  # yscale based on all data
   max_y = as.integer(ceiling(max(data[[y_axis]])))
   min_y = min(data[[y_axis]])
+
+  # yscale based on all subset data
+  max_y = as.integer(ceiling(max(mdata[[y_axis]])))
+  min_y = min(mdata[[y_axis]])
+
   limits_y = c(min_y, max_y)
   
   #cat(y_axis," min: ", min(data[[y_axis]])," ", min_y, "\n")
   #cat(y_axis," max: ", max(data[[y_axis]])," ", max_y, "\n")
 
   # causes error
+  p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                        labels = trans_format("log10", math_format(10^.x)),
+                        limits = limits_y)
   #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-  #                      labels = trans_format("log10", math_format(10^.x)),
-  #                      limits = limits_y)
+  #                      labels = trans_format("log10", math_format(10^.x)))
   
-  p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x))
+  #p = p + scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x))
 
   p = p + theme_bw() + ylab(paste(y_axis,"(s)")) +  xlab("Message Bin")
   p = p + theme(axis.text.x=element_text(angle=45))

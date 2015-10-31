@@ -79,8 +79,6 @@ graphInstructionLabels = graphInstructionStats
 #data$EditDistTotalTime = data$EditDistTime + data$EditDistBuildTime + data$ExecTreeTime
 ############### regen and uncomment XXX
 
-
-
 #data$Time = data$TimeReal - data$EdDistHintTime - data$EdDistStatTime
 #data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
 #data$EdDistBuildTime = data$EdDistBuildTime - data$EdDistHintTime
@@ -95,11 +93,9 @@ graphInstructionLabels = graphInstructionStats
 #graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
 #graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
 
-## Trim data by start and min Messages
-##data = subset(data, Message > start_Message & Message <= as.integer(floor(min_size/binwidth))*binwidth)
-
+### NB now remove first round in read_csv_data
 ## Remove first round of data (startup cost)
-data = subset(data, RoundNumber > 1)
+#data = subset(data, RoundNumber > 1)
 
 ## Convert socket event size data from bytes to kilobytes
 data$SocketEventSizeBytes = data$SocketEventSize
