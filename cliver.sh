@@ -36,10 +36,12 @@ USE_GDB=0
 USE_HEAP_PROFILER=0
 USE_HEAP_CHECK=0
 USE_HEAP_CHECK_LOCAL=0
+USE_SINGLE_THREADED_KLEE=0
 ROOT_DIR="`pwd`"
 BC_MODE="tetrinet"
 KTEST_DIR=""
 XARGS_MAX_PROCS=0 # for running in parallel mode with xargs
+SINGLE_KTEST_INPUT=""
 
 HMM_PREFIX="hmm_"
 HMM_TRAINING_MODE="ncross"
@@ -219,7 +221,12 @@ bc_parameters()
 
 initialize_cliver()
 {
-  CLIVER_BIN="$KLEE_ROOT/bin/klee -cliver "
+  if [ $USE_SINGLE_THREADED_KLEE -eq 1 ]; then
+    CLIVER_BIN="$KLEE_ROOT/bin/klee-st -cliver "
+  else
+    CLIVER_BIN="$KLEE_ROOT/bin/klee -cliver "
+  fi
+
   HMM_TRAIN_BIN="$KLEE_ROOT/bin/hmmtrain "
 
   if test ${SPECIAL_OUTPUT_DIR+defined}; then
@@ -368,8 +375,6 @@ do_training()
   for i in $KTEST_DIR/*ktest; do
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
-    lecho "${ktest_basename}"
-
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-copy-input-files-to-output-dir=1 "
@@ -383,7 +388,10 @@ do_training()
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
+    ## execute cliver
+    execute_time=$(elapsed_time)
     run_cliver $cliver_params
+    lecho "${ktest_basename} $(elapsed_time $execute_time)"
   done
 }
 
@@ -429,7 +437,11 @@ do_verification()
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
 
-    lecho "${ktest_basename}"
+    if [ -n "$SINGLE_KTEST_INPUT" ]; then
+      if [ $SINGLE_KTEST_INPUT != ${ktest_basename} ]; then
+        continue;
+      fi
+    fi
 
     cliver_params+="-socket-log $i "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -437,8 +449,10 @@ do_verification()
 
     cliver_params+="$BC_FILE $(bc_parameters $i) "
 
+    ## execute cliver
+    execute_time=$(elapsed_time)
     run_cliver $cliver_params
-
+    lecho "${ktest_basename} $(elapsed_time $execute_time)"
   done
 }
 
@@ -481,7 +495,11 @@ do_ncross_verification()
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
 
-    lecho "${ktest_basename}"
+    if [ -n "$SINGLE_KTEST_INPUT" ]; then
+      if [ $SINGLE_KTEST_INPUT != ${ktest_basename} ]; then
+        continue;
+      fi
+    fi
 
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
@@ -505,9 +523,9 @@ do_ncross_verification()
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
         fi 
         # enable to support self-training checks during verificiation
-        #if [ $i == $k ]; then
-        #  cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
-        #fi 
+        if [ $i == $k ]; then
+          cliver_params+=" -self-training-path-dir=${training_dirs[$k]}/ "
+        fi
       elif [[ $NCROSS_MODE == "self" ]] ; then
         if [ $i == $k ]; then
           cliver_params+=" -training-path-dir=${training_dirs[$k]}/ "
@@ -526,8 +544,11 @@ do_ncross_verification()
     done
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
-    run_cliver $cliver_params
 
+    ## execute cliver
+    execute_time=$(elapsed_time)
+    run_cliver $cliver_params
+    lecho "${ktest_basename} $(elapsed_time $execute_time)"
   done
 }
 
@@ -568,8 +589,6 @@ do_training_verification()
     local ktest_file="${ktest_files[$i]}"
     local ktest_basename=$(basename ${ktest_files[$i]})
     
-    lecho "${ktest_basename}"
-
     local cliver_params="$(cliver_parameters) "
 
     cliver_params+="-socket-log $ktest_file "
@@ -582,7 +601,11 @@ do_training_verification()
     done
 
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
+
+    ## execute cliver
+    execute_time=$(elapsed_time)
     run_cliver $cliver_params
+    lecho "${ktest_basename} $(elapsed_time $execute_time)"
   done
 }
 
@@ -719,8 +742,6 @@ do_hmm_verification()
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
 
-    lecho "${ktest_basename} ${hmm_file}"
-
     cliver_params+="-socket-log $ktest_file "
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
@@ -739,7 +760,9 @@ do_hmm_verification()
     cliver_params+="$BC_FILE $(bc_parameters $ktest_basename.ktest) "
 
     ## execute cliver
+    execute_time=$(elapsed_time)
     run_cliver $cliver_params
+    lecho "${ktest_basename} ${hmm_file} $(elapsed_time $execute_time)"
 
   done
 }
@@ -801,9 +824,8 @@ run_parallel_jobs()
 
 main() 
 {
-  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:nshvf" opt; do
+  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:y:nshvf" opt; do
     case $opt in
-
       b)
         DATA_TAG="$OPTARG"
         ;;
@@ -832,6 +854,11 @@ main()
 
       x)
         EXTRA_CLIVER_OPTIONS+="$OPTARG"
+        # check for --use-threads=1
+        if [[ ${EXTRA_CLIVER_OPTIONS} =~ use-threads=1[^[:digit:]]+ ]]; then
+          lecho "using single threaded KLEE (klee-st)"
+          USE_SINGLE_THREADED_KLEE=1
+        fi
         ;;
 
       m)
@@ -909,6 +936,11 @@ main()
 
       n)
         DRY_RUN=1
+        ;;
+
+      y)
+        # only run experiments on a single ktest file (subset of input)
+        SINGLE_KTEST_INPUT="$OPTARG"
         ;;
 
       v)
