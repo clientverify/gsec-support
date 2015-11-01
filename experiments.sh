@@ -319,7 +319,7 @@ main()
   generate_plot_html
 
   # create simple pdf for viewing plots
-  generate_plot_pdf
+  #generate_plot_pdf
 }
 
 # set up exit handler
