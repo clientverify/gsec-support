@@ -709,7 +709,9 @@ install_stp_git()
   cd $ROOT_DIR/build/$STP
   leval cmake \
       -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT \
+      -DBUILD_SHARED_LIBS:BOOL=OFF \
       -DENABLE_PYTHON_INTERFACE:BOOL=OFF \
+      -DTUNE_NATIVE:BOOL=ON \
       -Dcryptominisat4_DIR:PATH="${CRYPTOMINISAT_ROOT}/lib/cmake/cryptominisat4" \
       -DMINISAT_INCLUDE_DIRS:PATH="${MINISAT_ROOT}/include" \
       -DMINISAT_LIBDIR:PATH="${MINISAT_ROOT}/lib" \
