@@ -671,6 +671,30 @@ install_minisat()
   necho "[Done]\n"
 }
 
+install_cryptominisat()
+{
+  necho "$CRYPTOMINISAT\t\t"
+  check_dirs $CRYPTOMINISAT || { return 0; }
+
+  necho "[Cloning] "
+  cd $ROOT_DIR"/src"
+  leval git clone --branch $CRYPTOMINISAT_BRANCH $CRYPTOMINISAT_GIT
+
+  necho "[Compiling] "
+  mkdir -p $ROOT_DIR/build/$CRYPTOMINISAT
+  cd $ROOT_DIR/build/$CRYPTOMINISAT
+  leval cmake \
+    -DCMAKE_INSTALL_PREFIX:PATH=$CRYPTOMINISAT_ROOT \
+    -DNOPYTHONPLUGIN:BOOL="1" \
+    $ROOT_DIR/src/$CRYPTOMINISAT
+  leval make -j $MAKE_THREADS
+
+  necho "[Installing] "
+  leval make install
+
+  necho "[Done]\n"
+}
+
 install_stp_git()
 {
   necho "$STP\t\t\t"
@@ -685,8 +709,11 @@ install_stp_git()
   cd $ROOT_DIR/build/$STP
   leval cmake \
       -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT \
-      -DBUILD_SHARED_LIBS:BOOL=OFF \
       -DENABLE_PYTHON_INTERFACE:BOOL=OFF \
+      -Dcryptominisat4_DIR:PATH="${CRYPTOMINISAT_ROOT}/lib/cmake/cryptominisat4" \
+      -DMINISAT_INCLUDE_DIRS:PATH="${MINISAT_ROOT}/include" \
+      -DMINISAT_LIBDIR:PATH="${MINISAT_ROOT}/lib" \
+      -DSTP_INSTALL_CMAKE_DIR:PATH="lib/cmake/STP" \
       $ROOT_DIR/src/$STP
   leval make VERBOSE=1 -j $MAKE_THREADS
 
@@ -1548,6 +1575,7 @@ main()
     install_uclibc_git
     install_ncurses
     install_minisat
+    install_cryptominisat
     #install_stp
     install_stp_git
     #install_ghmm

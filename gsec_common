@@ -16,6 +16,7 @@ LIBUNWIND="libunwind-1.1"
 SPARSEHASH="sparsehash-2.0.2"
 NCURSES="ncurses-5.7"
 MINISAT="minisat"
+CRYPTOMINISAT="cryptominisat"
 STP="stp"
 TETRINET="tetrinet"
 WAFFLES="waffles-2011-12-6"
@@ -38,6 +39,7 @@ OPENSSL_BRANCH="heartbleed"
 OPENSSH_BRANCH="cliver"
 UCLIBC_BRANCH="cloud9-support"
 MINISAT_BRANCH="cliver-20150925" # actually a tag, not a branch
+CRYPTOMINISAT_BRANCH="4.5.3_for_klee"
 STP_BRANCH="cliver-20150925"     # actually a tag, not a branch
 
 # Source repositories
@@ -46,7 +48,10 @@ GIT_DIR="cliver"
 GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="https://github.com/robbycochran/whole-program-llvm.git"
-MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # Upstream: https://github.com/niklasso/minisat.git
+# Upstream: https://github.com/niklasso/minisat.git
+MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git"
+# Upstream: https://github.com/msoos/cryptominisat.git
+CRYPTOMINISAT_GIT="$GIT_HOST:$GIT_DIR/$CRYPTOMINISAT.git"
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
 STP_GIT="$GIT_HOST:$GIT_DIR/$STP.git"    # Upstream: https://github.com/stp/stp.git
@@ -105,6 +110,7 @@ initialize_root_directories()
 
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
   MINISAT_ROOT="$ROOT_DIR/local"
+  CRYPTOMINISAT_ROOT="$ROOT_DIR/local"
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
   LLVM_ROOT="$ROOT_DIR/local"
