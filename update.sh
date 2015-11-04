@@ -447,14 +447,14 @@ install_folly()
   necho "[Configuring] "
   cd $ROOT_DIR/src/$FOLLY/folly
   leval autoreconf -ivf
-  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' ./configure --prefix=$FOLLY_ROOT
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' ./configure --prefix=$FOLLY_ROOT
 
   necho "[Compiling] "
-  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make -j $MAKE_THREADS
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make -j $MAKE_THREADS
 
   necho "[Installing] "
   mkdir -p $FOLLY_ROOT
-  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make install
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make install
 
   necho "[Done]\n"
 }
@@ -1507,13 +1507,13 @@ main()
     install_google_perftools
     # Boost is still required, but we can use the system version
     #install_boost
-    install_folly
     install_uclibc_git
     install_ncurses
     install_stp
     #install_stp_git
     #install_ghmm
     manage_openssl install
+    install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
