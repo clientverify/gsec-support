@@ -30,7 +30,7 @@ KLEE_DEBUG_OPTS="--final-distance=0 --debug-socket=0 --debug-execution-tree=0 --
 KLEE_OPTS=" --use-threads=1 "
 TRAIN_OPTS=""
 #NAIVE_OPTS=" --print-stats=0 "
-NAIVE_OPTS=" --max-pass-count=1 "
+NAIVE_OPTS=" --max-pass-count=2 "
 #NAIVE_OPTS=" --max-round=3 "
 VERIFY_OPTS="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
 ED_OPTS="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
