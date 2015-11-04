@@ -225,6 +225,7 @@ cliver_parameters()
   cliver_params+="-use-call-paths=0 "
   cliver_params+="-use-cex-cache=0 "
   cliver_params+="-use-canonicalization=1 "
+  cliver_params+="-use-legacy-independent-solver=1 "
   cliver_params+="-output-istats=0 "
 
   cliver_params+="-use-tee-buf=$USE_TEE_BUF "
