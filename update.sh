@@ -1177,6 +1177,52 @@ config_and_build_openssl()
   export PATH="${PATH_ORIGINAL}"
 }
 
+config_and_build_openssl_shared()
+{
+  local tag="-shared"
+
+  local openssl_config_options=""
+  openssl_config_options+="--prefix=${OPENSSL_ROOT} "
+  openssl_config_options+="no-asm no-threads shared -DPURIFY "
+  openssl_config_options+="-DCLIVER "
+  openssl_config_options+="-DOPENSSL_NO_LOCKING "
+  openssl_config_options+="-DOPENSSL_NO_ERR "
+
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    # Warning: this adds not only debug symbols to OpenSSL, but also extra
+    # debug code like a custom malloc(). Cliver will be much slower.
+    openssl_config_options+="-d " # compile with debugging symbols
+  fi
+
+  local make_options=""
+
+  PATH_ORIGINAL="${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${PATH}"
+
+  # Create 'makedepend' replacement
+  MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
+  echo "#!/bin/bash" > "${MAKEDEPEND}"
+  echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
+  chmod +x "${MAKEDEPEND}"
+
+  necho "[Configuring${tag}] "
+  leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
+
+  necho "[Compiling${tag}] "
+  leval make $make_options depend
+  leval make $make_options
+
+  necho "[Installing${tag}] "
+  mkdir -p $OPENSSL_ROOT
+  leval make install_sw
+
+  # Clean afterwards so that future builds don't get confused
+  necho "[Cleaning] "
+  leval make clean
+
+  export PATH="${PATH_ORIGINAL}"
+}
+
 build_optimized_openssl_bitcode()
 {
   local tag=$1
@@ -1201,6 +1247,9 @@ manage_openssl()
       cd $ROOT_DIR"/src/$OPENSSL"
 
       leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
+
+      # Build native shared library (.so) for linking with other libraries
+      config_and_build_openssl_shared
 
       # Build two versions of openssl, to support cliver and lli
       config_and_build_openssl "-DKLEE " "-klee"
@@ -1228,6 +1277,9 @@ manage_openssl()
           necho "[Pulling] "
           leval git pull --all
         fi
+
+        # Build native shared library (.so) for linking with other libraries
+        config_and_build_openssl_shared
 
         # Build two versions of openssl, to support cliver and lli
         config_and_build_openssl "-DKLEE " "-klee"
