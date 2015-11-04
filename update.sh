@@ -447,14 +447,14 @@ install_folly()
   necho "[Configuring] "
   cd $ROOT_DIR/src/$FOLLY/folly
   leval autoreconf -ivf
-  leval ./configure --with-boost=$BOOST_ROOT --prefix=$FOLLY_ROOT
+  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' ./configure --prefix=$FOLLY_ROOT
 
   necho "[Compiling] "
-  leval make -j $MAKE_THREADS
+  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make -j $MAKE_THREADS
 
   necho "[Installing] "
   mkdir -p $FOLLY_ROOT
-  leval make install
+  leval env LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make install
 
   necho "[Done]\n"
 }
@@ -1204,15 +1204,10 @@ config_and_build_openssl_shared()
   local openssl_config_options=""
   openssl_config_options+="--prefix=${OPENSSL_ROOT} "
   openssl_config_options+="no-asm no-threads shared -DPURIFY "
-  openssl_config_options+="-DCLIVER "
+  #openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
   openssl_config_options+="-DOPENSSL_NO_ERR "
-
-  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
-    # Warning: this adds not only debug symbols to OpenSSL, but also extra
-    # debug code like a custom malloc(). Cliver will be much slower.
-    openssl_config_options+="-d " # compile with debugging symbols
-  fi
+  openssl_config_options+="-L${OPENSSL_ROOT}/lib "
 
   local make_options=""
 
@@ -1510,7 +1505,8 @@ main()
 
     install_wllvm
     install_google_perftools
-    install_boost
+    # Boost is still required, but we can use the system version
+    #install_boost
     install_folly
     install_uclibc_git
     install_ncurses
