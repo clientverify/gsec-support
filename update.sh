@@ -1220,9 +1220,14 @@ config_and_build_openssl_shared()
   export PATH="${ROOT_DIR}/local/bin:${PATH}"
 
   # Create 'makedepend' replacement
+  if test ${ALTCC+defined}; then
+    CC=${ALTCC}
+  else
+    CC=gcc
+  fi
   MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
   echo "#!/bin/bash" > "${MAKEDEPEND}"
-  echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
+  echo 'exec '"${CC}"' -M "$@"' >> "${MAKEDEPEND}"
   chmod +x "${MAKEDEPEND}"
 
   necho "[Configuring${tag}] "
