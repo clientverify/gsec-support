@@ -31,8 +31,10 @@ KLEE_OPTS=" --use-threads=1 "
 TRAIN_OPTS=""
 #NAIVE_OPTS=" --print-stats=0 "
 #NAIVE_OPTS=" --max-pass-count=2 "
-NAIVE_OPTS=" "
+#NAIVE_OPTS=" -link-first-pass=0 "
+#NAIVE_OPTS+=" -print-execution-events=0 -debug-network-manager=1 -debug-socket=1 -debug-cv-assignment=1 -debug-searcher=1 -debug-executor=1 -debug-print-instructions=0 "
 #NAIVE_OPTS=" --max-round=3 "
+NAIVE_OPTS=" "
 VERIFY_OPTS="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
 ED_OPTS="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
 HMM_OPTS=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
@@ -45,7 +47,7 @@ NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 EXPERIMENT_LIST_PARAMETERS=(
 #" ${KLEE_OPTS} ${NAIVE_OPTS} "
 #" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
-" ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} "
+" ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} " 
 #" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
 " --use-threads=2 ${NAIVE_OPTS} ${NATIVE_AES} "
 " --use-threads=4 ${NAIVE_OPTS} ${NATIVE_AES} "
@@ -55,10 +57,11 @@ EXPERIMENT_LIST_PARAMETERS=(
 #CLIVER_PARAMETERS="-i parallel "
 #CLIVER_PARAMETERS=" -v"
 CLIVER_PARAMETERS=" "
-#CLIVER_PARAMETERS=" -y gmail_spdy_stream01 -v "
+#CLIVER_PARAMETERS=" -y gmail_spdy_stream00 -v "
 
 # list of client types
 CLIENT_LIST=(
+openssl-klee
 openssl-klee
 openssl-klee
 openssl-klee
@@ -66,6 +69,7 @@ openssl-klee
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
+/playpen/buildbot/data/network/openssl/ktest-timefix
 /playpen/buildbot/data/network/openssl/ktest-timefix
 /playpen/buildbot/data/network/openssl/heartbeat
 /playpen/buildbot/data/network/openssl/heartbleed-only
@@ -75,17 +79,20 @@ CLIENT_LIST_KTEST=(
 CLIENT_LIST_PARAMETERS=(
 ""
 ""
+""
 " --legitimate-socket-log=false "
 )
 
 # list of extra bitcode paramters specific to each client type (params for actual client binary)
 CLIENT_LIST_BITCODE_PARAMETERS=(
-""
+" "
+" --fake-padding 16 "
 " -heartbeat "
 " -heartbeat "
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
+100
 100
 100
 100
