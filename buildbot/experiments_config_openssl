@@ -86,7 +86,7 @@ CLIENT_LIST_PARAMETERS=(
 # list of extra bitcode paramters specific to each client type (params for actual client binary)
 CLIENT_LIST_BITCODE_PARAMETERS=(
 " "
-" --fake-padding 16 "
+" --fake-padding 32 "
 " -heartbeat "
 " -heartbeat "
 )
