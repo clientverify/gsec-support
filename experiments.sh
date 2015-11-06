@@ -75,6 +75,17 @@ run_experiments()
     expOutput=${EXPERIMENT_LIST_NAMES[$i]}
     exp_params=${EXPERIMENT_LIST_PARAMETERS[$i]}
 
+    if [ -n "${EXPERIMENT_LIST_CLIVER_PARAMETERS[$i]}" ]; then
+      exp_cliver_params=${EXPERIMENT_LIST_CLIVER_PARAMETERS[$i]}
+    else
+      exp_cliver_params=" "
+    fi
+    if [ -n "${EXPERIMENT_LIST_BITCODE_PARAMETERS[$i]}" ]; then
+      exp_bitcode_params=${EXPERIMENT_LIST_BITCODE_PARAMETERS[$i]}
+    else
+      exp_bitcode_params=" "
+    fi
+
     for (( j=0; j<${num_clients}; ++j ));
     do
       client=${CLIENT_LIST[$j]}
@@ -84,13 +95,13 @@ run_experiments()
 
       bitcode_params=
       if [ -n "${CLIENT_LIST_BITCODE_PARAMETERS[$j]}" ]; then
-        bitcode_params="-l \"${CLIENT_LIST_BITCODE_PARAMETERS[$j]}\""
+        bitcode_params="-l \"${CLIENT_LIST_BITCODE_PARAMETERS[$j]} $exp_bitcode_params \""
       fi
 
       client_params=${CLIENT_LIST_PARAMETERS[$j]}
       extra_params=" -x \"${client_params} ${exp_params}\" "
       
-      cliver_command="${CLIVERSH} -s -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput ${CLIVER_PARAMETERS} ${bitcode_params} $extra_params "
+      cliver_command="${CLIVERSH} -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput $exp_cliver_params ${CLIVER_PARAMETERS} ${bitcode_params} $extra_params "
       lecho "EXEC: ${cliver_command}"
       eval ${cliver_command}
     done
