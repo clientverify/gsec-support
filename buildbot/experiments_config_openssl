@@ -7,8 +7,14 @@
 EXPERIMENT_LIST=(
 #naive
 #naive
-naive
 #naive
+naive
+naive
+naive
+naive
+naive
+naive
+naive
 naive
 naive
 naive
@@ -18,50 +24,94 @@ naive
 EXPERIMENT_LIST_NAMES=(
 #IDDFS
 #IDDFS-dropS2C
-IDDFS-nAES
 #IDDFS-nAES-dropS2C
+IDDFS-nAES-1-opt
+IDDFS-nAES-1
 IDDFS-nAES-2
 IDDFS-nAES-4
 IDDFS-nAES-16
+IDDFS-nAES-1-opt-FP
+IDDFS-nAES-1-FP
+IDDFS-nAES-2-FP
+IDDFS-nAES-4-FP
+IDDFS-nAES-16-FP
+
 )
 
-# EXPERIMENT_LIST parameters
-KLEE_DEBUG_OPTS="--final-distance=0 --debug-socket=0 --debug-execution-tree=0 --output-istats=0 --use-call-paths=0 "
-KLEE_OPTS=" --use-threads=1 "
-TRAIN_OPTS=""
-#NAIVE_OPTS=" --print-stats=0 "
-#NAIVE_OPTS=" --max-pass-count=2 "
-#NAIVE_OPTS=" -link-first-pass=0 "
-#NAIVE_OPTS+=" -print-execution-events=0 -debug-network-manager=1 -debug-socket=1 -debug-cv-assignment=1 -debug-searcher=1 -debug-executor=1 -debug-print-instructions=0 "
-#NAIVE_OPTS=" --max-round=3 "
-NAIVE_OPTS=" "
-VERIFY_OPTS="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
-ED_OPTS="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
-HMM_OPTS=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
+# parameters
+train_opts=""
+naive_opts=""
+naive_opts+=" --print-stats=1 "
+naive_opts+=" --link-first-pass=0 "
+#naive_opts+=" --max-pass-count=2 "
+#verify_opts="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
+#ed_opts="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
+#hmm_opts=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
+#debug_opts+=" -print-execution-events=0 -debug-network-manager=1 -debug-socket=1 -debug-cv-assignment=1 -debug-searcher=1 -debug-executor=1 -debug-print-instructions=0 "
 
 #OpenSSL specific options
-DROP_S2C="--only-verify-first-s2c=14 "
-NATIVE_AES=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
+drop_s2c="--only-verify-first-s2c=14 "
+native_aes=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
-# list of extra paramters specific to each experiment type
+# list of KLEE/Cliver parameters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-#" ${KLEE_OPTS} ${NAIVE_OPTS} "
-#" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} "
-" ${KLEE_OPTS} ${NAIVE_OPTS} ${NATIVE_AES} " 
-#" ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
-" --use-threads=2 ${NAIVE_OPTS} ${NATIVE_AES} "
-" --use-threads=4 ${NAIVE_OPTS} ${NATIVE_AES} "
-" --use-threads=16 ${NAIVE_OPTS} ${NATIVE_AES} "
+#" ${naive_opts} --use-threads=1 "
+#" ${naive_opts} ${drop_s2c} --use-threads=1 "
+#" ${naive_opts} ${drop_s2c} ${native_aes} --use-threads=1 "
+" ${naive_opts} ${native_aes} --use-threads=1  " 
+" ${naive_opts} ${native_aes} --use-threads=1  " 
+" ${naive_opts} ${native_aes} --use-threads=2  "
+" ${naive_opts} ${native_aes} --use-threads=4  "
+" ${naive_opts} ${native_aes} --use-threads=16 "
+" ${naive_opts} ${native_aes} --use-threads=1  " 
+" ${naive_opts} ${native_aes} --use-threads=1  " 
+" ${naive_opts} ${native_aes} --use-threads=2  "
+" ${naive_opts} ${native_aes} --use-threads=4  "
+" ${naive_opts} ${native_aes} --use-threads=16 "
+
 )
 
+# cliver.sh parameters used for all experiments
 #CLIVER_PARAMETERS="-i parallel "
 #CLIVER_PARAMETERS=" -v"
 CLIVER_PARAMETERS=" "
-#CLIVER_PARAMETERS=" -y gmail_spdy_stream00 -v "
+CLIVER_PARAMETERS=" -y gmail_spdy_stream00 "
+
+EXPERIMENT_LIST_CLIVER_PARAMETERS=(
+#""
+#""
+#""
+" -s "
+""
+""
+""
+""
+" -s "
+""
+""
+""
+" "
+)
+# List of bitcode parameters specific to each experiment type
+EXPERIMENT_LIST_BITCODE_PARAMETERS=(
+#""
+#""
+#""
+""
+""
+""
+""
+""
+" --fake-padding 16 "
+" --fake-padding 16 "
+" --fake-padding 16 "
+" --fake-padding 16 "
+" --fake-padding 16 "
+)
+
 
 # list of client types
 CLIENT_LIST=(
-openssl-klee
 openssl-klee
 openssl-klee
 openssl-klee
@@ -69,7 +119,6 @@ openssl-klee
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
-/playpen/buildbot/data/network/openssl/ktest-timefix
 /playpen/buildbot/data/network/openssl/ktest-timefix
 /playpen/buildbot/data/network/openssl/heartbeat
 /playpen/buildbot/data/network/openssl/heartbleed-only
@@ -79,20 +128,17 @@ CLIENT_LIST_KTEST=(
 CLIENT_LIST_PARAMETERS=(
 ""
 ""
-""
 " --legitimate-socket-log=false "
 )
 
 # list of extra bitcode paramters specific to each client type (params for actual client binary)
 CLIENT_LIST_BITCODE_PARAMETERS=(
 " "
-" --fake-padding 16 "
 " -heartbeat "
 " -heartbeat "
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
-100
 100
 100
 100
