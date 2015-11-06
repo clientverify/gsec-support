@@ -26,7 +26,7 @@ PROG=$(basename $0)
 . $HERE/gsec_common
 
 # Default command line options
-VERBOSE_OUTPUT=1
+VERBOSE_OUTPUT=0
 MAKE_THREADS=4
 USE_LSF=0
 USE_PARALLEL=0
@@ -854,11 +854,11 @@ main()
 
       x)
         EXTRA_CLIVER_OPTIONS+="$OPTARG"
-        # check for --use-threads=1
-        if [[ ${EXTRA_CLIVER_OPTIONS} =~ use-threads=1[^[:digit:]]+ ]]; then
-          lecho "using single threaded KLEE (klee-st)"
-          USE_SINGLE_THREADED_KLEE=1
-        fi
+        ## check for --use-threads=1
+        #if [[ ${EXTRA_CLIVER_OPTIONS} =~ use-threads=1[^[:digit:]]+ ]]; then
+        #  lecho "using single threaded KLEE (klee-st)"
+        #  USE_SINGLE_THREADED_KLEE=1
+        #fi
         ;;
 
       m)
@@ -948,7 +948,7 @@ main()
         ;;
 
       s)
-        VERBOSE_OUTPUT=0
+        USE_SINGLE_THREADED_KLEE=1
         ;;
 
       h)
@@ -983,6 +983,15 @@ main()
 
   if [ $USE_LSF -eq 1 ]; then
     initialize_lsf
+  fi
+
+  if [ ${USE_SINGLE_THREADED_KLEE} -eq 1 ]; then
+    if [[ ${EXTRA_CLIVER_OPTIONS} =~ use-threads=[^1] ]]; then
+      echo "invalid thread count for single threaded mode (-s)"; exit
+    fi
+    if [[ ${EXTRA_CLIVER_OPTIONS} =~ use-threads=1[[:digit:]]+ ]]; then
+      lecho "invalid thread count for single threaded mode (-s)"; exit
+    fi
   fi
 
   if [ $USE_PARALLEL -eq 1 ]; then
