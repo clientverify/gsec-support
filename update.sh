@@ -805,6 +805,7 @@ make_klee()
 
   make_options+="-j $MAKE_THREADS "
   make_options+="ENABLE_GOOGLE_PROFILER=1 "
+  make_options+="ENABLE_BOOST_GRAPHVIZ=1 "
 
   if test ${ALTCC+defined}; then
    make_options+="CC=$ALTCC CXX=$ALTCXX "
