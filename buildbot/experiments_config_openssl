@@ -3,7 +3,7 @@
 # note: list variables with the equivalent prefixes should have
 # equivalent number of elements
 
-fake_padding_length=16
+fake_padding_length=64
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
