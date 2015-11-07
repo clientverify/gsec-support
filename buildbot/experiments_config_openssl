@@ -3,11 +3,10 @@
 # note: list variables with the equivalent prefixes should have
 # equivalent number of elements
 
+fake_padding_length=16
+
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-#naive
-#naive
-#naive
 naive
 naive
 naive
@@ -22,19 +21,27 @@ naive
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
-#IDDFS
-#IDDFS-dropS2C
-#IDDFS-nAES-dropS2C
-IDDFS-nAES-1-opt
-IDDFS-nAES-1
-IDDFS-nAES-2
-IDDFS-nAES-4
-IDDFS-nAES-16
-IDDFS-nAES-1-opt-FP
-IDDFS-nAES-1-FP
-IDDFS-nAES-2-FP
-IDDFS-nAES-4-FP
-IDDFS-nAES-16-FP
+#IDDFS-nAES-1-opt
+#IDDFS-nAES-1
+#IDDFS-nAES-2
+#IDDFS-nAES-4
+#IDDFS-nAES-16
+#IDDFS-nAES-1-opt-FP${fake_padding_length}
+#IDDFS-nAES-1-FP${fake_padding_length}
+#IDDFS-nAES-2-FP${fake_padding_length}
+#IDDFS-nAES-4-FP${fake_padding_length}
+#IDDFS-nAES-16-FP${fake_padding_length}
+IDDFS-nAES-1-opt-dropS2C
+IDDFS-nAES-1-dropS2C
+IDDFS-nAES-2-dropS2C
+IDDFS-nAES-4-dropS2C
+IDDFS-nAES-16-dropS2C
+IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
+IDDFS-nAES-1-FP${fake_padding_length}-dropS2C
+IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
+IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
+IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
+
 
 )
 
@@ -53,11 +60,9 @@ naive_opts+=" --link-first-pass=0 "
 drop_s2c="--only-verify-first-s2c=14 "
 native_aes=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
+naive_opts+="${drop_s2c}"
 # list of KLEE/Cliver parameters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
-#" ${naive_opts} --use-threads=1 "
-#" ${naive_opts} ${drop_s2c} --use-threads=1 "
-#" ${naive_opts} ${drop_s2c} ${native_aes} --use-threads=1 "
 " ${naive_opts} ${native_aes} --use-threads=1  " 
 " ${naive_opts} ${native_aes} --use-threads=1  " 
 " ${naive_opts} ${native_aes} --use-threads=2  "
@@ -92,6 +97,7 @@ EXPERIMENT_LIST_CLIVER_PARAMETERS=(
 ""
 " "
 )
+
 # List of bitcode parameters specific to each experiment type
 EXPERIMENT_LIST_BITCODE_PARAMETERS=(
 #""
@@ -102,11 +108,11 @@ EXPERIMENT_LIST_BITCODE_PARAMETERS=(
 ""
 ""
 ""
-" --fake-padding 16 "
-" --fake-padding 16 "
-" --fake-padding 16 "
-" --fake-padding 16 "
-" --fake-padding 16 "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
 )
 
 
