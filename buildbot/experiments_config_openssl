@@ -13,10 +13,6 @@ naive
 naive
 naive
 naive
-naive
-naive
-naive
-naive
 )
 
 # list of output tags
@@ -33,13 +29,13 @@ EXPERIMENT_LIST_NAMES=(
 #IDDFS-nAES-16-FP${fake_padding_length}
 IDDFS-nAES-1-opt-dropS2C
 IDDFS-nAES-1-dropS2C
-IDDFS-nAES-2-dropS2C
-IDDFS-nAES-4-dropS2C
+#IDDFS-nAES-2-dropS2C
+#IDDFS-nAES-4-dropS2C
 IDDFS-nAES-16-dropS2C
 IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
 IDDFS-nAES-1-FP${fake_padding_length}-dropS2C
-IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
-IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
 IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
 
 
@@ -65,13 +61,13 @@ naive_opts+="${drop_s2c}"
 EXPERIMENT_LIST_PARAMETERS=(
 " ${naive_opts} ${native_aes} --use-threads=1  " 
 " ${naive_opts} ${native_aes} --use-threads=1  " 
-" ${naive_opts} ${native_aes} --use-threads=2  "
-" ${naive_opts} ${native_aes} --use-threads=4  "
+#" ${naive_opts} ${native_aes} --use-threads=2  "
+#" ${naive_opts} ${native_aes} --use-threads=4  "
 " ${naive_opts} ${native_aes} --use-threads=16 "
 " ${naive_opts} ${native_aes} --use-threads=1  " 
 " ${naive_opts} ${native_aes} --use-threads=1  " 
-" ${naive_opts} ${native_aes} --use-threads=2  "
-" ${naive_opts} ${native_aes} --use-threads=4  "
+#" ${naive_opts} ${native_aes} --use-threads=2  "
+#" ${naive_opts} ${native_aes} --use-threads=4  "
 " ${naive_opts} ${native_aes} --use-threads=16 "
 
 )
