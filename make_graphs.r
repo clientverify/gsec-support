@@ -180,7 +180,7 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   names(data)[names(data)=="MessageSize"] <- "SocketEventSize"
   names(data)[names(data)=="MessageSizeBytes"] <- "SocketEventSizeBytes"
 
-} else if (tag == "heartbleed") {
+} else if (tag == "heartbleed" | tag == "heartbleed-only" | tag == "heartbeat") {
   debug_printf("tag specific plots")
   plotwidth = default_plotwidth
   plotheight = default_plotheight
@@ -190,6 +190,7 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1") {
   #  do_line_plot("RoundRealTime")
   #}
   #quit(status=0)
+
 } else {
 
   ## Trim data by start and min Messages
@@ -270,7 +271,7 @@ if (length(selected_modes) != 0) {
       sdata <- subset(data, mode == mode_params[[m]])
       mdata <- sdata[theStat]
       stats <- stat.desc(mdata)
-      print(stats)
+      #print(stats)
       tstats <- t(stats)
       tstats <- tstats[,stat_names,drop=FALSE]
       tstats <- data.frame(t(tstats))
@@ -278,16 +279,16 @@ if (length(selected_modes) != 0) {
       tstats <- t(tstats)
 
       allstats <- rbind(allstats, tstats)
-      print(tstats)
+      #print(tstats)
 
       # get value of max for this stat
       maxValue <- stats["max", theStat]
       # matching row (if more than one take the first)
       maxRowID = which(sdata[,c(theStat)] == maxValue)[1]
 
-      # print entire max row
-      cat("\nMax ", theStat," Row:\n")
-      print(sdata[maxRowID,])
+      ## print entire max row
+      #cat("\nMax ", theStat," Row:\n")
+      #print(sdata[maxRowID,])
 
       #cat("\nMax Time Row:\n")
       #print(subset(sdata, Time == stats["max","Time"]))
@@ -299,10 +300,14 @@ if (length(selected_modes) != 0) {
   stat_table <- xtable(t(allstats))
   digits(stat_table) <- 4
   print(stat_table)
-  save(stat_table, file=paste(save_dir, "stat_table.tex", sep="/"))
+  print(allstats)
+  sink(paste(save_dir, "stat_table.tex", sep="/"))
+  print(stat_table)
+  sink()
+
+  write.csv(t(allstats), paste(save_dir, "summary_data.csv", sep="/"))
 
   #print(data$Backtracks)
-
   #data_bt = subset(data, Backtracks > 1)
   #data_nobt = subset(data, Backtracks <= 1)
   #print(stat.desc(data_bt$Time))
