@@ -7,12 +7,12 @@ fake_padding_length=128
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
-naive
-naive
-naive
-naive
-naive
-naive
+#naive
+#naive
+#naive
+#naive
+#naive
+#naive
 naive
 naive
 naive
@@ -24,16 +24,16 @@ naive
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
 ### bitcode AES
-IDDFS-1-opt
-IDDFS-1
+#IDDFS-1-opt
+#IDDFS-1
 #IDDFS-2
 #IDDFS-4
-IDDFS-16
-IDDFS-1-opt-FP${fake_padding_length}
-IDDFS-1-FP${fake_padding_length}
+#IDDFS-16
+#IDDFS-1-opt-FP${fake_padding_length}
+#IDDFS-1-FP${fake_padding_length}
 #IDDFS-2-FP${fake_padding_length}
 #IDDFS-4-FP${fake_padding_length}
-IDDFS-16-FP${fake_padding_length}
+#IDDFS-16-FP${fake_padding_length}
 #IDDFS-1-opt-dropS2C
 #IDDFS-1-dropS2C
 #IDDFS-2-dropS2C
@@ -88,16 +88,16 @@ native_aes=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 # list of KLEE/Cliver parameters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
 ### bitcode AES
-" ${naive_opts} --use-threads=1  "
-" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=1  "
 #" ${naive_opts} --use-threads=2  "
 #" ${naive_opts} --use-threads=4  "
-" ${naive_opts} --use-threads=16 "
-" ${naive_opts} --use-threads=1  "
-" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=16 "
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=1  "
 #" ${naive_opts} --use-threads=2  "
 #" ${naive_opts} --use-threads=4  "
-" ${naive_opts} --use-threads=16 "
+#" ${naive_opts} --use-threads=16 "
 
 ### native AES
 " ${naive_opts} ${native_aes} --use-threads=1  " 
@@ -121,12 +121,12 @@ CLIVER_PARAMETERS=" "
 
 EXPERIMENT_LIST_CLIVER_PARAMETERS=(
 ### bitcode AES
-" -s "
-""
-""
-" -s "
-""
-""
+#" -s "
+#""
+#""
+#" -s "
+#""
+#""
 
 ### native AES
 " -s "
@@ -140,12 +140,12 @@ EXPERIMENT_LIST_CLIVER_PARAMETERS=(
 # List of bitcode parameters specific to each experiment type
 EXPERIMENT_LIST_BITCODE_PARAMETERS=(
 ### bitcode AES
-""
-""
-""
-" --fake-padding ${fake_padding_length} "
-" --fake-padding ${fake_padding_length} "
-" --fake-padding ${fake_padding_length} "
+#""
+#""
+#""
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
 ### native AES
 ""
 ""
