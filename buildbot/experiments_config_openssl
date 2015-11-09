@@ -24,48 +24,48 @@ naive
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
 ### bitcode AES
-#IDDFS-1-opt
-#IDDFS-1
+IDDFS-1-opt
+IDDFS-1
 #IDDFS-2
 #IDDFS-4
-#IDDFS-16
-#IDDFS-1-opt-FP${fake_padding_length}
-#IDDFS-1-FP${fake_padding_length}
+IDDFS-16
+IDDFS-1-opt-FP${fake_padding_length}
+IDDFS-1-FP${fake_padding_length}
 #IDDFS-2-FP${fake_padding_length}
 #IDDFS-4-FP${fake_padding_length}
-#IDDFS-16-FP${fake_padding_length}
-IDDFS-1-opt-dropS2C
-IDDFS-1-dropS2C
+IDDFS-16-FP${fake_padding_length}
+#IDDFS-1-opt-dropS2C
+#IDDFS-1-dropS2C
 #IDDFS-2-dropS2C
 #IDDFS-4-dropS2C
-IDDFS-16-dropS2C
-IDDFS-1-opt-FP${fake_padding_length}-dropS2C
-IDDFS-1-FP${fake_padding_length}-dropS2C
+#IDDFS-16-dropS2C
+#IDDFS-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-1-FP${fake_padding_length}-dropS2C
 #IDDFS-2-FP${fake_padding_length}-dropS2C
 #IDDFS-4-FP${fake_padding_length}-dropS2C
-IDDFS-16-FP${fake_padding_length}-dropS2C
+#IDDFS-16-FP${fake_padding_length}-dropS2C
 
 ### native AES
-#IDDFS-nAES-1-opt
-#IDDFS-nAES-1
+IDDFS-nAES-1-opt
+IDDFS-nAES-1
 #IDDFS-nAES-2
 #IDDFS-nAES-4
-#IDDFS-nAES-16
-#IDDFS-nAES-1-opt-FP${fake_padding_length}
-#IDDFS-nAES-1-FP${fake_padding_length}
+IDDFS-nAES-16
+IDDFS-nAES-1-opt-FP${fake_padding_length}
+IDDFS-nAES-1-FP${fake_padding_length}
 #IDDFS-nAES-2-FP${fake_padding_length}
 #IDDFS-nAES-4-FP${fake_padding_length}
-#IDDFS-nAES-16-FP${fake_padding_length}
-IDDFS-nAES-1-opt-dropS2C
-IDDFS-nAES-1-dropS2C
+IDDFS-nAES-16-FP${fake_padding_length}
+#IDDFS-nAES-1-opt-dropS2C
+#IDDFS-nAES-1-dropS2C
 #IDDFS-nAES-2-dropS2C
 #IDDFS-nAES-4-dropS2C
-IDDFS-nAES-16-dropS2C
-IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
-IDDFS-nAES-1-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-16-dropS2C
+#IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-1-FP${fake_padding_length}-dropS2C
 #IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
 #IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
-IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
 )
 
 # parameters
@@ -84,7 +84,7 @@ naive_opts+=" --link-first-pass=0 "
 drop_s2c="--only-verify-first-s2c=14 "
 native_aes=" -native-aes -load=${ROOT_DIR}/gsec-support/Xlibs/libcrypto.so "
 
-naive_opts+="${drop_s2c}"
+#naive_opts+="${drop_s2c}"
 # list of KLEE/Cliver parameters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
 ### bitcode AES
