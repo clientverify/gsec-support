@@ -7,40 +7,21 @@
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
 training 
-#ncross-edit-dist-kprefix-row
+ncross-edit-dist-kprefix-row
 ncross-edit-dist-kprefix-row 
-#ncross-edit-dist-kprefix-row
-#ncross-edit-dist-kprefix-row
-#ncross-edit-dist-kprefix-row
-naive
-#ncross-edit-dist-kprefix-row
-#naive
-#ncross-edit-dist-kprefix-row
-#ncross-edit-dist-kprefix-row
-#naive
+ncross-edit-dist-kprefix-row
 )
 
 # list of output tags
 EXPERIMENT_LIST_NAMES=(
 training
-#ed-32
-#ed-24
+ed-1
+ed-8
 ed-16
-#ed-16-NodeThread-ClusterThread
-#ed-16-ClusterThread
-#ed-16-NodeThread
-#ed-16-noNodeThread-noClusterThread
-n-16
-#ed-8
-#n-8
-#ed-2
-#ed-1
-#n-1
 )
 
 KLEE_OPTS=" "
 KLEE_OPTS+=" -suppress-external-warnings=1 -all-external-warnings=0 "
-#VERIFY_OPTS+=" -lock-free-searcher=0 -buffered-searcher-size=0 "
 VERIFY_OPTS=" -skip-printf -print-stats=0 "
 VERIFY_OPTS+=" -max-k-extension=64 -cluster-size=65536 "
 VERIFY_OPTS+=" -edit-distance-at-clone-only=1 "
@@ -48,26 +29,27 @@ VERIFY_OPTS+=" -edit-distance-at-clone-only=1 "
 # list of extra paramters specific to each experiment type
 EXPERIMENT_LIST_PARAMETERS=(
 "--use-threads=24 ${KLEE_OPTS} ${VERIFY_OPTS} "
-#"--use-threads=33 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
-#"--use-threads=25 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
+"--use-threads=2 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
+"--use-threads=9 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
 "--use-threads=17 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
-#"--use-threads=16 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=0 "
-#"--use-threads=17 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=0 -lock-free-searcher=1 "
-"--use-threads=17 ${KLEE_OPTS} ${VERIFY_OPTS} -lock-free-searcher=1 "
-#"--use-threads=16 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=0 -lock-free-searcher=0 "
-#"--use-threads=16 ${KLEE_OPTS} ${VERIFY_OPTS} "
-#"--use-threads=9 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
-#"--use-threads=8 ${KLEE_OPTS} ${VERIFY_OPTS} "
-#"--use-threads=3 ${KLEE_OPTS} ${VERIFY_OPTS} -async-create-ed-tree=1 -lock-free-searcher=1 "
-#"--use-threads=1 ${KLEE_OPTS} ${VERIFY_OPTS}  -async-create-ed-tree=1 "
-#"--use-threads=1 ${KLEE_OPTS} ${VERIFY_OPTS} "
 )
 
-#CLIVER_PARAMETERS="-i parallel -j 8 "
-#CLIVER_PARAMETERS=" -v "
-CLIVER_PARAMETERS=""
-#CLIVER_PARAMETERS=" -y xpilot_34  "
-#CLIVER_PARAMETERS=" -y user_13_0_1_1_200_p1_localhost -v "
+CLIVER_PARAMETERS=" "
+
+EXPERIMENT_LIST_CLIVER_PARAMETERS=(
+""
+""
+""
+""
+)
+
+# List of bitcode parameters specific to each experiment type
+EXPERIMENT_LIST_BITCODE_PARAMETERS=(
+""
+""
+""
+""
+)
 
 # list of client types
 CLIENT_LIST=(
@@ -86,8 +68,8 @@ CLIENT_LIST_PARAMETERS=(
 ""
 )
 CLIENT_LIST_R_BIN_WIDTH=(
-10
-100
+60
+5
 )
 
 CLIENT_LIST_BITCODE_PARAMETERS=(
@@ -97,5 +79,4 @@ CLIENT_LIST_BITCODE_PARAMETERS=(
 
 # data locations
 RESULTS_LOCATION="data/results"
-
 
