@@ -53,8 +53,8 @@ timestamp_colnames = c("Index","Direction","Bytes","Timestamp")
 # Default parameters
 min_size=.Machine$integer.max
 start_Message = 1
-binwidth=20
-binwidth_time=30
+binwidth=100
+binwidth_time=5
 time_scale=1000000
 
 default_plotwidth=6
@@ -69,7 +69,8 @@ plotheight = default_plotheight
 x_axis = "RoundNumber"
 num_threads=1
 #output_filetype="eps"
-output_filetype="png"
+#output_filetype="png"
+output_filetype="pdf"
 timestamp_pattern = "*_client_socket.log"
 data_dir="data"
 use_title=FALSE
@@ -85,8 +86,9 @@ data <- NULL
 ### Helper Functions
 ###############################################################################
 
-printf <- function(...) invisible(print(sprintf(...)))
-debug_printf <- function(...) invisible(print(sprintf(...)))
+printf <- function(...) invisible(cat(sprintf(...),"\n"))
+#debug_printf <- function(...) invisible(print(sprintf(...)))
+debug_printf <- function(...) invisible(printf(...))
 #debug_printf <- function(...) {}
 
 ###############################################################################
@@ -227,107 +229,6 @@ get_mode_str = function(mode_id) {
   return("error")
 }
 
-#read_data_subdir = function(data_mode_dir, data_date_dir, mode_id) {
-#
-#  data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
-#  
-#  for (file in list.files(path=data_path)) {
-#    file_name = paste(data_path,file,sep="/")
-#    debug_printf("Reading: %s", file_name)
-#    
-#    # Read number of lines in file
-#    nrows = as.integer(unlist(unlist(strsplit(system(paste("wc -l ", file_name, sep=""), intern=T)," "))[1]))
-#    ncols = length(colnames)
-#    
-#    # Read file
-#    tmp_data = try(matrix(scan(file_name,what=integer(),nmax=nrows*ncols,quiet=TRUE),nrow=nrows,ncol=ncols,byrow=TRUE), silent=FALSE)
-#    
-#    if (class(tmp_data) != "try-error") {
-#      
-#      # length of rows, not cols
-#      len = length(tmp_data[,1]) 
-#      
-#      # extract file id
-#      if (client_type == "openssl") {
-#        id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
-#      } else {
-#        id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
-#      }
-#      debug_printf("id = %d", id)
-#      
-#      cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
-#      
-#      # Add Name id 
-#      tmp_data = cbind(tmp_data, rep(id, len))
-#      
-#      # Add Mode id
-#      tmp_data = cbind(tmp_data, rep(mode_id, len))
-#              
-#      # Add Direction
-#      if (!is.null(timestamps)) {
-#        ts = subset(timestamps, trace == id)
-#        directions = as.integer(factor(ts$Direction))
-#
-#        if (length(directions) < len) {
-#          directions = c(directions, rep(0, len - length(directions)))
-#        }
-#        tmp_data = cbind(tmp_data, directions[seq(len)])
-#      } else {
-#        cat("not using direction\n")
-#        tmp_data = cbind(tmp_data, rep(0, len))
-#      }
-#
-#      # Set bin number
-#      g = c()
-#      for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
-#      tmp_data = cbind(tmp_data, g)
-#      
-#      # Add placeholder for Delay
-#      tmp_data = cbind(tmp_data, rep(0, len))
-#
-#      # Compute delay values
-#      if (!is.null(timestamps) && length(subset(timestamps, trace == id)[,1]) > 0) {
-#        delays = compute_delays(tmp_data, id)
-#        delays_len = length(delays)
-#        tmp_data = tmp_data[seq(delays_len), ]
-#        cols = length(tmp_data[1,])
-#        tmp_data[,cols] = delays
-#        
-#        tmp_data = cbind(tmp_data, delays)
-#      } else {
-#        cat("not computing delays\n")
-#        tmp_data = cbind(tmp_data, rep(0, len))
-#      }
-#
-#      if (min_size > length(tmp_data[,1])) {
-#        min_size <<- length(tmp_data[,1])
-#      }
-#           
-#      all_data[[length(all_data) + 1]] <<- tmp_data
-#      
-#    } else {
-#      cat("Error: ", file_name,'\n')
-#    }
-#  }
-#}
-
-#read_all_data = function() {
-#  
-#  for (data_mode_dir in dir(paste(data_dir,sep="/"), full.names=FALSE, recursive=FALSE)) {
-#    
-#    data_path = paste(data_dir, data_mode_dir, sep="/")
-#    
-#    data_date_dirs = sort(dir(data_path, full.names=FALSE, recursive=FALSE), decreasing=TRUE)
-#    
-#    if (length(selected_modes) == 0 | data_mode_dir %in% selected_modes) {
-#      for (data_date_dir in data_date_dirs[seq(1)]) {
-#        mode_id = get_mode_id(data_mode_dir)
-#        read_data_subdir(data_mode_dir, data_date_dir, mode_id)
-#      }
-#    }
-#  }
-#}
-
 read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
 
   data_path = paste(data_dir, data_mode_dir, data_date_dir, sep="/")
@@ -346,39 +247,34 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     # length of rows, not cols
     len = length(tmp_data[,1])
 
-    # extract file id
+    # extract file id (openssl or games)
     if (client_type == "openssl") {
       id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
     } else {
       id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
     }
 
-    debug_printf("id = %d", id)
+    # Print info for this log
     cat(data_mode_dir,'\t',len,'\t',data_date_dir,'\t',file,'\t',id,'\n')
-
-    #data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
 
     # Add Name id
     tmp_data$trace = rep(id, len)
 
     # Add Mode id
-    #tmp_data = cbind(tmp_data, rep(mode_id, len))
     tmp_data$mode = rep(mode_id, len)
 
     # Set bin number
     g = c()
     for (j in seq(len)) { g = append(g,binwidth*(floor(j/binwidth))) }
-    #tmp_data = cbind(tmp_data, g)
     tmp_data$Bin = g
 
     if (min_size > length(tmp_data[,1])) {
       min_size <<- length(tmp_data[,1])
-      debug_printf("New min_size=%d", min_size)
+      #debug_printf("New min_size=%d", min_size)
     }
 
     # change absolute timestamps to relative
     tmp_data$SocketEventTimestamp = (tmp_data$SocketEventTimestamp - tmp_data$SocketEventTimestamp[1])
-    #tmp_data$SocketEventTimestamp = pmax(tmp_data$SocketEventTimestamp, rep(0, len))
 
     # Fix non-monotonic SocketEventTimeStamps
     max_ts <- 0
@@ -394,19 +290,6 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     }
 
     ## compute verifier delay
-    #v = vector("numeric",len)
-    #v[1] = 0
-    #for (j in seq(2, len)) {
-    #  v_delay = (v[j-1] + tmp_data$RoundRealTime[j]) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
-    #  #debug_printf("Delay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
-    #  if (v_delay < 0) {
-    #    #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
-    #    v_delay = 0;
-    #  }
-    #  v[j] = v_delay;
-    #}
-    #tmp_data$VerifierDelayTime = v
-
     t_arr = vector("numeric",len)
     t_comp = vector("numeric",len)
     t_delay = vector("numeric",len)
@@ -423,20 +306,6 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     }
     tmp_data$VerifierDelayTime = t_delay
     tmp_data$VerifierWaitTime = t_wait
-
-    # compute verifier delay (minus solvertime)
-    v = vector("numeric",len)
-    v[1] = 0
-    for (j in seq(2, len)) {
-      v_delay = (v[j-1] + (tmp_data$RoundRealTime[j] - tmp_data$BindingsSolveTime[j])) - (tmp_data$SocketEventTimestamp[j] - tmp_data$SocketEventTimestamp[j-1])
-      #debug_printf("SolverDelay: %s, Round: %i Delay: %f", file_name, j, v_delay / 1000000.0)
-      if (v_delay < 0) {
-        #debug_printf("Delay: %s, Round: %i is ahead: %i", file_name, j, v_delay)
-        v_delay = 0;
-      }
-      v[j] = v_delay;
-    }
-    tmp_data$VerifierMinusSolverDelayTime = v
 
     # Set timestamp bin number
     tmp_data$ArrivalBin = rep(0, len)
@@ -471,23 +340,21 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       if (j == len) nxt = j
       else nxt = j+1
       if (tmp_data$SocketEventType[j] == 0 & tmp_data$SocketEventType[prev] == 0) {
-      #if (tmp_data$SocketEventType[j] == 0) {
         tmp_data$VerifyTimeForSize[j] = tmp_data$RoundRealTime[j]
       } else if (tmp_data$SocketEventType[j] == 1 & tmp_data$SocketEventType[nxt] == 1) {
-      #} else if (tmp_data$SocketEventType[j] == 1) {
         tmp_data$VerifyTimeForSize[j] = tmp_data$RoundRealTime[nxt]
       } else {
         tmp_data$VerifyTimeForSize[j] = 0
       }
     }
 
-    # add data to global data list
-    #all_data[[length(all_data) + 1]] <<- tmp_data
-    debug_printf("id = %d: ncols_data=%d ncols=%d nrows_data=%d nrows=%d", id, ncol(data), ncol(tmp_data),nrow(data), nrow(tmp_data))
-    #cat(colnames(tmp_data), "\n")
-    #cat(colnames(data), "\n")
 
-    tmp_data$BackTrackCount <- NULL
+    # Add BackTrackCount if needed
+    if (!("BackTrackCount" %in% colnames(tmp_data))) {
+      tmp_data$BackTrackCount = rep(1, len)
+    }
+
+    #debug_printf("id = %d: ncols_data=%d ncols=%d nrows_data=%d nrows=%d", id, ncol(data), ncol(tmp_data),nrow(data), nrow(tmp_data))
     data <<- rbind(data, tmp_data)
   }
 }
@@ -515,7 +382,7 @@ read_csv_data = function() {
 
 ### Jittered point plot of data
 do_point_plot = function(y,x=x_axis,ylab="",xlab="") {
-  cat("plotting: (point), ",x," vs ",y,"\n")
+  debug_printf("Point Plot: %s %s %s %s", x, y, xlab, ylab)
  
   # remove zero values
   mdata = data[match.fun('!=')(data[[y]], 0), ]
@@ -612,8 +479,7 @@ do_line_alt_plot = function(y_axis,plot_x_axis=x_axis) {
 
 ### Alt. Line plot of data
 do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=data,min_y=0,max_y=0,grid=FALSE,with_points=FALSE) {
-  #cat("plotting: (group line), ", x, " vs ", y, "\n")
-  debug_printf("plotting: (group line) %s vs %s", x, y)
+  debug_printf("Group Line Plot: %s %s %s %s %s", x, y, xlab, ylab, tag)
 
   # vars
 
@@ -641,7 +507,6 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=dat
   #p = p + geom_point(aes(colour=factor(group)), shape=19, alpha=1/4) + geom_smooth(aes(colour=factor(group)),level=0.99,se=FALSE)
   if (grid) p = p + facet_grid(mode ~ .)
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
-  p = p + scale_y_continuous()
   #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
   p = p + theme(legend.position="none")
 
@@ -663,6 +528,8 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=dat
     #cat(y," max: ", max(data[[y]])," ", max_y, "\n")
 
     p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+  } else {
+    p = p + scale_y_continuous()
   }
 
   if (use_title)
@@ -866,7 +733,7 @@ do_instruction_summary_plot = function() {
 
 ### Boxplot
 do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=data, grid=TRUE) {
-  cat("plotting (boxplot of): ",x,", ",y,"\n")
+  debug_printf("Box Plot: %s %s %s", x, y, tag)
 
   # vars
   trace =  paste(y,client_type,"boxplot_bar",tag,sep="_")
@@ -884,13 +751,13 @@ do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=d
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
 
-  # yscale based on all data
-  min_y = as.integer(floor(min(data[[y]])))
-  max_y = as.integer(ceiling(max(data[[y]])))
+  ## yscale based on scale_data
+  #min_y = as.integer(floor(min(data[[y]])))
+  #max_y = as.integer(ceiling(max(data[[y]])))
 
-  # yscale based on all subset data
-  #min_y = as.integer(floor(min(mdata[[y]])))
-  #max_y = as.integer(ceiling(max(mdata[[y]])))
+  # yscale based on plot_data
+  min_y = as.integer(floor(min(plot_data[[y]])))
+  max_y = as.integer(ceiling(max(plot_data[[y]])))
 
   limits_y = c(min_y, max_y)
 
@@ -938,7 +805,7 @@ do_log_box_plot = function(y_axis) {
 do_box_alt_plot = function(params) { 
   p_mode = params[[1]]
   y_axis = params[[2]]
-  cat("plotting (boxplot of): ",p_mode," vs ",y_axis,"\n")
+  debug_printf("Box Plot: %s %s", p_mode, y_axis)
 
   mdata = subset(data, mode == p_mode)
   #mdata = mdata[match.fun('>')(mdata[[y_axis]], 0.5), ]
@@ -986,7 +853,7 @@ do_box_alt_plot = function(params) {
 do_box_alt_log_plot = function(params) { 
   p_mode = params[[1]]
   y_axis = params[[2]]
-  cat("plotting (log boxplot of): ",p_mode," vs ",y_axis,"\n")
+  debug_printf("Group Line Plot: %s %s", p_mode, y_axis)
 
   mdata = subset(data, mode == p_mode)
 

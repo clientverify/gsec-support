@@ -1,29 +1,19 @@
 
-# Read the timestamp data
-#read_timestamps()
-
+# Global data frame object which will contain all input data
 data = data.frame()
 
 # Read cliver logs
-#read_all_data()
 read_csv_data()
-#stop("quitin' early")
 
-## Convert list of data matrices to a single data frame
-#data = as.data.frame(do.call(rbind, all_data))
-#rm(all_data)
-#colnames(data) = data_frame_col_names
-
-# Retrace integer factors to string names
+# Rename integer factors to string names
 for (i in seq(length(modes))) {
-  cat(i, "\n")
   data$mode[data$mode == i] <- get_mode_str(i)
 }
 
 # Scale time stats from microsecnds to seconds
 for (col in colnames(data)) {
   if (grepl("Time", col)) {
-    cat("Scaling Time Stat: ", col, "\n")
+    #debug_printf("Scaling Time Stat: %s", col)
     data[col] = data[col] / 1000000.0
   }
 }
@@ -40,22 +30,15 @@ for (col in colnames(data)) {
 
 data$KLEETime = data$RoundRealTime
 for (stat in graphTimeStats) {
-  cat("subtracting :", stat, "\n")
   data$KLEETime = data$KLEETime - data[, stat]
 }
 graphTimeStats = c(graphTimeStats, 'KLEETime')
 graphTimeLabels = graphTimeStats
 
-
+# Compute additional stats and sub stat times
 data$ExtraInstructionCount = data$InstructionCount - (data$ValidPathInstructionCountPassOne + data$ValidPathInstructionCount)
-
 data$RoundRealTimeOpt = data$RoundRealTime - data$BindingsSolveTime
-
 data$RoundRealTimePerInst = data$RoundRealTime / data$InstructionCount
-
-#sdata= subset(data, ExtraInstructionCount < 0)
-#print(sdata)
-#quit(status=1)
 
 graphInstructionStats = c()
 for (col in colnames(data)) {
@@ -65,25 +48,28 @@ for (col in colnames(data)) {
 }
 graphInstructionLabels = graphInstructionStats
 
+## Convert socket event size data from bytes to kilobytes
+data$SocketEventSizeBytes = data$SocketEventSize
+data$SocketEventSize = data$SocketEventSize / 1024
+data$BW= data$BW / 1024
+data$BWs2c= data$BWs2c / 1024
+data$BWc2s= data$BWc2s / 1024
 
+### Old stats conversion ###
 #graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
 #graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
-#
 #graphTimeStats = c("RoundRealTime","SolverTime","ExecTreeTime","MergerTime", "SearcherTime","QueryTime")
 #graphTimeLabels= c("RoundRealTime","SolverTime","ExecTreeTime","MergerTime", "SearcherTime","QueryTime")
-
 ############### regen and uncomment XXX
 # Compute additional stats and sub stat times
 #data$ExtraInstructionCount = data$InstructionCount - data$ValidPathInstructionCount
 #data$SendInstructionCount = data$InstructionCount - data$RecvInstructionCount
 #data$EditDistTotalTime = data$EditDistTime + data$EditDistBuildTime + data$ExecTreeTime
 ############### regen and uncomment XXX
-
 #data$Time = data$TimeReal - data$EdDistHintTime - data$EdDistStatTime
 #data$SolverTime = data$SolverTime - data$STPTime - data$CEXTime
 #data$EdDistBuildTime = data$EdDistBuildTime - data$EdDistHintTime
 #data$EdDistTime = data$EdDistTime - data$EdDistStatTime
-
 ## Grouped Time stats
 #data$ConstraintOpt = data$SolverTime + data$CEXTime
 #data$SMT = data$STPTime
@@ -93,13 +79,4 @@ graphInstructionLabels = graphInstructionStats
 #graphTimeStats = c("KLEE","PathSelection","EditDistance","EquivalentStateDetection", "ConstraintOpt","SMT")
 #graphTimeLabels = c("Executing insts. in KLEE","Operations on Live","Computing Edit Distance","Equiv. State Detection", "Constraint Solving")
 
-### NB now remove first round in read_csv_data
-## Remove first round of data (startup cost)
-#data = subset(data, RoundNumber > 1)
 
-## Convert socket event size data from bytes to kilobytes
-data$SocketEventSizeBytes = data$SocketEventSize
-data$SocketEventSize = data$SocketEventSize / 1024
-data$BW= data$BW / 1024
-data$BWs2c= data$BWs2c / 1024
-data$BWc2s= data$BWc2s / 1024
