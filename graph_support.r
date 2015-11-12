@@ -285,7 +285,6 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
       } else {
         debug_printf("Fixing Net timestamp: %s, Round: %i out of order, %f, %f", file_name, j, ts, max_ts)
         tmp_data$SocketEventTimestamp[j] <- max_ts
-        max_ts <- ts
       }
     }
 
