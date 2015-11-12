@@ -168,35 +168,35 @@ EXPERIMENT_LIST_BITCODE_PARAMETERS=(
 # list of client types
 CLIENT_LIST=(
 openssl-klee
-openssl-klee
-openssl-klee
+#openssl-klee
+#openssl-klee
 )
 
 # location of directories holding ktest files for experiments
 CLIENT_LIST_KTEST=(
 /playpen/buildbot/data/network/openssl/ktest-timefix
-/playpen/buildbot/data/network/openssl/heartbeat
-/playpen/buildbot/data/network/openssl/heartbleed-only
+#/playpen/buildbot/data/network/openssl/heartbeat
+#/playpen/buildbot/data/network/openssl/heartbleed-only
 )
 
 # list of extra klee paramters specific to each client type
 CLIENT_LIST_PARAMETERS=(
 ""
-""
-" --legitimate-socket-log=false "
+#""
+#" --legitimate-socket-log=false "
 )
 
 # list of extra bitcode paramters specific to each client type (params for actual client binary)
 CLIENT_LIST_BITCODE_PARAMETERS=(
 " "
-" -heartbeat "
-" -heartbeat "
+#" -heartbeat "
+#" -heartbeat "
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
 15
-15
-15
+#15
+#15
 )
 
 # data locations
