@@ -502,17 +502,19 @@ do_line_group_plot = function(y, x=x_axis, ylab="",
   tmp_data = plot_data
 
   if (length(group_relabels) != 0) {
-    printf("Before: ")
-    printf(levels(tmp_data$group))
     revalue(tmp_data$group, group_relabels) -> tmp_data$group
-    printf("After: ")
-    printf(levels(tmp_data$group))
   }
 
   # construct plot
   p = ggplot(tmp_data, aes_string(x=x, y=y))
   #p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
-  p = p + geom_line(aes(linetype=factor(group)),size=1.00)
+  if (length(group_relabels) != 0) {
+    levels_reorder <- c("Workers=1, No Padding","Workers=1, Padding","Workers=16, Padding")
+    #p = p + geom_line(aes(linetype=factor(group, levels=levels_reorder))
+    p = p + geom_line(aes(linetype=factor(group, levels=c("Workers=1, No Padding","Workers=1, Padding","Workers=16, Padding"))))
+  } else {
+    p = p + geom_line(aes(linetype=factor(group)),size=0.6)
+  }
   #if (length(group_labels) == 0)
   #  p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
   #else
@@ -523,15 +525,6 @@ do_line_group_plot = function(y, x=x_axis, ylab="",
   if (grid) p = p + facet_grid(mode ~ .)
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
-  if (length(group_relabels) != 0) {
-    p = p + scale_linetype_manual(values=c("dotted","solid","dashed","longdash"))
-    p = p + theme(legend.position=c(0.65,0.50),
-                  legend.text=element_text(size=8),
-                  legend.title=element_blank())
-  } else {
-    p = p + theme(legend.position="none")
-  }
-
   if (min_y != max_y) {
     # yscale based on all data
     #min_y = as.integer(floor(min(data[[y]])))
@@ -553,6 +546,17 @@ do_line_group_plot = function(y, x=x_axis, ylab="",
   } else {
     p = p + scale_y_continuous()
   }
+
+  if (length(group_relabels) != 0) {
+    p = p + scale_linetype_manual(values=c("dotted","solid","dashed","longdash"))
+    p = p + theme(legend.position=c(0.70,0.45),
+                  legend.background = element_rect(fill=alpha('white', 0.001)),
+                  legend.text=element_text(size=7),
+                  legend.title=element_blank())
+  } else {
+    p = p + theme(legend.position="none")
+  }
+
 
   if (use_title)
     p = p + ggtitle(title)

@@ -139,10 +139,10 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
     #maxArrivalBin <- tmp_factors[length(tmp_factors)]
     #pdata = subset(pdata, ArrivalBin != maxArrivalBin)
     for (i in seq(length(y_axis_list))) {
-      #min_y = as.integer(floor(min(pdata[[y_axis_list[i]]])))
-      #max_y = as.integer(ceiling(max(pdata[[y_axis_list[i]]])))
-      #limits_y = c(min_y, max_y)
-      limits_y = c()
+      min_y = as.integer(floor(min(pdata[[y_axis_list[i]]])))
+      max_y = as.integer(ceiling(max(pdata[[y_axis_list[i]]])))
+      limits_y = c(min_y, max_y)
+      #limits_y = c()
       if (is_gmail_data) {
         do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE,limits_y=limits_y)
         do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE,limits_y=limits_y)
@@ -165,17 +165,17 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
     }
   }
 
-  plotwidth = default_plotwidth
-  plotheight = default_plotheight*0.65
   if (is_gmail_data) {
+    plotwidth = default_plotwidth*0.75
+    plotheight = default_plotheight*0.5
     for (i in seq(length(y_axis_list))) {
       tls_tag=paste("Trace1Only","TLS1_3",sep="_")
       tls1_3_data = subset(data, mode=="IDDFS-nAES-1-opt-dropS2C" | mode=="IDDFS-nAES-1-opt-FP128-dropS2C" | mode=="IDDFS-nAES-16-FP128-dropS2C")
       tls1_3_data = subset(tls1_3_data, trace == 1)
       #group_labels = c("NumWorkers=1, No Padding","NumWorkers=1, With Padding","NumWorkers=16, With Padding")
-      group_relabels=c("IDDFS-nAES-1-opt-dropS2C.1"="NumWorkers=1, No Padding",
-                       "IDDFS-nAES-1-opt-FP128-dropS2C.1"="NumWorkers=1, With Padding",
-                       "IDDFS-nAES-16-FP128-dropS2C.1"="NumWorkers=16, With Padding")
+      group_relabels=c("IDDFS-nAES-1-opt-dropS2C.1"="Workers=1, No Padding",
+                       "IDDFS-nAES-1-opt-FP128-dropS2C.1"="Workers=1, Padding",
+                       "IDDFS-nAES-16-FP128-dropS2C.1"="Workers=16, Padding")
       #group_relabels = c("A", "B", "C")
       #group_labels = c()
       do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=tls_tag, plot_data=tls1_3_data, grid=FALSE,group_relabels=group_relabels)
@@ -198,10 +198,10 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
   x = "SocketEventTimestamp"
   xlab = "Arrival Time (s)"
 
-  plotwidth = default_plotwidth*0.75
-  plotheight = default_plotheight*0.75
-
   ## Generate cumululative data transferred plots
+  plotwidth = default_plotwidth*0.75
+  plotheight = default_plotheight*0.5
+
   min_y = as.integer(floor(min(data[["BW"]])))
   max_y = as.integer(ceiling(max(data[["BW"]])))
   pdata = data
@@ -219,15 +219,14 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
 
   # Plot Cost vs MessageSize in best-case run for TLS1_2
   if (is_gmail_data) {
+    plotwidth = default_plotwidth*0.75
+    plotheight = default_plotheight*0.75
+
     tls1_2_data = subset(data, mode=="IDDFS-nAES-1-opt")
-    plotwidth = default_plotwidth*0.6
-    plotheight = default_plotheight*0.6
     do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)",tag="TLS1_2",plot_data=tls1_2_data)
 
     # Plot Cost vs MessageSize in best-case run for TLS1_3
     tls1_3_data = subset(data, mode=="IDDFS-nAES-1-opt-dropS2C" | mode=="IDDFS-nAES-1-opt-FP128-dropS2C" | mode=="IDDFS-nAES-16-FP128-dropS2C")
-    plotwidth = default_plotwidth*0.6
-    plotheight = default_plotheight*0.6
     do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)",tag="TLS1_3",plot_data=tls1_3_data)
   }
 
