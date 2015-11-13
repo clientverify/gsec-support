@@ -95,6 +95,15 @@ for (col in colnames(data)) {
 }
 printf("Dropped %d empty statistic columns", length(empty_stats))
 
+names(data)[names(data)=="RoundRealTime"] <- "Cost"
+names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
+names(data)[names(data)=="VerifierWaitTime"] <- "Wait"
+names(data)[names(data)=="BackTrackCount"] <- "Backtracks"
+names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
+names(data)[names(data)=="SocketEventSizeBytes"] <- "MessageSizeBytes"
+names(data)[names(data)=="InstructionCount"] <- "Insts"
+
+
 ################################################################################
 ## Create different types of plots over the stat variables
 ################################################################################
@@ -102,29 +111,27 @@ printf("Dropped %d empty statistic columns", length(empty_stats))
 printf("\nGENERATING PLOTS")
 ################################################################################
 if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
-  names(data)[names(data)=="RoundRealTime"] <- "Cost"
-  names(data)[names(data)=="VerifierDelayTime"] <- "Delay"
-  names(data)[names(data)=="VerifierWaitTime"] <- "Wait"
-  names(data)[names(data)=="BackTrackCount"] <- "Backtracks"
-  names(data)[names(data)=="SocketEventSize"] <- "MessageSize"
-  names(data)[names(data)=="SocketEventSizeBytes"] <- "MessageSizeBytes"
-  names(data)[names(data)=="InstructionCount"] <- "Insts"
+
+  is_gmail_data = tag == "ktest-timefix" | tag == "ktest-single-1"
+  is_games_data = tag == "NDSS2013V2"
+  if (is_gmail_data) {
+    printf("SSL GMAIL DATA")
+  } else if (is_games_data) {
+    printf("GAMES DATA")
+  } else {
+    printf("NOT GAMES OR GMAIL DATA")
+  }
 
   plotwidth = default_plotwidth*0.75
-  plotheight = default_plotheight*0.75
-
-  plotwidth = default_plotwidth*0.6
-  plotheight = default_plotheight*0.6
-  do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)")
-  plotwidth = default_plotwidth*0.75
-  plotheight = default_plotheight*0.75
-
   plotheight = default_plotheight*0.5
-  x="factor(ArrivalBin)"
+
+  #x="factor(ArrivalBin)"
+  x="ArrivalBin"
   xlab="Arrival Time (s)"
 
   y_axis_list = c("Cost", "Delay")
   ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
+
   for (m in selected_modes) {
     pdata = subset(data, mode == m)
     # Drop last bin
@@ -132,9 +139,15 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
     #maxArrivalBin <- tmp_factors[length(tmp_factors)]
     #pdata = subset(pdata, ArrivalBin != maxArrivalBin)
     for (i in seq(length(y_axis_list))) {
-      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE)
-      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE)
-      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllTraces",sep="_"),   plot_data=pdata,grid=FALSE)
+      #min_y = as.integer(floor(min(pdata[[y_axis_list[i]]])))
+      #max_y = as.integer(ceiling(max(pdata[[y_axis_list[i]]])))
+      #limits_y = c(min_y, max_y)
+      limits_y = c()
+      if (is_gmail_data) {
+        do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE,limits_y=limits_y)
+        do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE,limits_y=limits_y)
+      }
+      do_box_plot(y_axis_list[i],x,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllTraces",sep="_"),   plot_data=pdata,grid=FALSE,limits_y=limits_y)
     }
   }
 
@@ -142,37 +155,87 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
   for (m in selected_modes) {
     pdata = subset(data, mode == m)
     for (i in seq(length(y_axis_list))) {
-      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE)
-      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE)
+      if (is_gmail_data) {
+        do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"Trace1Only",sep="_"),  plot_data=subset(pdata, trace == 1), grid=FALSE)
+        do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllButTrace1",sep="_"),plot_data=subset(pdata, trace != 1),grid=FALSE)
+      }
       do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=paste(m,"AllTraces",sep="_"),   plot_data=pdata,grid=FALSE)
       #do_line_group_plot(y_axis_list[i],x="SocketEventTimestamp",ylab=ylab_list[i],xlab=",plot_data=pdata)
       #do_line_group_plot(y_axis_list[i],x=x_alt,ylab=ylab_list[i],xlab=xlab,plot_data=data)
     }
   }
 
+  plotwidth = default_plotwidth
+  plotheight = default_plotheight*0.65
+  if (is_gmail_data) {
+    for (i in seq(length(y_axis_list))) {
+      tls_tag=paste("Trace1Only","TLS1_3",sep="_")
+      tls1_3_data = subset(data, mode=="IDDFS-nAES-1-opt-dropS2C" | mode=="IDDFS-nAES-1-opt-FP128-dropS2C" | mode=="IDDFS-nAES-16-FP128-dropS2C")
+      tls1_3_data = subset(tls1_3_data, trace == 1)
+      #group_labels = c("NumWorkers=1, No Padding","NumWorkers=1, With Padding","NumWorkers=16, With Padding")
+      group_relabels=c("IDDFS-nAES-1-opt-dropS2C.1"="NumWorkers=1, No Padding",
+                       "IDDFS-nAES-1-opt-FP128-dropS2C.1"="NumWorkers=1, With Padding",
+                       "IDDFS-nAES-16-FP128-dropS2C.1"="NumWorkers=16, With Padding")
+      #group_relabels = c("A", "B", "C")
+      #group_labels = c()
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag=tls_tag, plot_data=tls1_3_data, grid=FALSE,group_relabels=group_relabels)
+    }
+  }
+
+  plotwidth = default_plotwidth*0.75
+  plotheight = default_plotheight*0.5
+
   y_axis_list = c("Cost", "Delay")
   ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
   for (i in seq(length(y_axis_list))) {
-    do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",  plot_data=subset(data, trace == 1), grid=FALSE, with_points=FALSE)
-    do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="AllButTrace1",plot_data=subset(data, trace != 1), grid=FALSE, with_points=FALSE)
+    if (is_gmail_data) {
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",  plot_data=subset(data, trace == 1), grid=FALSE, with_points=FALSE)
+      do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="AllButTrace1",plot_data=subset(data, trace != 1), grid=FALSE, with_points=FALSE)
+    }
     do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="AllTraces",   plot_data=data, grid=FALSE,with_points=FALSE)
   }
 
   x = "SocketEventTimestamp"
   xlab = "Arrival Time (s)"
 
-  min_y = as.integer(floor(min(data[["BW"]])))
-  max_y = as.integer(ceiling(max(data[["BW"]])))
-  plot_data = subset(data, mode=="IDDFS-nAES")
-  do_line_group_plot("BW",   x, ylab="Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
-  do_line_group_plot("BWs2c",x, ylab="Data (KB)", xlab=xlab, plot_data=plot_data,min_y=min_y,max_y=max_y)
-  do_line_group_plot("BWc2s",x, ylab="Data (KB)", xlab=xlab,plot_data=plot_data,min_y=min_y,max_y=max_y)
+  plotwidth = default_plotwidth*0.75
   plotheight = default_plotheight*0.75
 
+  ## Generate cumululative data transferred plots
+  min_y = as.integer(floor(min(data[["BW"]])))
+  max_y = as.integer(ceiling(max(data[["BW"]])))
+  pdata = data
+  if (is_gmail_data) {
+    pdata = subset(data, mode=="IDDFS-nAES-1-opt")
+  } else if (is_games_data) {
+    pdata = subset(data, mode=="ed-16")
+  }
+  do_line_group_plot("BW",   x, ylab="Data (KB)", xlab=xlab, plot_data=pdata,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWs2c",x, ylab="Data (KB)", xlab=xlab, plot_data=pdata,min_y=min_y,max_y=max_y)
+  do_line_group_plot("BWc2s",x, ylab="Data (KB)", xlab=xlab,plot_data=pdata,min_y=min_y,max_y=max_y)
+
+  plotwidth = default_plotwidth*0.75
+  plotheight = default_plotheight*0.5
+
+  # Plot Cost vs MessageSize in best-case run for TLS1_2
+  if (is_gmail_data) {
+    tls1_2_data = subset(data, mode=="IDDFS-nAES-1-opt")
+    plotwidth = default_plotwidth*0.6
+    plotheight = default_plotheight*0.6
+    do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)",tag="TLS1_2",plot_data=tls1_2_data)
+
+    # Plot Cost vs MessageSize in best-case run for TLS1_3
+    tls1_3_data = subset(data, mode=="IDDFS-nAES-1-opt-dropS2C" | mode=="IDDFS-nAES-1-opt-FP128-dropS2C" | mode=="IDDFS-nAES-16-FP128-dropS2C")
+    plotwidth = default_plotwidth*0.6
+    plotheight = default_plotheight*0.6
+    do_point_plot("VerifyTimeForSize","MessageSize",ylab="Verification Cost (s)",xlab="Message Size (KB)",tag="TLS1_3",plot_data=tls1_3_data)
+  }
+
 } else if (tag == "heartbleed" | tag == "heartbleed-only" | tag == "heartbeat") {
+  printf("SSL HEARTBEAT/HEARTBLEED DATA")
   plotwidth = default_plotwidth
   plotheight = default_plotheight
-  do_line_plot("RoundRealTime")
+  do_line_plot("Cost")
   #data=subset(data, mode == "IDDFS")
   #if (nrow(data) > 0) {
   #  do_line_plot("RoundRealTime")
@@ -183,27 +246,21 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
 
   plotwidth = default_plotwidth
   plotheight = default_plotheight
-  #results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
-  #results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
-
-  #results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
-  #results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
-  #results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
-  #results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
-
-  results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
-
-  plotheight = max(default_plotheight,length(unique(data$trace))*heightscalefactor)
-  results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
-  results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-
-  #x_axis <- "SocketEventSize"
+  ##results = mclapply(plotnames, do_box_plot, mc.cores=num_threads)
+  ##results = mclapply(plotnames, do_log_box_plot, mc.cores=num_threads)
+  ##results = mclapply(c("Delay"), do_max_plot, mc.cores=num_threads)
+  ##results = mclapply(c("Delay"), do_last_message_box_plot, mc.cores=num_threads)
+  ##results = mclapply(plotnames, do_histogram_plot, mc.cores=num_threads)
+  ##results = mclapply(plotnames, do_summary_plot, mc.cores=num_threads)
+  #results = mclapply(plotnames, do_mean_plot, mc.cores=num_threads)
+  #plotheight = max(default_plotheight,length(unique(data$trace))*heightscalefactor)
+  #results = mclapply(plotnames, do_line_alt_plot, mc.cores=num_threads)
   #results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
-  #x_axis <- "RoundNumber"
-
-  results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
-
-  #results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
+  ##x_axis <- "SocketEventSize"
+  ##results = mclapply(plotnames, do_line_plot, mc.cores=num_threads)
+  ##x_axis <- "RoundNumber"
+  #results = mclapply(plotnames, do_logscale_line_plot, mc.cores=num_threads)
+  ##results = mclapply(plotnames, do_point_plot, mc.cores=num_threads)
 
 }
 
@@ -238,9 +295,10 @@ if (length(selected_modes) != 0) {
       theStat <- y_params[[y]]
       #cat("\nMode: ",mode_params[[m]]," Stat: ", theStat,"\n")
       sdata <- subset(data, mode == mode_params[[m]])
+      #print(sdata)
       mdata <- sdata[theStat]
       stats <- stat.desc(mdata)
-      #print(stats)
+      print(stats)
       tstats <- t(stats)
       tstats <- tstats[,stat_names,drop=FALSE]
       tstats <- data.frame(t(tstats))

@@ -36,8 +36,6 @@ colnames = c(
   "QueryCacheHits","QueryCacheMisses","QueryConstructCount"
 )
 
-
-
 data_frame_col_names = c(colnames, "trace", "mode", "Direction", "Bin", "Delay")
 
 timeStats = c(
@@ -57,11 +55,11 @@ binwidth=100
 binwidth_time=5
 time_scale=1000000
 
-default_plotwidth=6
-default_plotheight=6
+default_plotwidth=5
+default_plotheight=5
 # Presentations (larger font)
-#default_plotwidth=4
-#default_plotheight=4
+default_plotwidth=4
+default_plotheight=4
 
 heightscalefactor = 0.5
 plotwidth = default_plotwidth
@@ -88,8 +86,8 @@ data <- NULL
 
 printf <- function(...) invisible(cat(sprintf(...),"\n"))
 #debug_printf <- function(...) invisible(print(sprintf(...)))
-debug_printf <- function(...) invisible(printf(...))
-#debug_printf <- function(...) {}
+#debug_printf <- function(...) invisible(printf(...))
+debug_printf <- function(...) {}
 
 ###############################################################################
 ### Function: Read Timestamp data
@@ -380,18 +378,20 @@ read_csv_data = function() {
 ###############################################################################
 
 ### Jittered point plot of data
-do_point_plot = function(y,x=x_axis,ylab="",xlab="") {
+do_point_plot = function(y, x="RoundNumber", ylab="", xlab="", tag="",plot_data=data, grid=FALSE) {
   debug_printf("Point Plot: %s %s %s %s", x, y, xlab, ylab)
  
   # remove zero values
-  mdata = data[match.fun('!=')(data[[y]], 0), ]
+  mdata = plot_data[match.fun('!=')(plot_data[[y]], 0), ]
   
   if (length(mdata[,1]) == 0)
     return
-  
+
   # vars
-  trace = paste(paste(x,"vs",y,sep=""),client_type,"point",sep="_")
   title = paste(x,"vs",y, sep=" ")
+  trace = paste(paste(x,"vs",y,sep=""),client_type,"point",sep="_")
+  if (tag != "")
+    trace = paste(trace, tag, sep="_")
   file_name = paste(trace, output_filetype, sep=".")
  
   # default labels
@@ -404,6 +404,7 @@ do_point_plot = function(y,x=x_axis,ylab="",xlab="") {
   #p = p + geom_point(aes(colour=factor(mode),shape=factor(mode)),size=1)
 
   p = p + geom_point(aes(colour=factor(SocketEventType),shape=factor(SocketEventType)),size=2.0)
+  if (grid) p = p + facet_grid(mode ~ .)
   p = p + scale_colour_grey(start=0.0,end=0.5)
   #p = p + geom_point(aes(shape=factor(SocketEventType)),size=2.0)
 
@@ -477,7 +478,8 @@ do_line_alt_plot = function(y_axis,plot_x_axis=x_axis) {
 }
 
 ### Alt. Line plot of data
-do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=data,min_y=0,max_y=0,grid=FALSE,with_points=FALSE) {
+do_line_group_plot = function(y, x=x_axis, ylab="",
+                              xlab="",tag="",plot_data=data,min_y=0,max_y=0,grid=FALSE,with_points=FALSE,group_relabels=c()) {
   debug_printf("Group Line Plot: %s %s %s %s %s", x, y, xlab, ylab, tag)
 
   # vars
@@ -497,17 +499,38 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=dat
   if (xlab == "") xlab = x
 
   plot_data$group = interaction(plot_data$mode, plot_data$trace)
+  tmp_data = plot_data
+
+  if (length(group_relabels) != 0) {
+    printf("Before: ")
+    printf(levels(tmp_data$group))
+    revalue(tmp_data$group, group_relabels) -> tmp_data$group
+    printf("After: ")
+    printf(levels(tmp_data$group))
+  }
 
   # construct plot
-  p = ggplot(plot_data, aes_string(x=x, y=y))
-  p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
+  p = ggplot(tmp_data, aes_string(x=x, y=y))
+  #p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
+  p = p + geom_line(aes(linetype=factor(group)),size=1.00)
+  #if (length(group_labels) == 0)
+  #  p = p + geom_line(aes(linetype=factor(group)),size=1.00, alpha=1/2)
+  #else
+  #  p = p + geom_line(aes(linetype=factor(group,levels=group_labels)),size=1.00, alpha=1/2)
   #if (with_points) p = p + geom_point(aes(colour=factor(group),shape=factor(group)), alpha=1/2)
   if (with_points) p = p + geom_point(aes(shape=factor(group)), alpha=1/2)
   #p = p + geom_point(aes(colour=factor(group)), shape=19, alpha=1/4) + geom_smooth(aes(colour=factor(group)),level=0.99,se=FALSE)
   if (grid) p = p + facet_grid(mode ~ .)
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   #p = p + theme(axis.title.x=element_blank(), axis.text.x=element_text(angle=-90))
-  p = p + theme(legend.position="none")
+  if (length(group_relabels) != 0) {
+    p = p + scale_linetype_manual(values=c("dotted","solid","dashed","longdash"))
+    p = p + theme(legend.position=c(0.65,0.50),
+                  legend.text=element_text(size=8),
+                  legend.title=element_blank())
+  } else {
+    p = p + theme(legend.position="none")
+  }
 
   if (min_y != max_y) {
     # yscale based on all data
@@ -537,8 +560,6 @@ do_line_group_plot = function(y, x=x_axis, ylab="", xlab="",tag="",plot_data=dat
   p;
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
-
-
 
 ### Logscale line plot of data
 do_logscale_line_plot = function(y_axis) {
@@ -731,7 +752,7 @@ do_instruction_summary_plot = function() {
 
 
 ### Boxplot
-do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=data, grid=TRUE) {
+do_box_plot = function(y,x="Bin",ylab="",xlab="",tag="",plot_data=data,grid=TRUE,limits_y=c()) {
   debug_printf("Box Plot: %s %s %s", x, y, tag)
 
   # vars
@@ -743,24 +764,30 @@ do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=d
   if (ylab == "") ylab = paste(y,"(s)")
   if (xlab == "") xlab = "Message"
 
+  # This is only needed if we have an empty Bin
+  # We set the factor levels to be equal to the levels for the entire
+  # data set for x
+  aes_x_str = paste("factor(",x,",levels=levels(factor(data$",x,")))",sep="")
+
   # construct plot
-  p <- ggplot(plot_data, aes_string(x=x, y=y))
+  p <- ggplot(plot_data, aes_string(x=aes_x_str, y=y))
   p = p + geom_boxplot()
   if (grid) p = p + facet_grid(mode ~ .)
   p = p + theme_bw() + ylab(ylab) + xlab(xlab)
   p = p + stat_summary(fun.y=mean, geom="point", shape=5, size=3)
 
-  ## yscale based on scale_data
-  #min_y = as.integer(floor(min(data[[y]])))
-  #max_y = as.integer(ceiling(max(data[[y]])))
+  if (length(limits_y) != 2) {
+    ## yscale based on scale_data
+    min_y = as.integer(floor(min(data[[y]])))
+    max_y = as.integer(ceiling(max(data[[y]])))
 
-  # yscale based on plot_data
-  min_y = as.integer(floor(min(plot_data[[y]])))
-  max_y = as.integer(ceiling(max(plot_data[[y]])))
+    # yscale based on plot_data
+    #min_y = as.integer(floor(min(plot_data[[y]])))
+    #max_y = as.integer(ceiling(max(plot_data[[y]])))
+    limits_y = c(min_y, max_y)
+  }
 
-  limits_y = c(min_y, max_y)
-
-  if (max_y > 5)
+  if (limits_y[2] > 5)
     breaks_y = (0:5)*diff(floor(limits_y/5)*5)/5
   else
     breaks_y = (0:5)*diff(floor(limits_y))/5
@@ -769,6 +796,9 @@ do_box_plot = function(y, x="factor(Bin)", ylab="", xlab="", tag="", plot_data=d
   #cat(y," max: ", max(data[[y]])," ", max_y, "\n")
 
   p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+  p = p + scale_x_discrete(drop=FALSE) # plot all levels, even if empty
+
+  p = p + theme(axis.text.x=element_text(angle=45))
 
   if (use_title)
     p = p + ggtitle(title)
