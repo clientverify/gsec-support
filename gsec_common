@@ -37,7 +37,7 @@ XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
 OPENSSH_BRANCH="cliver"
 UCLIBC_BRANCH="cloud9-support"
-MINISAT_BRANCH="cliver-20150925" # actually a tag, not a branch
+MINISAT_BRANCH="master"
 STP_BRANCH="2.1.2"               # actually a tag, not a branch
 
 # Source repositories
@@ -46,7 +46,7 @@ GIT_DIR="cliver"
 GOOGLE_PERFTOOLS_SVN="http://gperftools.googlecode.com/svn/trunk/"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="https://github.com/robbycochran/whole-program-llvm.git"
-MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # Upstream: https://github.com/niklasso/minisat.git
+MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # Upstream: https://github.com/stp/minisat.git
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
 STP_GIT="$GIT_HOST:$GIT_DIR/$STP.git"    # Upstream: https://github.com/stp/stp.git
