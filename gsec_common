@@ -38,7 +38,7 @@ OPENSSL_BRANCH="heartbleed"
 OPENSSH_BRANCH="cliver"
 UCLIBC_BRANCH="cloud9-support"
 MINISAT_BRANCH="cliver-20150925" # actually a tag, not a branch
-STP_BRANCH="cliver-20150925"     # actually a tag, not a branch
+STP_BRANCH="2.1.2"               # actually a tag, not a branch
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
