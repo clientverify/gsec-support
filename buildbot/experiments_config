@@ -40,7 +40,8 @@ EXPERIMENT_LIST_PARAMETERS=(
 " ${KLEE_OPTS} ${NAIVE_OPTS} ${DROP_S2C} ${NATIVE_AES} "
 )
 
-CLIVER_PARAMETERS="-i parallel"
+# CLIVER_PARAMETERS="-i parallel"
+CLIVER_PARAMETERS=" "
 
 # list of client types
 CLIENT_LIST=(
