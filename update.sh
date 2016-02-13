@@ -1300,6 +1300,11 @@ manage_openssl()
           leval git pull --all
         fi
 
+        if [ $FORCE_CLEAN -eq 1 ]; then
+          necho "[Cleaning] "
+          leval make clean
+        fi
+
         # Build native shared library (.so) for linking with other libraries
         config_and_build_openssl_shared
 
