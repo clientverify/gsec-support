@@ -1161,7 +1161,7 @@ config_and_build_openssl()
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
   openssl_config_options+="-DOPENSSL_NO_ERR "
-  #openssl_config_options+="-d " # compile with debugging symbols
+  openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
