@@ -1257,7 +1257,7 @@ build_optimized_openssl_bitcode()
 manage_openssl()
 {
   necho "$OPENSSL  \t\t"
-  case $1 in 
+  case $1 in
     install)
       check_dirs $OPENSSL || { return 0; }
 
@@ -1365,6 +1365,138 @@ manage_testclientserver()
       ;;
 
     update)
+      ;;
+
+  esac
+  necho "[Done]\n"
+}
+
+###############################################################################
+
+config_and_build_boringssl()
+{
+  local llvm_compiler_options=$1
+  local tag=$2
+  local save_directory="$(pwd)"
+  local boringssl_build_directory="$ROOT_DIR/build/$BORINGSSL"
+
+  local boringssl_config_options=""
+  boringssl_config_options+="-DCMAKE_INSTALL_PREFIX=${BORINGSSL_ROOT} "
+  # boringssl_config_options+="no-asm no-threads no-shared -DPURIFY "
+  # boringssl_config_options+="-DCLIVER "
+  # boringssl_config_options+="-DBORINGSSL_NO_LOCKING "
+  # boringssl_config_options+="-DBORINGSSL_NO_ERR "
+  #boringssl_config_options+="-d " # compile with debugging symbols
+
+  local make_options=""
+  make_options+="CC=wllvm "
+  make_options+="CXX=wllvm++ "
+  make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
+  make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+
+  export LLVM_COMPILER=${LLVM_CC}
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+
+  necho "[Configuring${tag}] "
+  leval mkdir -p "$boringssl_build_directory"
+  leval cd "$boringssl_build_directory"
+  leval $make_options cmake -GNinja \
+      $boringssl_config_options \
+      $ROOT_DIR/src/$BORINGSSL
+
+  necho "[Compiling${tag}] "
+  leval $make_options ninja
+
+  if [ $SKIP_TESTS -eq 0 ]; then
+    necho "[Testing (skipped)] "
+    #necho "[Testing] "
+    #leval make $make_options test
+  fi
+
+  necho "[Installing${tag}] "
+  leval mkdir -p $BORINGSSL_ROOT
+  leval cp tool/bssl $BORINGSSL_ROOT/bin/
+  leval extract-bc $BORINGSSL_ROOT/bin/bssl
+  leval cp $BORINGSSL_ROOT/bin/bssl.bc $BORINGSSL_ROOT/bin/bssl${tag}.bc
+
+  cd $save_directory
+}
+
+build_optimized_boringssl_bitcode()
+{
+  local tag=$1
+
+  necho "[Optimizing${tag}] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${BORINGSSL_ROOT}/bin/bssl-opt${tag}.bc ${BORINGSSL_ROOT}/bin/bssl${tag}.bc
+}
+
+manage_boringssl()
+{
+  local boringssl_build_directory="$ROOT_DIR/build/$BORINGSSL"
+
+  necho "$BORINGSSL  \t\t"
+  case $1 in
+    install)
+      check_dirs $BORINGSSL || { return 0; }
+
+      cd $ROOT_DIR"/src"
+
+      necho "[Cloning] "
+      leval git clone $BORINGSSL_GIT $BORINGSSL
+
+      cd $ROOT_DIR"/src/$BORINGSSL"
+
+      leval git checkout -b $BORINGSSL_BRANCH origin/$BORINGSSL_BRANCH
+
+      # Build two versions of boringssl, to support cliver and lli
+      config_and_build_boringssl "-DKLEE" "-klee"
+      config_and_build_boringssl " " "-run"
+      ;;
+
+    update)
+      if [ ! -e "$ROOT_DIR/src/$BORINGSSL/.git" ]; then
+        echo "[Error] (git directory missing) "; exit;
+      fi
+
+      cd $ROOT_DIR/src/$BORINGSSL
+
+      if [ $BUILD_LOCAL -eq 0 ]; then
+        if [ "$(git_current_branch)" != "$BORINGSSL_BRANCH" ]; then
+          echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+        fi
+        necho "[Checking] "
+        leval git remote update
+      fi
+
+      if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+        if [ $BUILD_LOCAL -eq 0 ]; then
+          necho "[Pulling] "
+          leval git pull --all
+        fi
+
+        if [ $FORCE_CLEAN -eq 1 ]; then
+          necho "[Cleaning] "
+          leval cd $boringssl_build_directory
+          leval ninja clean
+          leval cd -
+        fi
+
+        # Build two versions of boringssl, to support cliver and lli
+        config_and_build_boringssl "-DKLEE" "-klee"
+        config_and_build_boringssl " " "-run"
+
+        # run opt on two versions of boringssl, to support cliver and lli
+        build_optimized_boringssl_bitcode "-klee"
+        build_optimized_boringssl_bitcode "-run"
+      fi
+      ;;
+    opt*)
+      # run opt on two versions of boringssl, to support cliver and lli
+      build_optimized_boringssl_bitcode "-klee"
+      build_optimized_boringssl_bitcode "-run"
       ;;
 
   esac
@@ -1520,9 +1652,11 @@ main()
     #install_stp_git
     #install_ghmm
     manage_openssl install
+    manage_boringssl install
     install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
+    manage_boringssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
     install_zlib
     install_expat
@@ -1545,6 +1679,9 @@ main()
       openssl)
         manage_openssl update
         ;;
+      boringssl)
+        manage_boringssl update
+        ;;
       llvm)
         update_llvm
         ;;
@@ -1559,6 +1696,7 @@ main()
     # update all
     update_wllvm
     manage_openssl update
+    manage_boringssl update
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm
