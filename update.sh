@@ -1405,13 +1405,15 @@ config_and_build_boringssl()
       $boringssl_config_options \
       $ROOT_DIR/src/$BORINGSSL
 
+  necho "[Cleaning${tag}] "
+  leval ninja clean
+
   necho "[Compiling${tag}] "
   leval $make_options ninja
 
   if [ $SKIP_TESTS -eq 0 ]; then
-    necho "[Testing (skipped)] "
-    #necho "[Testing] "
-    #leval make $make_options test
+    necho "[Testing] "
+    leval ninja run_tests
   fi
 
   necho "[Installing${tag}] "
