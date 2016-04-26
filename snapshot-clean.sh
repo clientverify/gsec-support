@@ -27,6 +27,8 @@ then
     do
         [ -d "${dirname}" ] && mv -v "${dirname}" "${snapdir}/"
     done
+    echo "Snapshot directory contents:"
+    ls -la "${snapdir}"
 else
     echo "No symlink detected at ${logsymlink}"
     echo "Removing directories without taking a snapshot."
