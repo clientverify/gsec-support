@@ -1382,11 +1382,13 @@ config_and_build_boringssl()
 
   local boringssl_config_options=""
   boringssl_config_options+="-DCMAKE_INSTALL_PREFIX=${BORINGSSL_ROOT} "
-  # boringssl_config_options+="no-asm no-threads no-shared -DPURIFY "
-  # boringssl_config_options+="-DCLIVER "
-  # boringssl_config_options+="-DBORINGSSL_NO_LOCKING "
-  # boringssl_config_options+="-DBORINGSSL_NO_ERR "
-  #boringssl_config_options+="-d " # compile with debugging symbols
+
+  # Original OpenSSL options
+  # openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
+  # openssl_config_options+="-DCLIVER "
+  # openssl_config_options+="-DOPENSSL_NO_LOCKING "
+  # openssl_config_options+="-DOPENSSL_NO_ERR "
+  # openssl_config_options+="-d " # compile with debugging symbols
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1395,7 +1397,16 @@ config_and_build_boringssl()
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
 
   export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
+  LLVM_COMPILER_FLAGS=""
+  LLVM_COMPILER_FLAGS+="-fno-slp-vectorize "
+  LLVM_COMPILER_FLAGS+="-fno-slp-vectorize-aggressive "
+  LLVM_COMPILER_FLAGS+="-fno-vectorize "
+  LLVM_COMPILER_FLAGS+="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} "
+  LLVM_COMPILER_FLAGS+="${llvm_compiler_options} "
+  LLVM_COMPILER_FLAGS+="-DOPENSSL_NO_ASM "
+  LLVM_COMPILER_FLAGS+="-DOPENSSL_NO_THREADS "
+  LLVM_COMPILER_FLAGS+="-DCLIVER "
+  export LLVM_COMPILER_FLAGS
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   necho "[Configuring${tag}] "
