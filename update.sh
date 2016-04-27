@@ -658,7 +658,7 @@ install_llvm()
 
   cd $ROOT_DIR"/src/$LLVM"
 
-  leval git checkout -b $LLVM_BRANCH origin/$LLVM_BRANCH
+  leval git checkout $LLVM_BRANCH
 
   if test ${GIT_TAG+defined}; then
     necho "[Fetching $GIT_TAG] "
@@ -1461,7 +1461,7 @@ manage_boringssl()
 
       cd $ROOT_DIR"/src/$BORINGSSL"
 
-      leval git checkout -b $BORINGSSL_BRANCH origin/$BORINGSSL_BRANCH
+      leval git checkout $BORINGSSL_BRANCH
 
       # Build two versions of boringssl, to support cliver and lli
       config_and_build_boringssl "-DKLEE" "-klee"
