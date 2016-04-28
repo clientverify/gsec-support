@@ -1426,7 +1426,7 @@ config_and_build_boringssl()
   leval ninja clean
 
   necho "[Compiling${tag}] "
-  leval $make_options ninja
+  leval ninja
 
   if [ $SKIP_TESTS -eq 0 ]; then
     necho "[Testing] "
