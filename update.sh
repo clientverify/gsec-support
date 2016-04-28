@@ -1395,6 +1395,14 @@ config_and_build_boringssl()
   make_options+="CXX=wllvm++ "
   make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
   make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+  local cflags_options=""
+  cflags_options+="-DOPENSSL_NO_ASM "
+  cflags_options+="-DOPENSSL_NO_THREADS "
+  #cflags_options+="-DCLIVER "
+  make_options+="CFLAGS='${cflags_options}' "
+  local cxxflags_options=""
+  cxxflags_options+="${cflags_options} "
+  make_options+="CXXFLAGS='${cxxflags_options}' "
 
   export LLVM_COMPILER=${LLVM_CC}
   LLVM_COMPILER_FLAGS=""
@@ -1403,15 +1411,13 @@ config_and_build_boringssl()
   LLVM_COMPILER_FLAGS+="-fno-vectorize "
   LLVM_COMPILER_FLAGS+="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} "
   LLVM_COMPILER_FLAGS+="${llvm_compiler_options} "
-  LLVM_COMPILER_FLAGS+="-DOPENSSL_NO_ASM "
-  LLVM_COMPILER_FLAGS+="-DOPENSSL_NO_THREADS "
-  LLVM_COMPILER_FLAGS+="-DCLIVER "
   export LLVM_COMPILER_FLAGS
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
 
   necho "[Configuring${tag}] "
   leval mkdir -p "$boringssl_build_directory"
   leval cd "$boringssl_build_directory"
+  leval rm -f CMakeCache.txt
   leval $make_options cmake -GNinja \
       $boringssl_config_options \
       $ROOT_DIR/src/$BORINGSSL
