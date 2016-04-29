@@ -19,6 +19,7 @@ FORCE_COMPILATION=0
 FORCE_CONFIGURE=0
 INSTALL_PACKAGES=0
 BUILD_DEBUG=0
+BUILD_DEBUG_ALL=0
 BUILD_LOCAL=0 # build local code, don't checkout from git
 SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
@@ -570,7 +571,14 @@ config_llvm ()
   cd $ROOT_DIR"/build/$LLVM"
 
   LLVM_CONFIG_OPTIONS="--prefix=$LLVM_ROOT "
-  LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions --enable-shared --enable-pic --enable-libffi "
+  LLVM_CONFIG_OPTIONS+="--enable-shared --enable-pic --enable-libffi "
+
+  # Note: the LLVM debug build is slow and very large (400 MB)
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    LLVM_CONFIG_OPTIONS+="--enable-debug-symbols --disable-optimized "
+  else
+    LLVM_CONFIG_OPTIONS+="--enable-optimized --disable-assertions "
+  fi
 
   if test ${ALTCC+defined}; then
     LLVM_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
@@ -1161,7 +1169,12 @@ config_and_build_openssl()
   openssl_config_options+="-DCLIVER "
   openssl_config_options+="-DOPENSSL_NO_LOCKING "
   openssl_config_options+="-DOPENSSL_NO_ERR "
-  #openssl_config_options+="-d " # compile with debugging symbols
+
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    # Warning: this adds not only debug symbols to OpenSSL, but also extra
+    # debug code like a custom malloc(). Cliver will be much slower.
+    openssl_config_options+="-d " # compile with debugging symbols
+  fi
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1383,12 +1396,10 @@ config_and_build_boringssl()
   local boringssl_config_options=""
   boringssl_config_options+="-DCMAKE_INSTALL_PREFIX=${BORINGSSL_ROOT} "
 
-  # Original OpenSSL options
-  # openssl_config_options+="no-asm no-threads no-shared -DPURIFY "
-  # openssl_config_options+="-DCLIVER "
-  # openssl_config_options+="-DOPENSSL_NO_LOCKING "
-  # openssl_config_options+="-DOPENSSL_NO_ERR "
-  # openssl_config_options+="-d " # compile with debugging symbols
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    # The default BoringSSL build is debug, compiled with -ggdb
+    boringssl_config_options+="-DCMAKE_BUILD_TYPE=Release "
+  fi
 
   local make_options=""
   make_options+="CC=wllvm "
@@ -1547,7 +1558,7 @@ main()
 {
   echo
   echo "====--configuration--===="
-  while getopts ":afkcivsb:r:j:dltn" opt; do
+  while getopts ":afkcivsb:r:j:dDltn" opt; do
     case $opt in
   
       f)
@@ -1556,8 +1567,14 @@ main()
         ;;
    
       d)
-        lecho "Building debug version"
+        lecho "Building (mostly) debug version"
         BUILD_DEBUG=1
+        ;;
+
+      D)
+        lecho "Building completely debug version"
+        BUILD_DEBUG=1
+        BUILD_DEBUG_ALL=1
         ;;
  
       l)
