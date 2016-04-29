@@ -1409,7 +1409,7 @@ config_and_build_boringssl()
   local cflags_options=""
   cflags_options+="-DOPENSSL_NO_ASM "
   cflags_options+="-DOPENSSL_NO_THREADS "
-  #cflags_options+="-DCLIVER "
+  cflags_options+="-DCLIVER "
   make_options+="CFLAGS='${cflags_options}' "
   local cxxflags_options=""
   cxxflags_options+="${cflags_options} "
