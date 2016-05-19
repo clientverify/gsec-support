@@ -1198,10 +1198,11 @@ config_and_build_openssl()
   leval make $make_options depend
   leval make $make_options
 
-  if [ $SKIP_TESTS -eq 0 ]; then
-    necho "[Testing (skipped)] "
-    #necho "[Testing] "
-    #leval make $make_options test
+  if [ $SKIP_TESTS -eq 1 ]; then
+    necho "[Testing${tag} (skipped)] "
+  else
+    necho "[Testing${tag}] "
+    leval make $make_options test
   fi
 
   necho "[Installing${tag}] "
@@ -1440,7 +1441,8 @@ config_and_build_boringssl()
   leval ninja
 
   if [ $SKIP_TESTS -eq 0 ]; then
-    necho "[Testing] "
+    necho "[Testing${tag}] "
+    # Do we need to use a system-wide lockfile here?
     leval ninja run_tests
   fi
 
