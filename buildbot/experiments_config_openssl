@@ -7,18 +7,23 @@ fake_padding_length=128
 
 # list of modes to run cliver.sh
 EXPERIMENT_LIST=(
+### bitcode AES
+#naive
+#naive
+#naive
+#naive
+
+### native AES
 naive
-#naive
-naive
-#naive
 naive
 naive
-#naive
-#naive
-#naive
-#naive
-#naive
-#naive
+naive
+
+### KTestText; native AES
+naive
+naive
+naive
+naive
 )
 
 # list of output tags
@@ -66,6 +71,28 @@ IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
 #IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
 #IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
 IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
+
+### KTestText; native AES
+IDDFS-text-nAES-1-opt
+#IDDFS-text-nAES-1
+#IDDFS-text-nAES-2
+#IDDFS-text-nAES-4
+#IDDFS-text-nAES-16
+#IDDFS-text-nAES-1-opt-FP${fake_padding_length}
+#IDDFS-text-nAES-1-FP${fake_padding_length}
+#IDDFS-text-nAES-2-FP${fake_padding_length}
+#IDDFS-text-nAES-4-FP${fake_padding_length}
+#IDDFS-text-nAES-16-FP${fake_padding_length}
+IDDFS-text-nAES-1-opt-dropS2C
+#IDDFS-text-nAES-1-dropS2C
+#IDDFS-text-nAES-2-dropS2C
+#IDDFS-text-nAES-4-dropS2C
+#IDDFS-text-nAES-16-dropS2C
+IDDFS-text-nAES-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-1-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-2-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-4-FP${fake_padding_length}-dropS2C
+IDDFS-text-nAES-16-FP${fake_padding_length}-dropS2C
 )
 
 # parameters
@@ -116,6 +143,23 @@ EXPERIMENT_LIST_PARAMETERS=(
 #" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
 #" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
 " ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+
+### KTestText; native AES
+" ${naive_opts} ${native_aes} --use-threads=1  "
+#" ${naive_opts} ${native_aes} --use-threads=1  "
+#" ${naive_opts} ${native_aes} --use-threads=2  "
+#" ${naive_opts} ${native_aes} --use-threads=4  "
+#" ${naive_opts} ${native_aes} --use-threads=16 "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
 )
 
 # cliver.sh parameters used for all experiments
@@ -135,15 +179,15 @@ EXPERIMENT_LIST_CLIVER_PARAMETERS=(
 
 ### native AES
 " -s "
-#""
-#""
 " -s "
-#""
-#""
 " -s "
 ""
-#""
 
+### KTestText; native AES
+" -T -s "
+" -T -s "
+" -T -s "
+" -T "
 )
 
 # List of bitcode parameters specific to each experiment type
@@ -156,6 +200,14 @@ EXPERIMENT_LIST_BITCODE_PARAMETERS=(
 #" --fake-padding ${fake_padding_length} "
 #" --fake-padding ${fake_padding_length} "
 ### native AES
+""
+#""
+""
+#""
+#" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+### KTestText; native AES
 ""
 #""
 ""

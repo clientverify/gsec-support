@@ -42,6 +42,7 @@ BC_MODE="tetrinet"
 KTEST_DIR=""
 XARGS_MAX_PROCS=0 # for running in parallel mode with xargs
 SINGLE_KTEST_INPUT=""
+KTEST_FILE_TYPE="binary" # binary or text
 
 HMM_PREFIX="hmm_"
 HMM_TRAINING_MODE="ncross"
@@ -336,6 +337,23 @@ cliver_parameters()
   printf "%s" "$cliver_params"
 }
 
+cliver_ktest_parameters()
+{
+  local binary_ktest_file=$1
+  if [[ $KTEST_FILE_TYPE == "binary" ]]; then
+      printf "%s" "-socket-log ${binary_ktest_file} "
+  else # text
+      local params=""
+      local binary_basename=$(basename "$binary_ktest_file")
+      local parentdir=$(dirname "$binary_ktest_file")
+      local txtfile="${binary_basename}.txt"
+      local keyfile="${binary_basename}.key"
+      params+="-socket-log-text=${parentdir}/text/${txtfile} "
+      params+="-tls-master-secret-file=${parentdir}/keys/${keyfile} "
+      printf "%s" "${params}"
+  fi
+}
+
 run_cliver()
 {
   # Save each cliver command and parameters
@@ -375,7 +393,7 @@ do_training()
   for i in $KTEST_DIR/*ktest; do
     local ktest_basename=$(basename $i .ktest)
     local cliver_params="$(cliver_parameters)"
-    cliver_params+="-socket-log $i "
+    cliver_params+=$(cliver_ktest_parameters "$i")
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-copy-input-files-to-output-dir=1 "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
@@ -443,7 +461,7 @@ do_verification()
       fi
     fi
 
-    cliver_params+="-socket-log $i "
+    cliver_params+=$(cliver_ktest_parameters "$i")
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
 
@@ -501,7 +519,7 @@ do_ncross_verification()
       fi
     fi
 
-    cliver_params+="-socket-log $ktest_file "
+    cliver_params+=$(cliver_ktest_parameters "$ktest_file")
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
 
@@ -591,7 +609,7 @@ do_training_verification()
     
     local cliver_params="$(cliver_parameters) "
 
-    cliver_params+="-socket-log $ktest_file "
+    cliver_params+=$(cliver_ktest_parameters "$ktest_file")
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
 
@@ -742,7 +760,7 @@ do_hmm_verification()
     local ktest_basename=$(basename ${training_dirs[$i]})
     local cliver_params="$(cliver_parameters) "
 
-    cliver_params+="-socket-log $ktest_file "
+    cliver_params+=$(cliver_ktest_parameters "$ktest_file")
     cliver_params+="-output-dir $CLIVER_OUTPUT_DIR/$ktest_basename "
     cliver_params+="-cliver-mode=$CLIVER_MODE "
     cliver_params+="-use-hmm "
@@ -797,6 +815,7 @@ usage()
   echo -e "\t-m [gigabytes]\t\t\t\t(maximum memory usage)"
   echo -e "\t-p [heapprofile|heaplocal|heapcheck]\t(memory profiling options)"
   echo -e "\t-r [dir]\t\t\t\t(alternative root directory)"
+  echo -e "\t-T \t\t\t\t\t(KTestText: use text/*.ktest.txt & keys/*.ktest.key)"
   echo -e "\t-n \t\t\t\t\t(dry run)"
   echo -e "\t-s \t\t\t\t\t(silent)"
   echo -e "\t-h \t\t\t\t\t(help/usage)"
@@ -824,7 +843,7 @@ run_parallel_jobs()
 
 main() 
 {
-  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:y:nshvf" opt; do
+  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:y:nshvfT" opt; do
     case $opt in
       b)
         DATA_TAG="$OPTARG"
@@ -951,10 +970,15 @@ main()
         USE_SINGLE_THREADED_KLEE=1
         ;;
 
+      T)
+        KTEST_FILE_TYPE="text" # default is "binary"
+        ;;
+
       h)
         usage
         exit
         ;;
+
       :)
         echo "Option -$OPTARG requires an argument"
         usage
