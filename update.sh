@@ -1538,17 +1538,69 @@ manage_boringssl()
 
 ###############################################################################
 
+manage_apache()
+{
+  necho "$APACHE  \t\t"
+  case $1 in
+    install)
+      check_dirs $APACHE || { return 0; }
+
+      cd $ROOT_DIR"/src"
+
+      necho "[Cloning] "
+      leval git clone $APACHE_GIT
+
+      cd $ROOT_DIR"/src/$APACHE"
+
+      leval git checkout $APACHE_BRANCH
+
+      # Build two versions of boringssl, to support cliver and lli
+      config_and_build_apache
+      ;;
+
+    update)
+      necho "UPDATE  \t\t"
+      if [ ! -e "$ROOT_DIR/src/$APACHE/.git" ]; then
+        echo "[Error] (git directory missing) "; exit;
+      fi
+
+      cd $ROOT_DIR/src/$APACHE
+
+      if [ $BUILD_LOCAL -eq 0 ]; then
+        if [ "$(git_current_branch)" != "$APACHE_BRANCH" ]; then
+          echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+        fi
+        necho "[Checking] "
+        leval git remote update
+      fi
+
+      if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+        if [ $BUILD_LOCAL -eq 0 ]; then
+          necho "[Pulling] "
+          leval git pull --all
+        fi
+
+        if [ $FORCE_CLEAN -eq 1 ]; then
+          necho "[Cleaning] "
+          leval cd $ROOT_DIR/src/$APACHE/httpd-2.4.18/
+          leval make clean
+          leval cd -
+        fi
+
+        # Build apache 
+        config_and_build_apache
+
+      fi
+      ;;
+
+  esac
+  necho "[Done]\n"
+}
+
+
 config_and_build_apache()
 {
-  necho "config_and_build_apache "
-  necho "git clone ${APACHE_GIT}"
-  cd $ROOT_DIR"/src"
-  leval git clone $APACHE_GIT
-  necho "config_and_build_apache clone"
-  cd $ROOT_DIR"/src/$APACHE"
-
-  leval git checkout -b $APACHE_BRANCH origin/$APACHE_BRANCH
-  necho "config_and_build_apache checkedout "
   cd $ROOT_DIR
 
   local apache_config_options=""
@@ -1561,8 +1613,6 @@ config_and_build_apache()
 
   local make_options=""
 
-  #export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
-
   # Create 'makedepend' replacement
 
   necho "[Configuring] "
@@ -1572,11 +1622,7 @@ config_and_build_apache()
   leval make $make_options
 
   necho "[Installing] "
-  mkdir -p $APACHE_ROOT
-  necho " MEEP "
   leval make install
-
-  necho "MEEP"
 }
 
 
@@ -1745,7 +1791,7 @@ main()
     install_expat
     install_tetrinet
     install_xpilot_with_wllvm
-    config_and_build_apache 
+    manage_apache install
  
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     echo
@@ -1770,7 +1816,7 @@ main()
         update_llvm
         ;;
       apache)
-        config_and_build_apache
+        manage_apache update
         ;;
       *)
        echo "${SELECTIVE_BUILD_TARGET} not found!"; exit
@@ -1787,6 +1833,7 @@ main()
     update_klee
     update_tetrinet
     update_xpilot_with_wllvm
+    manage_apache update
   fi
   
   echo

@@ -128,7 +128,7 @@ initialize_root_directories()
   GHMM_ROOT="$ROOT_DIR/local"
   FOLLY_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
-  APACHE_ROOT="$ROOT_DIR/local"
+  APACHE_ROOT="$ROOT_DIR/src/$APACHE"
 }
 
 ### echo message to screen and log to file (even when verbose is disabled)
