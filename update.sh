@@ -1535,6 +1535,51 @@ manage_boringssl()
   necho "[Done]\n"
 }
 
+
+###############################################################################
+
+config_and_build_apache()
+{
+  necho "config_and_build_apache "
+  necho "git clone ${APACHE_GIT}"
+  cd $ROOT_DIR"/src"
+  leval git clone $APACHE_GIT
+  necho "config_and_build_apache clone"
+  cd $ROOT_DIR"/src/$APACHE"
+
+  leval git checkout -b $APACHE_BRANCH origin/$APACHE_BRANCH
+  necho "config_and_build_apache checkedout "
+  cd $ROOT_DIR
+
+  local apache_config_options=""
+  apache_config_options+="--prefix=${APACHE_ROOT} "
+  apache_config_options+="--with-included-apr=/usr/local/apr "
+  apache_config_options+="--enable-ssl "
+  apache_config_options+="--with-ssl-builddir=${ROOT_DIR}/src/openssl "
+  apache_config_options+="--enable-ssl-staticlib-deps "
+  apache_config_options+="--enable-mods-static=ssl "
+
+  local make_options=""
+
+  #export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+
+  # Create 'makedepend' replacement
+
+  necho "[Configuring] "
+  leval $ROOT_DIR/src/$APACHE/httpd-2.4.18/configure $apache_config_options
+
+  necho "[Compiling] "
+  leval make $make_options
+
+  necho "[Installing] "
+  mkdir -p $APACHE_ROOT
+  necho " MEEP "
+  leval make install
+
+  necho "MEEP"
+}
+
+
 ###############################################################################
 
 on_exit()
@@ -1700,7 +1745,8 @@ main()
     install_expat
     install_tetrinet
     install_xpilot_with_wllvm
-  
+    config_and_build_apache 
+ 
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     echo
     echo "====--update--===="
@@ -1722,6 +1768,9 @@ main()
         ;;
       llvm)
         update_llvm
+        ;;
+      apache)
+        config_and_build_apache
         ;;
       *)
        echo "${SELECTIVE_BUILD_TARGET} not found!"; exit

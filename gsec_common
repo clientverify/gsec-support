@@ -28,6 +28,7 @@ BORINGSSL="boringssl"
 GHMM="ghmm"
 TESTCLIENTSERVER="testclientserver"
 FOLLY="folly"
+APACHE="apache"
 
 # Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
@@ -40,6 +41,7 @@ BORINGSSL_BRANCH="playback_support"
 UCLIBC_BRANCH="cloud9-support"
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
 FOLLY_TAG="v0.57.0"
+APACHE_BRANCH="demo_orphan"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -58,6 +60,7 @@ OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 BORINGSSL_GIT="${GIT_HOST}:${GIT_DIR}/${BORINGSSL}.git"
 GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
 FOLLY_GIT="https://github.com/facebook/folly.git"
+APACHE_GIT="$GIT_HOST:$GIT_DIR/${APACHE}.git"
 
 # Tarball locations
 PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
@@ -125,6 +128,7 @@ initialize_root_directories()
   GHMM_ROOT="$ROOT_DIR/local"
   FOLLY_ROOT="$ROOT_DIR/local"
   DATA_DIR="$ROOT_DIR/data"
+  APACHE_ROOT="$ROOT_DIR/local"
 }
 
 ### echo message to screen and log to file (even when verbose is disabled)
