@@ -1601,7 +1601,8 @@ manage_apache()
 
 config_and_build_apache()
 {
-  cd $ROOT_DIR
+  cd "$ROOT_DIR/src/$APACHE/httpd-2.4.18/"
+
 
   local apache_config_options=""
   apache_config_options+="--prefix=${APACHE_ROOT} "
@@ -1623,6 +1624,8 @@ config_and_build_apache()
 
   necho "[Installing] "
   leval make install
+
+  cd $ROOT_DIR
 }
 
 
