@@ -63,7 +63,7 @@ FOLLY_GIT="https://github.com/facebook/folly.git"
 APACHE_GIT="$GIT_HOST:$GIT_DIR/${APACHE}.git"
 
 # Tarball locations
-PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
+PACKAGE_DIR="http://cs.unc.edu/~nesfield/cliverfiles/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 UDIS86_PACKAGE="$UDIS86.tar.gz"
