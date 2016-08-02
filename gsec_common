@@ -52,7 +52,7 @@ OPENSSL_GIT="${GIT_HOST}:${GIT_DIR}/${OPENSSL}.git"
 GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
 
 # Tarball locations
-PACKAGE_DIR="http://cs.unc.edu/~rac/cliverfiles/"
+PACKAGE_DIR="http://cs.unc.edu/~nesfield/cliverfiles/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 GOOGLE_PERFTOOLS_PACKAGE="$GOOGLE_PERFTOOLS.tar.gz"
