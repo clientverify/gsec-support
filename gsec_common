@@ -39,7 +39,7 @@ OPENSSL_BRANCH="heartbleed"
 BORINGSSL_BRANCH="playback_support"
 UCLIBC_BRANCH="cloud9-support"
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
-FOLLY_TAG="v0.57.0"
+FOLLY_TAG="2016.07.26"
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
