@@ -1387,6 +1387,153 @@ manage_testclientserver()
 
 ###############################################################################
 
+
+config_and_build_openssh()
+{
+  local llvm_compiler_options=$1
+  local tag=$2
+  mkdir ${ROOT_DIR}/var
+  mkdir ${ROOT_DIR}/var/empty
+
+  local openssh_config_options=""
+  openssh_config_options+="--prefix=${OPENSSH_ROOT} "
+  #openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
+  openssh_config_options+="--without-openssl "
+  openssh_config_options+="--without-pie "
+  openssh_config_options+="--disable-strip "
+  openssh_config_options+="--with-privsep-path=${ROOT_DIR}/var/empty"
+
+  local config_env=""
+  config_env+="CC=wllvm "
+  local cflags_for_config=""
+  cflags_for_config="-DWITH_KTEST "
+
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
+    cflags_for_config+="-g " # compile with debugging symbols
+  fi
+
+  cflags_for_config+=""
+  config_env+="CFLAGS=\"${cflags_for_config}\" "
+
+  #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
+
+  local make_options=""
+  make_options+="-j $MAKE_THREADS " # parallel build
+  #make_options+="CC=wllvm "
+  #make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
+  #make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+
+  export LLVM_COMPILER=${LLVM_CC}
+  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
+  PATH_ORIGINAL="${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+
+  if [ $FORCE_CLEAN -eq 1 ]; then
+    necho "[Cleaning] "
+    leval make clean
+  fi
+
+  necho "[Configuring${tag}] "
+  leval autoreconf -i
+  leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
+
+  necho "[Compiling${tag}] "
+  leval make $make_options
+
+  # Note: this takes forever, and uses specific hard-coded ports.  Therefore,
+  # only one instance of OpenSSH "make tests" can be run on the machine at any
+  # point in time.
+  # Unfortunately, "make tests" breaks when built --without-openssl.  We
+  # therefore disable the tests for now.
+  necho "[Testing disabled] "
+  #if [ $SKIP_TESTS -eq 0 ]; then
+  #  necho "[Testing] "
+  #  local RETRY=180 # keep retrying for about 3 hours (6 builds)
+  #  leval lockfile-create --use-pid --retry $RETRY --lock-name $OPENSSH_LOCKFILE
+  #  leval make tests
+  #  leval lockfile-remove --lock-name $OPENSSH_LOCKFILE
+  #fi
+
+  necho "[Installing${tag}] "
+  mkdir -p $OPENSSH_ROOT
+  leval make install-nokeys
+  leval extract-bc $OPENSSH_ROOT/bin/ssh
+  leval cp $OPENSSH_ROOT/bin/ssh.bc $OPENSSH_ROOT/bin/ssh${tag}.bc
+
+  export PATH="${PATH_ORIGINAL}"
+}
+
+build_optimized_openssh_bitcode()
+{
+  local tag=$1
+
+  necho "[Optimizing${tag}] "
+  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSH_ROOT}/bin/ssh-opt${tag}.bc ${OPENSSH_ROOT}/bin/ssh${tag}.bc
+}
+
+manage_openssh()
+{
+  necho "$OPENSSH  \t\t"
+  case $1 in
+    install)
+      check_dirs $OPENSSH || { return 0; }
+
+      cd $ROOT_DIR"/src"
+
+      necho "[Cloning] "
+      leval git clone $OPENSSH_GIT $OPENSSH
+
+      cd $ROOT_DIR"/src/$OPENSSH"
+
+      leval git checkout -b $OPENSSH_BRANCH origin/$OPENSSH_BRANCH
+
+      # Build only one version. Later we might need 2 versions in order to
+      # support cliver and lli, like OpenSSL.
+      config_and_build_openssh "-DKLEE " "-klee"
+      #config_and_build_openssh " " "-run"
+      ;;
+
+    update)
+      if [ ! -e "$ROOT_DIR/src/$OPENSSH/.git" ]; then
+        echo "[Error] (git directory missing) "; exit;
+      fi
+
+      cd $ROOT_DIR/src/$OPENSSH
+
+      if [ $BUILD_LOCAL -eq 0 ]; then
+        if [ "$(git_current_branch)" != "$OPENSSH_BRANCH" ]; then
+          echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+        fi
+        necho "[Checking] "
+        leval git remote update
+      fi
+
+      if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
+
+        if [ $BUILD_LOCAL -eq 0 ]; then
+          necho "[Pulling] "
+          leval git pull --all
+        fi
+
+        # Build only one version. Later we might need 2 versions in order to
+        # support cliver and lli, like OpenSSL.
+        config_and_build_openssh "-DKLEE " "-klee"
+        #config_and_build_openssh " " "-run"
+      fi
+      ;;
+
+    opt*)
+      # Run LLVM optimizer (opt) on only one version. Later we might need 2
+      # versions in order to support cliver and lli, like OpenSSL.
+      build_optimized_openssh_bitcode "-klee"
+      #build_optimized_openssh_bitcode "-run"
+      ;;
+  esac
+  necho "[Done]\n"
+}
+
+###############################################################################
 config_and_build_boringssl()
 {
   local llvm_compiler_options=$1
@@ -1541,6 +1688,7 @@ on_exit()
 {
   if [ $ERROR_EXIT -eq 1 ]; then
     lecho "Error"
+    lockfile-remove --lock-name $OPENSSH_LOCKFILE > /dev/null 2>&1
     if ! [ $VERBOSE_OUTPUT -eq 1 ]; then
       if test ${LOG_FILE+defined}; then
         necho "\n\n"
@@ -1690,10 +1838,12 @@ main()
     #install_stp_git
     #install_ghmm
     manage_openssl install
+    manage_openssh install # NOTE: SSH depends on OpenSSL
     manage_boringssl install
     install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
+    manage_openssh opt
     manage_boringssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
     install_zlib
@@ -1717,6 +1867,10 @@ main()
       openssl)
         manage_openssl update
         ;;
+      openssh)
+        manage_openssh update
+        manage_openssh opt
+        ;;
       boringssl)
         manage_boringssl update
         ;;
@@ -1734,6 +1888,8 @@ main()
     # update all
     update_wllvm
     manage_openssl update
+    manage_openssh update # Note: SSH depends on OpenSSL
+    manage_openssh opt
     manage_boringssl update
     update_klee
     update_tetrinet
