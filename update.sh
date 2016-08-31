@@ -1306,6 +1306,7 @@ config_and_build_openssh()
 {
   local llvm_compiler_options=$1
   local tag=$2
+  mkdir -p ${LOCAL_ROOT}/var/empty
 
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
@@ -1313,6 +1314,7 @@ config_and_build_openssh()
   openssh_config_options+="--without-openssl "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
+  openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty"
 
   local config_env=""
   config_env+="CC=wllvm "
