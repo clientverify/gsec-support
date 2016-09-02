@@ -2,7 +2,61 @@
 
 ###############################################################################
 ### experiments.sh : Run Training or Verification experiments
-
+#
+# Terminology and Design Rationale
+#
+# This Andrew Chi's interpretation of Robby Cochran's experiment
+# scripts, attempting to capture (or reverse engineer) the design
+# rationale :-)
+#
+# Typical usage:
+# $ ./gsec-support/experiments.sh -c gsec-support/buildbot/experiments_config
+#
+# At a high level, we run N experiments against each of M clients, for
+# a total of (N * M) sets of results.
+#
+# Experiment - Each "experiment" represents a build/configuration of
+# *KLEE* (not the client to be verified). For example, running KLEE in
+# release mode with 16 threads, native AES optimizations, and dropS2C.
+# Note that those last two features are (unfortunately) built into the
+# KLEE source code and are enabled as KLEE options, even though they
+# are specific to the OpenSSL client.  But since they are KLEE
+# options, they are associated with the experiment, not the client.
+#
+# Client - Each "client" comprises an ordered pair of the form
+# (program/args, network data).  The "network data" (ktest files) are
+# behaviorally verified against the "program/args" (LLVM bitcode and
+# its comand-line arguments).  For example, we could verify 21 Gmail
+# network traces against an OpenSSL s_client configured to offer only
+# a particular AES-GCM ciphersuite.  Another example would be
+# verifying a single Heartbleed attack network trace against an
+# OpenSSL s_client configured to complete the handshake, send a single
+# Heartbeat, and exit.
+#
+# There is some subtlety here.  In some cases, an experiment's
+# particular configuration needs to touch the (bitcode) client's
+# command line arguments. For example, to designate the maximum amount
+# of simulated padding for putative TLS 1.3, the variable
+# EXPERIMENT_LIST_BITCODE_PARAMETERS can contain the option
+# "--fake-padding 128", which is inserted as a bitcode argument.
+# Conversely, sometimes the client's particular configuration needs to
+# touch the verifier's (KLEE) command line arguments.  For example, to
+# designate that the Heartbleed attack network trace is expected to
+# fail verification, the variable CLIENT_LIST_PARAMETERS can contain
+# "--legitimate-socket-log=false", which is inserted as a KLEE
+# argument.
+#
+# The command line parameters to KLEE and the client (whether openssl,
+# tetrinet, or xpilot) are NOT fully determined by this script and the
+# experiments_config file.  Many of the default options for both KLEE
+# and the particular clients are hard-coded into the cliver.sh script,
+# which is invoked by this experiments.sh script (N * M) times, each
+# time adding different *additional* command line arguments
+# corresponding to the particular experiment and the particular
+# client.  Think of the cliver.sh script as hard-coding the base
+# command line arguments for KLEE and the three client programs; the
+# experiments.sh script varies and adds any additional options as
+# appropriate for each particular experiment.
 ###############################################################################
 
 # see http://www.davidpashley.com/articles/writing-robust-shell-scripts.html
