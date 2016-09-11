@@ -245,9 +245,12 @@ read_csv_subdir = function(data_mode_dir, data_date_dir, mode_id) {
     # length of rows, not cols
     len = length(tmp_data[,1])
 
-    # extract file id (openssl or games)
-    if (client_type == "openssl") {
-      id = as.integer(substring(unlist(unlist(strsplit(file,"_|\\."))[3]),7))
+    # extract file id (openssl, bssl, or games)
+    if (client_type == "openssl" || client_type == "bssl") {
+      # "gmail_spdy_stream08.ktest" or "bssl_gmail_spdy_stream08.ktest"
+      file_parts <- unlist(strsplit(file,"_|\\."))
+      id_segment <- file_parts[length(file_parts)-1]
+      id = as.integer(substring(id_segment,7))
     } else {
       id = as.integer(unlist(unlist(strsplit(file,"_|\\."))[2]))
     }

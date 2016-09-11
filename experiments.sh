@@ -229,8 +229,10 @@
 # Note: the R scripts do some correction on the timestamps to make
 # them monotonic -- the way the Gmail timestamps are mapped from
 # original tcpdump to ktest file can make it so that they are not
-# monotonically increasing.  I don't know whether processed_data.csv
-# contains the original or the corrected timestamps.
+# monotonically increasing.  In addition, the R scripts remove the
+# startup and shutdown times for KLEE, leaving only the round-by-round
+# verification times.  The processed_data.csv file contains the
+# corrected timestamps, not the originals.
 ###############################################################################
 
 # see http://www.davidpashley.com/articles/writing-robust-shell-scripts.html

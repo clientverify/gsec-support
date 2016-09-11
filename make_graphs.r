@@ -130,7 +130,7 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
   xlab="Arrival Time (s)"
 
   y_axis_list = c("Cost", "Delay")
-  ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
+  ylab_list = c("Verification Cost (s)", "Verification Lag (s)")
 
   for (m in selected_modes) {
     pdata = subset(data, mode == m)

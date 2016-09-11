@@ -108,7 +108,7 @@ naive_opts+=" --link-first-pass=0 "
 #hmm_opts=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
 #debug_opts+=" -print-execution-events=0 -debug-network-manager=1 -debug-socket=1 -debug-cv-assignment=1 -debug-searcher=1 -debug-executor=1 -debug-print-instructions=0 "
 
-#OpenSSL specific options
+#OpenSSL/BoringSSL specific options
 #drop_s2c="--only-verify-first-s2c=14 "
 drop_s2c="--drop-tls-s2c-app-data=true "
 native_aes=" -native-aes -load=${ROOT_DIR}/local/lib/libcrypto.so "
@@ -225,6 +225,7 @@ CLIENT_LIST=(
 openssl-klee
 openssl-klee
 openssl-klee
+bssl-klee
 )
 
 # location of directories holding ktest files for experiments
@@ -232,23 +233,27 @@ CLIENT_LIST_KTEST=(
 /playpen/buildbot/data/network/openssl/ktest-timefix
 /playpen/buildbot/data/network/openssl/heartbeat
 /playpen/buildbot/data/network/openssl/heartbleed-only
+/playpen/buildbot/data/network/boringssl/ktest-timefix
 )
 
-# list of extra klee paramters specific to each client type
+# list of extra klee parameters specific to each client type
 CLIENT_LIST_PARAMETERS=(
 ""
 ""
 " --legitimate-socket-log=false "
+""
 )
 
-# list of extra bitcode paramters specific to each client type (params for actual client binary)
+# list of extra bitcode parameters specific to each client type (params for actual client binary)
 CLIENT_LIST_BITCODE_PARAMETERS=(
 " "
 " -heartbeat "
 " -heartbeat "
+" "
 )
 
 CLIENT_LIST_R_BIN_WIDTH=(
+30
 30
 30
 30

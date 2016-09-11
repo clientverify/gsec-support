@@ -3,7 +3,7 @@
 ################################################################################
 # cliver.sh - helper script for cliver. 
 #
-# - Handles parameters for openssl, xpilot and tetrinet clients
+# - Handles parameters for openssl, boringssl, xpilot and tetrinet clients
 # - Several modes for verifying ktest network logs
 #   - naive: BFS search for a valid execution path for a given network log
 #   - training: same as naive but output execution fragments
@@ -156,6 +156,25 @@ openssl_parameters()
   printf "%s" "$bc_file_opts"
 }
 
+bssl_parameters()
+{
+  local IP="127.0.0.1"
+  local PORT="4433"
+  local bc_file_opts=""
+
+  bc_file_opts+=" client "
+  bc_file_opts+=" ${EXTRA_BITCODE_OPTIONS} "
+
+  ## Use this to add extra BC parameters from the commandline
+  if test ${CLIVER_BC_PARAMS+defined}; then
+    bc_file_opts+=" ${CLIVER_BC_PARAMS} "
+  fi
+
+  bc_file_opts+=" -connect $IP:$PORT "
+
+  printf "%s" "$bc_file_opts"
+}
+
 initialize_bc()
 {
   # Alternative to using recent link in KTEST_DIR and TRAINING_DIR
@@ -171,6 +190,13 @@ initialize_bc()
       OPENSSL_CERTS_DIR="$KTEST_DIR/certs"
       BC_FILE="$OPENSSL_ROOT/bin/${BC_MODE}.bc"
       TRAINING_DIR="$DATA_DIR/training/openssl-klee/$DATA_TAG"
+      ;;
+    bssl*)
+      if [ -z "$KTEST_DIR" ] ; then
+        KTEST_DIR="$DATA_DIR/network/bssl/$DATA_TAG"
+      fi
+      BC_FILE="$BORINGSSL_ROOT/bin/${BC_MODE}.bc"
+      TRAINING_DIR="$DATA_DIR/training/bssl-klee/$DATA_TAG"
       ;;
     tetri*)
       if [ -z "$KTEST_DIR" ] ; then
@@ -207,6 +233,9 @@ bc_parameters()
   case $BC_MODE in
     openssl*)
       openssl_parameters $1
+      ;;
+    bssl*)
+      bssl_parameters $1
       ;;
     tetri*)
       tetrinet_parameters $1
@@ -327,6 +356,9 @@ cliver_parameters()
       cliver_params+="-client-model=tetrinet "
       ;;
     openssl*)
+      cliver_params+="-cloud9-posix-runtime "
+      ;;
+    bssl*)
       cliver_params+="-cloud9-posix-runtime "
       ;;
     testclientserver*)
@@ -805,7 +837,7 @@ usage()
 {
   echo -e "$0\n\nUSAGE:"
   echo -e "\t-t [verify|training|ncross]\t\t(type of verification)(REQUIRED)" 
-  echo -e "\t-c [xpilot|tetrinet|openssl]\t\t(client binary)(REQUIRED)"
+  echo -e "\t-c [xpilot|tetrinet|openssl|bssl]\t\t(client binary)(REQUIRED)"
   echo -e "\t-i [gdb|lsf|interactive]\t\t(run mode)"
   echo -e "\t-b [\"\"]\t\t\t\t\t(name of ktest dir in data/network/[client-type]/ dir)"
   echo -e "\t-k [\"\"]\t\t\t\t\t(full path to ktest directory)"
