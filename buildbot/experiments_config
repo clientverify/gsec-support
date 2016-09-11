@@ -1,1 +1,1 @@
-source ./gsec-support/buildbot/experiments_config_openssl
+source ./gsec-support/buildbot/experiments_config_ssl
