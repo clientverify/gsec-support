@@ -1405,12 +1405,13 @@ config_and_build_openssh()
   openssh_config_options+="--without-openssl "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
-  openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty"
+  openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty "
 
   local config_env=""
   config_env+="CC=wllvm "
   local cflags_for_config=""
-  cflags_for_config="-DWITH_KTEST "
+  cflags_for_config="-DCLIVER "
+  cflags_for_config+="-DWITH_KTEST "
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
     cflags_for_config+="-g " # compile with debugging symbols
