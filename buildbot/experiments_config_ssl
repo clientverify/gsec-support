@@ -164,9 +164,9 @@ EXPERIMENT_LIST_PARAMETERS=(
 
 # cliver.sh parameters used for all experiments.  Note that these are
 # parameters to the cliver.sh wrapper script, not to klee.
-CLIVER_PARAMETERS="-i parallel " # run several experiments at the same time
 #CLIVER_PARAMETERS=" -v" # verbose output
-#CLIVER_PARAMETERS=" " # (default) run experiments sequentially
+CLIVER_PARAMETERS=" " # (default) run experiments sequentially
+#CLIVER_PARAMETERS="-i parallel " # run several experiments at the same time
 #CLIVER_PARAMETERS=" -y gmail_spdy_stream00 -v " # run only single ktest
 
 # Experiment-specific parameters to the cliver.sh script, not to klee.
