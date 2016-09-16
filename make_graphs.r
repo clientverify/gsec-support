@@ -28,8 +28,11 @@ tag=args[2]
 # time binwidth (seconds) for boxplot graphs
 binwidth_time=as.numeric(args[3])
 
+# run_prefix (e.g., "2016-09-16.15:21:12")
+run_prefix <- args[4]
+
 ## modes to graph
-arg_modes=args[-1:-3]
+arg_modes=args[-1:-4]
 
 ###############################################################################
 # Create output dirs
@@ -39,7 +42,7 @@ data_name="data"
 output_name="plots"
 
 data_dir = paste(root_dir, data_name, tag, sep="/")
-save_dir = paste(root_dir, output_name, tag, format(Sys.time(),"%F-%R"), sep="/")
+save_dir = paste(root_dir, output_name, tag, run_prefix, sep="/")
 
 dir.create(save_dir, recursive=TRUE)
 
