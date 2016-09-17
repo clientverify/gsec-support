@@ -408,7 +408,9 @@ do_plots()
     # the symlink created by cliver.sh is set to $data_tag
     local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
 
-    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client ${data_tag} ${CLIENT_LIST_R_BIN_WIDTH[$j]} ${RUN_PREFIX} ${EXPERIMENT_LIST_NAMES[@]}
+    leval ./gsec-support/make_graphs.r $RESULTS_LOCATION/$client \
+          ${data_tag} ${CLIENT_LIST_R_BIN_WIDTH[$j]} \
+          ${RUN_PREFIX} ${EXPERIMENT_LIST_NAMES[@]}
   done
 
   # Cross-client comparison plots.  These comparison plots are
@@ -423,15 +425,27 @@ do_plots()
   # files from the individual client plot directories instead of going
   # back and re-compiling the data.
 
-  # local CROSS_CLIENT_ROOT="${RESULTS_LOCATION}/cross-client"
-  # mkdir -p "${CROSS_CLIENT_ROOT}/${RUN_PREFIX}"
-  # for (( j=0; j<${num_clients}; ++j ));
-  # do
-  #   local client=${CLIENT_LIST[$j]}
-  #   local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
+  local CROSS_CLIENT_ROOT="${RESULTS_LOCATION}/cross-client"
+  local target_data_dir="${CROSS_CLIENT_ROOT}/data/${RUN_PREFIX}"
+  local target_plots_dir="${CROSS_CLIENT_ROOT}/plots/${RUN_PREFIX}"
+  mkdir -p "${target_data_dir}" "${target_plots_dir}"
+  lecho "Collating processed data in ${target_data_dir}"
 
-  #   leval ./gsec-support/make_crossclient_graphs.r $RESULTS_LOCATION/$client ${data_tag} ${CLIENT_LIST_R_BIN_WIDTH[$j]} ${RUN_PREFIX} ${EXPERIMENT_LIST_NAMES[@]}
-  # done
+  for (( j=0; j<${num_clients}; ++j ));
+  do
+    local client=${CLIENT_LIST[$j]}
+    local data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
+    local bin_width=${CLIENT_LIST_R_BIN_WIDTH[$j]}
+    local target_filename="${client}__${data_tag}__${bin_width}.csv"
+
+    local plots_dir="$RESULTS_LOCATION/$client/plots/$data_tag/$RUN_PREFIX"
+    local processed_data="${plots_dir}/processed_data.csv"
+    leval cp "${processed_data}" "${target_data_dir}/${target_filename}"
+  done
+
+  lecho "Generating cross-client comparison plots"
+  leval ./gsec-support/make_crossclient_graphs.r "${CROSS_CLIENT_ROOT}" \
+        "${RUN_PREFIX}" ${EXPERIMENT_LIST_NAMES[@]}
 
 }
 

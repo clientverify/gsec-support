@@ -813,6 +813,70 @@ do_box_plot = function(y,x="Bin",ylab="",xlab="",tag="",plot_data=data,grid=TRUE
   ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
 }
 
+### Cross-client (XC) Boxplot
+do_box_plot_xc = function(y, x="Bin", ylab="", xlab="", tag="",
+                       plot_data=NULL, full_data=NULL,
+                       grid=TRUE,limits_y=c()) {
+  debug_printf("Box Plot: %s %s %s", x, y, tag)
+
+  # client types
+  client_types <- paste(unique(plot_data$Client), collapse = "_")
+
+  # vars
+  trace = paste(y,"boxplot_bar",client_types,tag,sep="_")
+  title = paste("Boxplot of",y,"over",min_size,"Messages",tag,sep=" ")
+  file_name = paste(trace, output_filetype, sep=".")
+
+  # default labels
+  if (ylab == "") ylab = paste(y,"(s)")
+  if (xlab == "") xlab = "Message"
+
+  # This is only needed if we have an empty Bin
+  # We set the factor levels to be equal to the levels for the entire
+  # data set for x
+  aes_x_str = paste("factor(",x,",levels=levels(factor(full_data$",x,")))",
+                    sep="")
+
+  # construct plot
+  p <- ggplot(plot_data, aes_string(x=aes_x_str, y=y, fill="Client"))
+  p <- p + geom_boxplot(position=position_dodge(width=0.8))
+  if (grid) p <- p + facet_grid(mode ~ .)
+  p <- p + theme_bw() + ylab(ylab) + xlab(xlab)
+  p <- p + scale_fill_grey(start = 0.4, end = 0.9)
+  p <- p + stat_summary(fun.y=mean, geom="point", shape=5, size=3, position=position_dodge(width=0.8))
+  p <- p + theme(legend.position = c(1,1), legend.justification = c(1,1))
+
+  if (length(limits_y) != 2) {
+    ## yscale based on full_data
+    min_y = as.integer(floor(min(full_data[[y]])))
+    max_y = as.integer(ceiling(max(full_data[[y]])))
+
+    # yscale based on plot_data
+    #min_y = as.integer(floor(min(plot_data[[y]])))
+    #max_y = as.integer(ceiling(max(plot_data[[y]])))
+    limits_y = c(min_y, max_y)
+  }
+
+  if (limits_y[2] > 5)
+    breaks_y = (0:5)*diff(floor(limits_y/5)*5)/5
+  else
+    breaks_y = (0:5)*diff(floor(limits_y))/5
+
+  #cat(y," min: ", min(full_data[[y]])," ", min_y, "\n")
+  #cat(y," max: ", max(full_data[[y]])," ", max_y, "\n")
+
+  p = p + scale_y_continuous(limits=limits_y,breaks=breaks_y)
+  p = p + scale_x_discrete(drop=FALSE) # plot all levels, even if empty
+
+  p = p + theme(axis.text.x=element_text(angle=45))
+
+  if (use_title)
+    p = p + ggtitle(title)
+
+  ggsave(paste(save_dir, file_name, sep="/"), width=plotwidth, height=plotheight)
+}
+
+
 ### Log Boxplot
 do_log_box_plot = function(y_axis) {
   cat("plotting (boxplot of): ",x_axis,", ",y_axis,"\n")
@@ -1009,6 +1073,46 @@ parse_client_type = function() {
   client_type = rev(strsplit(root_dir,"/")[[1]])[1]
   client_type = strsplit(client_type,"-")[[1]][1]
   return(client_type)
+}
+
+formal_client_type <- function(raw_client_name) {
+    client_prefix <- unlist(strsplit(raw_client_name, "-"))[1]
+    if (client_prefix == "openssl") {
+        return("OpenSSL")
+    } else if (client_prefix == "bssl") {
+        return("BoringSSL")
+    } else {
+        return(client_prefix)
+    }
+}
+
+read_processed_data <- function(datadir) {
+    alldata <- data.frame()
+    processed_data_files <- dir(datadir)
+    for (f in processed_data_files) {
+
+        # Extract client type, data_tag, and bin_width from filename
+        f_sans_ext <- strsplit(f, "\\.")[[1]] # remove "*.csv" extension
+        f_parts <- unlist(strsplit(f_sans_ext, "__")) # double underscore
+        client <- f_parts[1]
+        data_tag <- f_parts[2]
+        bin_width <- f_parts[3]
+
+        # Read data and add Client, DataTag, and ArrivalBinWidth columns
+        df <- read.csv(paste(datadir, f, sep="/"), header = TRUE)
+        df$Client <- formal_client_type(client)
+        df$DataTag <- data_tag
+        df$ArrivalBinWidth <- bin_width
+
+        alldata <- rbind(alldata, df)
+    }
+
+    # Sort client levels so that OpenSSL comes before BoringSSL
+    client_levels <- unique(sort(alldata$Client, decreasing=TRUE))
+    alldata$Client <- factor(alldata$Client, levels=client_levels)
+    alldata$DataTag <- factor(alldata$DataTag)
+
+    return(alldata)
 }
 
 ###############################################################################
