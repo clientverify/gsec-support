@@ -189,7 +189,7 @@ if (tag == "ktest-timefix" | tag == "ktest-single-1" | tag == "NDSS2013V2") {
   plotheight = default_plotheight*0.5
 
   y_axis_list = c("Cost", "Delay")
-  ylab_list = c("Verifcation Cost (s)", "Verification Lag (s)")
+  ylab_list = c("Verification Cost (s)", "Verification Lag (s)")
   for (i in seq(length(y_axis_list))) {
     if (is_gmail_data) {
       do_line_group_plot(y_axis_list[i],x_alt,ylab=ylab_list[i],xlab=xlab,tag="Trace1Only",  plot_data=subset(data, trace == 1), grid=FALSE, with_points=FALSE)
