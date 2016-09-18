@@ -109,26 +109,31 @@ for (tag in unique(client_datatag_pairs$DataTag)) {
   for (m in selected_modes) {
     pdata = subset(alldata, mode == m & DataTag == tag)
     for (i in seq(length(y_axis_list))) {
-      min_y = as.integer(floor(min(pdata[[y_axis_list[i]]])))
-      max_y = as.integer(ceiling(max(pdata[[y_axis_list[i]]])))
-      limits_y = c(min_y, max_y)
-      if (is_gmail_data) {
+      for (rm_legend in c(FALSE, TRUE)) {
+        min_y = as.integer(floor(min(pdata[[y_axis_list[i]]])))
+        max_y = as.integer(ceiling(max(pdata[[y_axis_list[i]]])))
+        limits_y = c(min_y, max_y)
+        if (is_gmail_data) {
+          do_box_plot_xc(y_axis_list[i], x, ylab=ylab_list[i], xlab=xlab,
+                         tag=paste(tag, m, "Trace1Only", sep="_"),
+                         plot_data=subset(pdata, trace == 1),
+                         full_data=alldata,
+                         grid=FALSE, limits_y=limits_y,
+                         remove_legend=rm_legend)
+          do_box_plot_xc(y_axis_list[i], x, ylab=ylab_list[i], xlab=xlab,
+                         tag=paste(tag, m, "AllButTrace1", sep="_"),
+                         plot_data=subset(pdata, trace != 1),
+                         full_data=alldata,
+                         grid=FALSE, limits_y=limits_y,
+                         remove_legend=rm_legend)
+        }
         do_box_plot_xc(y_axis_list[i], x, ylab=ylab_list[i], xlab=xlab,
-                       tag=paste(tag, m, "Trace1Only", sep="_"),
-                       plot_data=subset(pdata, trace == 1),
+                       tag=paste(tag, m,"AllTraces",sep="_"),
+                       plot_data=pdata,
                        full_data=alldata,
-                       grid=FALSE, limits_y=limits_y)
-        do_box_plot_xc(y_axis_list[i], x, ylab=ylab_list[i], xlab=xlab,
-                       tag=paste(tag, m, "AllButTrace1", sep="_"),
-                       plot_data=subset(pdata, trace != 1),
-                       full_data=alldata,
-                       grid=FALSE, limits_y=limits_y)
+                       grid=FALSE, limits_y=limits_y,
+                       remove_legend=rm_legend)
       }
-      do_box_plot_xc(y_axis_list[i], x, ylab=ylab_list[i], xlab=xlab,
-                     tag=paste(tag, m,"AllTraces",sep="_"),
-                     plot_data=pdata,
-                     full_data=alldata,
-                     grid=FALSE, limits_y=limits_y)
     }
   }
 

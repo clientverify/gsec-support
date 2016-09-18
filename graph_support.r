@@ -816,14 +816,18 @@ do_box_plot = function(y,x="Bin",ylab="",xlab="",tag="",plot_data=data,grid=TRUE
 ### Cross-client (XC) Boxplot
 do_box_plot_xc = function(y, x="Bin", ylab="", xlab="", tag="",
                        plot_data=NULL, full_data=NULL,
-                       grid=TRUE,limits_y=c()) {
+                       grid=TRUE,limits_y=c(),remove_legend=FALSE) {
   debug_printf("Box Plot: %s %s %s", x, y, tag)
 
   # client types
   client_types <- paste(unique(plot_data$Client), collapse = "_")
 
   # vars
-  trace = paste(y,"boxplot_bar",client_types,tag,sep="_")
+  if (remove_legend) {
+    trace = paste(y,"boxplot_bar",client_types,tag,"nolegend",sep="_")
+  } else {
+    trace = paste(y,"boxplot_bar",client_types,tag,sep="_")
+  }
   title = paste("Boxplot of",y,"over",min_size,"Messages",tag,sep=" ")
   file_name = paste(trace, output_filetype, sep=".")
 
@@ -841,10 +845,14 @@ do_box_plot_xc = function(y, x="Bin", ylab="", xlab="", tag="",
   p <- ggplot(plot_data, aes_string(x=aes_x_str, y=y, fill="Client"))
   p <- p + geom_boxplot(position=position_dodge(width=0.8))
   if (grid) p <- p + facet_grid(mode ~ .)
-  p <- p + theme_bw() + ylab(ylab) + xlab(xlab)
+  p <- p + theme_bw(base_size = 16) + ylab(ylab) + xlab(xlab)
   p <- p + scale_fill_grey(start = 0.4, end = 0.9)
   p <- p + stat_summary(fun.y=mean, geom="point", shape=5, size=3, position=position_dodge(width=0.8))
-  p <- p + theme(legend.position = c(1,1), legend.justification = c(1,1))
+  if (remove_legend) {
+    p <- p + guides(fill=FALSE)
+  } else {
+    p <- p + theme(legend.position = c(1,1), legend.justification = c(1,1))
+  }
 
   if (length(limits_y) != 2) {
     ## yscale based on full_data
