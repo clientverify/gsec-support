@@ -98,7 +98,7 @@ IDDFS-text-nAES-16-FP${fake_padding_length}-dropS2C
 # parameters
 train_opts=""
 naive_opts=""
-naive_opts+=" --print-stats=0 --skip-printf=1 "
+naive_opts+=" --print-stats=1 --skip-printf=1 "
 #naive_opts+=" --max-round=5 "
 naive_opts+=" --link-first-pass=0 "
 #naive_opts+=" -suppress-external-warnings=1 -all-external-warnings=0 "
