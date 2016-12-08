@@ -1380,7 +1380,8 @@ main()
 
     install_wllvm
     install_google_perftools
-    install_boost
+    # Boost is still required, but we can use the system version
+    #install_boost
     install_uclibc_git
     install_ncurses
     install_stp
