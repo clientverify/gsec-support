@@ -260,7 +260,7 @@ set_alternate_gcc()
 
 check_gcc_version()
 {
-  if [ $(gcc-minor-version) -le 8 ]; then
+  if [ $(gcc-major-version) -le 4 ] && [ $(gcc-minor-version) -le 8 ]; then
     set_alternate_gcc
   else
     lecho "Using gcc-$(gcc-fullversion)"
@@ -269,7 +269,7 @@ check_gcc_version()
 
 check_gcc_version_old()
 {
-  if [ $(gcc-minor-version) -ge 7 ]; then
+  if [ $(gcc-major-version) -le 4 ] && [ $(gcc-minor-version) -ge 7 ]; then
     set_alternate_gcc_old
   else
     lecho "Using gcc-$(gcc-fullversion)"
