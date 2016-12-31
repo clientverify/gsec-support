@@ -1098,7 +1098,10 @@ config_and_build_xpilot_with_wllvm()
   leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11${tag}
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    opt_passes="-strip-debug ${opt_passes}"
+  fi
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}.bc
 
   export PATH="${PATH_ORIGINAL}"
@@ -1269,7 +1272,10 @@ build_optimized_openssl_bitcode()
   local tag=$1
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    opt_passes="-strip-debug ${opt_passes}"
+  fi
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSL_ROOT}/bin/openssl-opt${tag}.bc ${OPENSSL_ROOT}/bin/openssl${tag}.bc
 }
  
@@ -1473,7 +1479,10 @@ build_optimized_openssh_bitcode()
   local tag=$1
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    opt_passes="-strip-debug ${opt_passes}"
+  fi
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSH_ROOT}/bin/ssh-opt${tag}.bc ${OPENSSH_ROOT}/bin/ssh${tag}.bc
 }
 
@@ -1615,7 +1624,10 @@ build_optimized_boringssl_bitcode()
   local tag=$1
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-strip-debug -O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    opt_passes="-strip-debug ${opt_passes}"
+  fi
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${BORINGSSL_ROOT}/bin/bssl-opt${tag}.bc ${BORINGSSL_ROOT}/bin/bssl${tag}.bc
 }
 
