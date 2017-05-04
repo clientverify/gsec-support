@@ -99,7 +99,9 @@
 # [klee-droppings]
 # ----------------
 #
-# Path template: ${ROOT_DIR}/data/${EXPERIMENT}/${CLIENT}/${DATE=DATATAG}
+# Path template:
+#
+#   ${ROOT_DIR}/data/klee-droppings/${EXPERIMENT}/${CLIENT}/${DATE=DATATAG}
 #
 # The KLEE droppings tree is a collection of all of the directories
 # that are usually named "klee-out-##" that are emitted by an
@@ -112,7 +114,7 @@
 # experiment name, then by client program, and then by the network
 # data.  For example,
 #
-#   data/IDDFS-nAES-1-opt/openssl-klee/ktest-timefix/gmail_spdy_stream00/
+#   IDDFS-nAES-1-opt/openssl-klee/ktest-timefix/gmail_spdy_stream00/
 #
 # In this example, "IDDFS-nAES-1-opt" refers to the KLEE
 # configuration: "iterative-deepening depth first search, native-AES
@@ -128,7 +130,7 @@
 # the directory "ktest-timefix" is actually just a symlink to a
 # subdirectory named 2016-09-08.00:28:07 as shown below.
 #
-#   thew:~/cliver/data/IDDFS-nAES-1-opt/openssl-klee$ ls -l
+#   thew:~/cliver/data/klee-out/IDDFS-nAES-1-opt/openssl-klee$ ls -l
 #   total 8
 #   drwxr-xr-x ... 4096 Sep  7 15:14 2016-09-07.15:14:28
 #   drwxr-xr-x ...   46 Sep  7 15:16 2016-09-07.15:16:18
@@ -337,7 +339,7 @@ run_experiments()
       client_params=${CLIENT_LIST_PARAMETERS[$j]}
       extra_params=" -x \"${client_params} ${exp_params}\" "
       
-      cliver_command="${CLIVERSH} -t $expType -c $client -b $data_tag -k $ktest_dir -o $expOutput $exp_cliver_params ${CLIVER_PARAMETERS} ${bitcode_params} $extra_params "
+      cliver_command="${CLIVERSH} -t $expType -c $client -b $data_tag -k $ktest_dir -o klee-droppings/$expOutput $exp_cliver_params ${CLIVER_PARAMETERS} ${bitcode_params} $extra_params "
       lecho "EXEC: ${cliver_command}"
       eval ${cliver_command}
     done
@@ -366,7 +368,7 @@ copy_results()
       # Directory that holds output (klee droppings) of all cliver.sh
       # experiments using this client.  For example,
       # data/IDDFS-nAES-1-opt/openssl-klee
-      client_data_path=${DATA_DIR}/${expOutput}/${client}
+      client_data_path=${DATA_DIR}/klee-droppings/${expOutput}/${client}
 
       # the symlink created by cliver.sh is set to $data_tag
       data_tag=$(basename ${CLIENT_LIST_KTEST[$j]})
