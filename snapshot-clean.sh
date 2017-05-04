@@ -19,7 +19,8 @@ then
     timestamp="${BASH_REMATCH[1]}"
     echo "Detected log symlink: ${logsymlink}"
     echo "Symlink dereference:  ${logfilename}"
-    snapdir="${snaproot}/snapshot_${timestamp}"
+    snapdirname="snapshot_${timestamp}"
+    snapdir="${snaproot}/${snapdirname}"
 
     echo "Moving directories to snapshot: ${snapdir}"
     mkdir -p "${snapdir}"
@@ -27,6 +28,15 @@ then
     do
         [ -d "${dirname}" ] && mv -v "${dirname}" "${snapdir}/"
     done
+    echo "Snapshot directory contents:"
+    ls -la "${snapdir}"
+    cd "${snaproot}"
+    snapfilename="${snapdirname}.tar.gz"
+    echo "Compressing to tarball: ${snaproot}/${snapfilename}"
+    tar -cz --force-local -f "${snapfilename}" "${snapdirname}"
+    echo "Removing directory: ${snapdir}"
+    rm -rf "${snapdirname}"
+    cd -
 else
     echo "No symlink detected at ${logsymlink}"
     echo "Removing directories without taking a snapshot."
