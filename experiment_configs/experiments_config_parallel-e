@@ -1,0 +1,263 @@
+#experiments.sh : config file for buildbot
+
+# note: list variables with the equivalent prefixes should have
+# equivalent number of elements
+
+fake_padding_length=128
+
+# list of modes to run cliver.sh
+EXPERIMENT_LIST=(
+### bitcode AES
+#naive
+#naive
+#naive
+#naive
+
+### native AES
+naive
+naive
+naive
+naive
+
+### KTestText; native AES
+#naive
+#naive
+#naive
+#naive
+)
+
+# list of output tags
+EXPERIMENT_LIST_NAMES=(
+### bitcode AES
+#IDDFS-1-opt
+#IDDFS-1
+#IDDFS-2
+#IDDFS-4
+#IDDFS-16
+#IDDFS-1-opt-FP${fake_padding_length}
+#IDDFS-1-FP${fake_padding_length}
+#IDDFS-2-FP${fake_padding_length}
+#IDDFS-4-FP${fake_padding_length}
+#IDDFS-16-FP${fake_padding_length}
+#IDDFS-1-opt-dropS2C
+#IDDFS-1-dropS2C
+#IDDFS-2-dropS2C
+#IDDFS-4-dropS2C
+#IDDFS-16-dropS2C
+#IDDFS-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-1-FP${fake_padding_length}-dropS2C
+#IDDFS-2-FP${fake_padding_length}-dropS2C
+#IDDFS-4-FP${fake_padding_length}-dropS2C
+#IDDFS-16-FP${fake_padding_length}-dropS2C
+
+### native AES
+IDDFS-nAES-1-opt
+#IDDFS-nAES-1
+#IDDFS-nAES-2
+#IDDFS-nAES-4
+#IDDFS-nAES-16
+#IDDFS-nAES-1-opt-FP${fake_padding_length}
+#IDDFS-nAES-1-FP${fake_padding_length}
+#IDDFS-nAES-2-FP${fake_padding_length}
+#IDDFS-nAES-4-FP${fake_padding_length}
+#IDDFS-nAES-16-FP${fake_padding_length}
+IDDFS-nAES-1-opt-dropS2C
+#IDDFS-nAES-1-dropS2C
+#IDDFS-nAES-2-dropS2C
+#IDDFS-nAES-4-dropS2C
+#IDDFS-nAES-16-dropS2C
+IDDFS-nAES-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-1-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-2-FP${fake_padding_length}-dropS2C
+#IDDFS-nAES-4-FP${fake_padding_length}-dropS2C
+IDDFS-nAES-16-FP${fake_padding_length}-dropS2C
+
+### KTestText; native AES
+#IDDFS-text-nAES-1-opt
+#IDDFS-text-nAES-1
+#IDDFS-text-nAES-2
+#IDDFS-text-nAES-4
+#IDDFS-text-nAES-16
+#IDDFS-text-nAES-1-opt-FP${fake_padding_length}
+#IDDFS-text-nAES-1-FP${fake_padding_length}
+#IDDFS-text-nAES-2-FP${fake_padding_length}
+#IDDFS-text-nAES-4-FP${fake_padding_length}
+#IDDFS-text-nAES-16-FP${fake_padding_length}
+#IDDFS-text-nAES-1-opt-dropS2C
+#IDDFS-text-nAES-1-dropS2C
+#IDDFS-text-nAES-2-dropS2C
+#IDDFS-text-nAES-4-dropS2C
+#IDDFS-text-nAES-16-dropS2C
+#IDDFS-text-nAES-1-opt-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-1-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-2-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-4-FP${fake_padding_length}-dropS2C
+#IDDFS-text-nAES-16-FP${fake_padding_length}-dropS2C
+)
+
+# parameters
+train_opts=""
+naive_opts=""
+naive_opts+=" --print-stats=1 --skip-printf=1 "
+#naive_opts+=" --max-round=5 "
+naive_opts+=" --link-first-pass=0 "
+#naive_opts+=" -suppress-external-warnings=1 -all-external-warnings=0 "
+#naive_opts+=" --max-pass-count=2 "
+#verify_opts="--edit-distance-at-clone-only=1  -basic-block-event-flag=0 "
+#ed_opts="--guide-budget-secs=0 --max-k-extension=64 --cluster-size=65000 "
+#hmm_opts=" --max-medoids=0 --basicblock-recompute-count=256 --print-omit-headers --hmm-omit-headers --guide-budget-secs=5 "
+#debug_opts+=" -print-execution-events=0 -debug-network-manager=1 -debug-socket=1 -debug-cv-assignment=1 -debug-searcher=1 -debug-executor=1 -debug-print-instructions=0 "
+
+#OpenSSL/BoringSSL specific options
+#drop_s2c="--only-verify-first-s2c=14 "
+drop_s2c="--drop-tls-s2c-app-data=true "
+native_aes=" -native-aes -load=${ROOT_DIR}/local/lib/libcrypto.so "
+
+# list of KLEE/Cliver parameters specific to each experiment type
+EXPERIMENT_LIST_PARAMETERS=(
+### bitcode AES
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=2  "
+#" ${naive_opts} --use-threads=4  "
+#" ${naive_opts} --use-threads=16 "
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=1  "
+#" ${naive_opts} --use-threads=2  "
+#" ${naive_opts} --use-threads=4  "
+#" ${naive_opts} --use-threads=16 "
+
+### native AES
+" ${naive_opts} ${native_aes} --use-threads=1  " 
+#" ${naive_opts} ${native_aes} --use-threads=1  "
+#" ${naive_opts} ${native_aes} --use-threads=2  "
+#" ${naive_opts} ${native_aes} --use-threads=4  "
+#" ${naive_opts} ${native_aes} --use-threads=16 "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+
+### KTestText; native AES
+#" ${naive_opts} ${native_aes} --use-threads=1  "
+#" ${naive_opts} ${native_aes} --use-threads=1  "
+#" ${naive_opts} ${native_aes} --use-threads=2  "
+#" ${naive_opts} ${native_aes} --use-threads=4  "
+#" ${naive_opts} ${native_aes} --use-threads=16 "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=1  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=2  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=4  "
+#" ${naive_opts} ${native_aes} ${drop_s2c} --use-threads=16 "
+)
+
+# cliver.sh parameters used for all experiments.  Note that these are
+# parameters to the cliver.sh wrapper script, not to klee.
+#CLIVER_PARAMETERS=" -v" # verbose output
+CLIVER_PARAMETERS=" " # (default) run experiments sequentially
+#CLIVER_PARAMETERS="-i parallel " # run several experiments at the same time
+#CLIVER_PARAMETERS=" -y gmail_spdy_stream00 -v " # run only single ktest
+
+# Experiment-specific parameters to the cliver.sh script, not to klee.
+EXPERIMENT_LIST_CLIVER_PARAMETERS=(
+### bitcode AES
+#" -s "
+#""
+#""
+#" -s "
+#""
+#""
+
+### native AES
+" -s "
+" -s "
+" -s "
+""
+
+### KTestText; native AES
+#" -T -s "
+#" -T -s "
+#" -T -s "
+#" -T "
+)
+
+# List of bitcode parameters specific to each experiment type
+EXPERIMENT_LIST_BITCODE_PARAMETERS=(
+### bitcode AES
+#""
+#""
+#""
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
+### native AES
+""
+#""
+""
+#""
+#" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+" --fake-padding ${fake_padding_length} "
+### KTestText; native AES
+#""
+#""
+#""
+#""
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
+#" --fake-padding ${fake_padding_length} "
+)
+
+
+# list of client types
+CLIENT_LIST=(
+openssl-klee
+#openssl-klee
+#openssl-klee
+#bssl-klee
+)
+
+# location of directories holding ktest files for experiments
+CLIENT_LIST_KTEST=(
+/playpen/buildbot/data/network/openssl/ktest-timefix-101e
+#/playpen/buildbot/data/network/openssl/heartbeat
+#/playpen/buildbot/data/network/openssl/heartbleed-only
+#/playpen/buildbot/data/network/boringssl/ktest-timefix
+)
+
+# list of extra klee parameters specific to each client type
+CLIENT_LIST_PARAMETERS=(
+""
+#""
+#" --legitimate-socket-log=false "
+#""
+)
+
+# list of extra bitcode parameters specific to each client type (params for actual client binary)
+CLIENT_LIST_BITCODE_PARAMETERS=(
+" "
+#" -heartbeat "
+#" -heartbeat "
+#" "
+)
+
+CLIENT_LIST_R_BIN_WIDTH=(
+30
+#30
+#30
+#30
+)
+
+# data locations
+RESULTS_LOCATION="data/results"
