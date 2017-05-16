@@ -23,7 +23,7 @@ ERROR_EXIT=1
 PROG=$(basename $0)
 
 # Include gsec_common
-. $HERE/gsec_common
+. $HERE/build_configs/gsec_common
 
 # Default command line options
 VERBOSE_OUTPUT=0
@@ -848,6 +848,7 @@ usage()
   echo -e "\t-p [heapprofile|heaplocal|heapcheck]\t(memory profiling options)"
   echo -e "\t-r [dir]\t\t\t\t(alternative root directory)"
   echo -e "\t-T \t\t\t\t\t(KTestText: use text/*.ktest.txt & keys/*.ktest.key)"
+  echo -e "\t-e \t\t\t\t\t(extra build config file: supplements gsec_common)"
   echo -e "\t-n \t\t\t\t\t(dry run)"
   echo -e "\t-s \t\t\t\t\t(silent)"
   echo -e "\t-h \t\t\t\t\t(help/usage)"
@@ -875,10 +876,15 @@ run_parallel_jobs()
 
 main() 
 {
-  while getopts "b:k:t:o:c:x:i:j:l:p:d:r:m:y:nshvfT" opt; do
+  while getopts "b:k:t:o:c:e:x:i:j:l:p:d:r:m:y:nshvfT" opt; do
     case $opt in
       b)
         DATA_TAG="$OPTARG"
+        ;;
+
+      e) # variables supplementing or overriding gsec_common
+        EXTRA_BUILD_CONFIG=$OPTARG
+        source ${EXTRA_BUILD_CONFIG}
         ;;
 
       k)

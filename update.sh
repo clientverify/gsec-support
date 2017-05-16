@@ -11,7 +11,7 @@ HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ERROR_EXIT=1
 
 # Include gsec_common
-. $HERE/gsec_common
+. $HERE/build_configs/gsec_common
 
 # Command line options
 FORCE_CLEAN=0
@@ -1728,9 +1728,14 @@ main()
 {
   echo
   echo "====--configuration--===="
-  while getopts ":afkcivsb:r:j:dDltn" opt; do
+  while getopts ":ae:fkcivsb:r:j:dDltn" opt; do
     case $opt in
-  
+
+      e) # variables supplementing or overriding gsec_common
+        EXTRA_BUILD_CONFIG=$OPTARG
+        source ${EXTRA_BUILD_CONFIG}
+        ;;
+
       f)
         lecho "Forcing compilation"
         FORCE_COMPILATION=1

@@ -257,14 +257,15 @@ ROOT_DIR="`pwd`"
 VERBOSE_OUTPUT=0
 
 # Include gsec_common
-. $HERE/gsec_common
+. $HERE/build_configs/gsec_common
 
 
 ###############################################################################
 # Global Variables
 ###############################################################################
 
-EXP_CONFIG="" # experiment config file 
+EXP_CONFIG="" # experiment config file
+EXTRA_BUILD_CONFIG="" # extra build config file (if any)
 CLIVERSH="./gsec-support/cliver.sh"
 PLOTS_ONLY=0
 
@@ -594,8 +595,12 @@ load_config()
 
 main() 
 {
-  while getopts "c:vp" opt; do
+  while getopts "c:e:vp" opt; do
     case $opt in
+      e) # variables supplementing or overriding gsec_common
+        EXTRA_BUILD_CONFIG=$OPTARG
+        source ${EXTRA_BUILD_CONFIG}
+        ;;
       c)
         EXP_CONFIG=$OPTARG
         ;;

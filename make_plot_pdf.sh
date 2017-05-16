@@ -17,7 +17,7 @@ ROOT_DIR="`pwd`"
 VERBOSE_OUTPUT=0
 
 # Include gsec_common
-. $HERE/gsec_common
+. $HERE/build_configs/gsec_common
 
 FIGURE_DIR=$1
 if [ "$#" -ne 1 ]
