@@ -25,7 +25,7 @@ SELECTIVE_BUILD=0
 SELECTIVE_BUILD_TARGET=""
 SKIP_INSTALL_ERRORS=1
 SKIP_TESTS=0
-INSTALL_LLVMGCC_BIN=1
+INSTALL_CLANG_BIN=1
 USE_LLVM29=0
 VERBOSE_OUTPUT=0
 MAKE_THREADS=$(max_threads)
@@ -79,27 +79,6 @@ get_package()
     leval tar $TAR_OPTIONS -xvjf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST 
   elif [ $PACKAGE_TYPE == "xz" ]; then
     leval tar $TAR_OPTIONS -xvf $LOCAL_DEST/$PACKAGE -C $LOCAL_DEST
-  else
-    echo "[Error invalid package type] "
-    rm $LOCAL_DEST/$PACKAGE
-    exit
-  fi
-
-  rm $LOCAL_DEST/$PACKAGE
-}
-
-check_dirs()
-{
-  if [ -e $ROOT_DIR/src/$1 ] ||
-     [ -e $ROOT_DIR/build/$1 ] ||
-     [ -e $1 ] ; then
-    if [ $SKIP_INSTALL_ERRORS -eq 1 ]; then
-      echo "[Skipping] (Already exists, integrity unconfirmed) "
-      return 1
-    else
-      echo "[Error checking dirs] "
-      exit
-    fi
   else
     echo "[Error invalid package type] "
     rm $LOCAL_DEST/$PACKAGE
@@ -192,28 +171,6 @@ install_waffles()
   necho "[Installing] "
   mkdir -p $WAFFLES_ROOT
   leval make install INSTALL_PREFIX="$WAFFLES_ROOT"
-
-  necho "[Done]\n"
-}
-
-install_zlib_llvm()
-{
-  necho "$ZLIB (llvm) \t"
-  check_dirs $ZLIB-llvm || { return 0; }
-  get_package $ZLIB_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$ZLIB-llvm"
-
-  cd $ROOT_DIR/src/$ZLIB-llvm
-
-  necho "[Configuring] "
-  ZLIB_LLVM_OPTIONS="CC=$LLVMGCC_ROOT/bin/llvm-gcc AR=$LLVM_ROOT/bin/llvm-ar CFLAGS=-emit-llvm"
-  leval $ZLIB_LLVM_OPTIONS $ROOT_DIR/src/$ZLIB-llvm/configure --static --prefix=$ZLIB_ROOT 
-
-  necho "[Compiling] "
-  leval make libz.a 
-
-  necho "[Installing] "
-  mkdir -p $ZLIB_ROOT
-  leval cp -p libz.a $ZLIB_ROOT/lib/libz-llvm.a
 
   necho "[Done]\n"
 }
@@ -425,7 +382,7 @@ install_uclibc_git()
   cd $ROOT_DIR/src/$UCLIBC
 
   necho "[Configuring] "
-  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$LLVMGCC_ROOT/bin/$LLVM_CC --make-llvm-lib
+  leval ./configure --with-llvm-config=$LLVM_ROOT/bin/llvm-config --with-cc=$CLANG_ROOT/bin/$LLVM_CC --make-llvm-lib
 
   necho "[Compiling] "
   leval make 
@@ -460,50 +417,19 @@ install_folly()
   necho "[Done]\n"
 }
 
-install_llvmgcc_bin()
+install_clang_bin()
 {
-  necho "$LLVMGCC_BIN\t"
-  check_dirs "$LLVMGCC_ROOT/bin/$LLVM_CC" || { return 0; }
-  get_package $LLVMGCC_BIN_PACKAGE $PACKAGE_DIR $LLVMGCC_ROOT 
+  necho "$CLANG_BIN\t"
+  check_dirs "$CLANG_ROOT/bin/$LLVM_CC" || { return 0; }
+  get_package $CLANG_BIN_PACKAGE $PACKAGE_DIR $CLANG_ROOT
   necho "[Done]\n"
 }
 
-install_llvmgcc_from_source()
+install_clang_from_source()
 {
-  necho "$LLVMGCC\t"
-  check_dirs $LLVMGCC || { return 0; }
-  get_package $LLVMGCC_PACKAGE $PACKAGE_DIR "$ROOT_DIR/src/$LLVMGCC"
-
-  mkdir -p $ROOT_DIR/build/$LLVMGCC
-  cd $ROOT_DIR/build/$LLVMGCC
-
-  LLVMGCC_CONFIG_OPTIONS="--prefix=$LLVMGCC_ROOT --disable-multilib --program-prefix=llvm- "
-  LLVMGCC_CONFIG_OPTIONS+="--enable-llvm=$LLVM_ROOT --enable-languages=c,c++ "
-
-  LLVMGCC_CONFIG_ENV_OPTIONS=""
-
-  if test ${ALTCC+defined}; then
-    LLVMGCC_CONFIG_ENV_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
-  fi
-
-  necho "[Configuring] "
-  leval $LLVMGCC_CONFIG_ENV_OPTIONS $ROOT_DIR/src/$LLVMGCC/configure $LLVMGCC_CONFIG_OPTIONS 
-
-  LLVMGCC_MAKE_OPTIONS=""
-
-  if test ${ALTCC+defined}; then
-    # HACK for LLVM 2.7 + GCC 4.2 support: needs path to crti.o
-    LLVMGCC_MAKE_OPTIONS+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
-  fi
-
-  necho "[Compiling] "
-  leval make $LLVMGCC_MAKE_OPTIONS -j $MAKE_THREADS 
-
-  necho "[Installing] "
-  mkdir -p $LLVMGCC_ROOT
-  leval make $LLVMGCC_MAKE_OPTIONS install 
-
-  necho "[Done]\n"
+  necho "$CLANG\t"
+  necho "Installation from source not supported\n"
+  exit 2
 }
 
 update_wllvm()
@@ -695,6 +621,27 @@ install_llvm()
   necho "[Done]\n"
 }
 
+install_minisat()
+{
+  necho "$MINISAT\t\t\t"
+  check_dirs $MINISAT || { return 0; }
+
+  necho "[Cloning] "
+  cd $ROOT_DIR"/src"
+  leval git clone --branch $MINISAT_BRANCH $MINISAT_GIT
+
+  necho "[Compiling] "
+  mkdir -p $ROOT_DIR/build/$MINISAT
+  cd $ROOT_DIR/build/$MINISAT
+  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$MINISAT_ROOT $ROOT_DIR/src/$MINISAT
+  leval make VERBOSE=1 -j $MAKE_THREADS
+
+  necho "[Installing] "
+  leval make install
+
+  necho "[Done]\n"
+}
+
 install_stp_git()
 {
   necho "$STP\t\t\t"
@@ -707,8 +654,12 @@ install_stp_git()
   necho "[Compiling] "
   mkdir -p $ROOT_DIR/build/$STP
   cd $ROOT_DIR/build/$STP
-  leval cmake -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF $ROOT_DIR/src/$STP
-  leval make -j $MAKE_THREADS
+  leval cmake \
+      -DCMAKE_INSTALL_PREFIX:PATH=$STP_ROOT \
+      -DBUILD_SHARED_LIBS:BOOL=OFF \
+      -DENABLE_PYTHON_INTERFACE:BOOL=OFF \
+      $ROOT_DIR/src/$STP
+  leval make VERBOSE=1 -j $MAKE_THREADS
 
   necho "[Installing] "
   leval make install
@@ -771,8 +722,8 @@ config_klee()
 
   KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
   KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$LLVMGCC_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$LLVMGCC_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$CLANG_ROOT/bin/$LLVM_CC "
+  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$CLANG_ROOT/bin/$LLVM_CXX "
 
   if [ $USE_LLVM29 -eq 0 ]; then
     KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
@@ -988,7 +939,7 @@ build_tetrinet()
 {
   TETRINET_MAKE_OPTIONS="NCURSES_DIR=${NCURSES_ROOT} "
   TETRINET_MAKE_OPTIONS+="PREFIX=${TETRINET_ROOT} "
-  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${LLVMGCC_ROOT}/bin/${LLVM_CC}\" "
+  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${CLANG_ROOT}/bin/${LLVM_CC}\" "
   TETRINET_MAKE_OPTIONS+="LLVMCOMPILER_FLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
   TETRINET_MAKE_OPTIONS+="LLVMLINKER=\"${LLVM_ROOT}/bin/${LLVM_LD}\" "
 
@@ -1084,7 +1035,7 @@ config_and_build_xpilot_with_wllvm()
   export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DXLIB_ILLEGAL_ACCESS -D__GNUC__ ${llvm_compiler_options} "
   PATH_ORIGINAL="${PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   necho "[Configuring${tag}] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
@@ -1190,7 +1141,7 @@ config_and_build_openssl()
   export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
   PATH_ORIGINAL="${PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   # Create 'makedepend' replacement
   MAKEDEPEND="${ROOT_DIR}/local/bin/makedepend"
@@ -1381,7 +1332,7 @@ manage_testclientserver()
       fi
 
       necho "[Compiling] "
-      leval ${LLVMGCC_ROOT}/bin/${LLVM_CC} -g ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
+      leval ${CLANG_ROOT}/bin/${LLVM_CC} -g ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
       leval ${TESTCC} $native_compile_flags -g -o $TESTCLIENTSERVER
 
       necho "[Installing] "
@@ -1437,7 +1388,7 @@ config_and_build_openssh()
   export LLVM_COMPILER=${LLVM_CC}
   export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} ${llvm_compiler_options} "
   PATH_ORIGINAL="${PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   if [ $FORCE_CLEAN -eq 1 ]; then
     necho "[Cleaning] "
@@ -1586,7 +1537,7 @@ config_and_build_boringssl()
   LLVM_COMPILER_FLAGS+="${llvm_compiler_options} "
   export LLVM_COMPILER_FLAGS
   PATH_ORIGINAL="${PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${LLVMGCC_ROOT}/bin/:${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
   necho "[Configuring${tag}] "
   leval mkdir -p "$boringssl_build_directory"
@@ -1797,7 +1748,7 @@ main()
         lecho "Using $OPTARG threads"
         MAKE_THREADS=$OPTARG
         ;;
-   
+
       :)
         echo "Option -$OPTARG requires an argument"
         exit
@@ -1827,6 +1778,12 @@ main()
   # force usage of gcc-5
   set_alternate_gcc
 
+  if [ $USE_STP_NEW -eq 1 ]; then
+    lecho "Building with newer STP + minisat"
+  else
+    lecho "Building with older STP + cryptominisat2"
+  fi
+
   lecho "Compiling with $(max_threads) threads"
 
   initialize_root_directories
@@ -1840,10 +1797,10 @@ main()
   
     mkdir -p $ROOT_DIR/{src,local,build}
 
-    if [ $INSTALL_LLVMGCC_BIN -eq 1 ]; then
-      install_llvmgcc_bin
+    if [ $INSTALL_CLANG_BIN -eq 1 ]; then
+      install_clang_bin
     else
-      install_llvmgcc_from_source
+      install_clang_from_source
     fi
 
     install_llvm
@@ -1859,8 +1816,12 @@ main()
     #install_boost
     install_uclibc_git
     install_ncurses
-    install_stp
-    #install_stp_git
+    if [ $USE_STP_NEW -eq 1 ]; then
+      install_minisat
+      install_stp_git
+    else
+      install_stp
+    fi
     #install_ghmm
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL

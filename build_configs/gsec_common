@@ -1,10 +1,14 @@
-# This file contains common variables and routines for the gsec scripts *- sh -*
+#!/bin/bash
+
+# This file contains common variables and routines for the build scripts.
+# Do not run this on its own. It is "sourced" from other scripts.
 
 # Packages
 LLVM="llvm"
-LLVMGCC="llvm-gcc-4.2-2.9"
-LLVMGCC_BIN="clang+llvm-3.4.2"
+CLANG="clang+llvm-3.4.2"
+CLANG_BIN="clang+llvm-3.4.2"
 LLVM_CC="clang"
+LLVM_CXX="clang++"
 LLVM_LD="llvm-link"
 WLLVM="whole-program-llvm"
 KLEE="klee"
@@ -15,6 +19,7 @@ UDIS86="udis86-1.7"
 LIBUNWIND="libunwind-1.1"
 SPARSEHASH="sparsehash-2.0.2"
 NCURSES="ncurses-5.7"
+MINISAT="minisat"
 STP="stp"
 TETRINET="tetrinet"
 WAFFLES="waffles-2011-12-6"
@@ -40,8 +45,13 @@ OPENSSL_BRANCH="heartbleed"
 OPENSSH_BRANCH="cliver"
 BORINGSSL_BRANCH="playback_support"
 UCLIBC_BRANCH="cloud9-support"
+MINISAT_BRANCH="master"
+STP_BRANCH="2.1.2"               # actually a tag, not a branch
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
 FOLLY_TAG="2016.07.26"
+
+# Build choices (try to minimize these and use branches instead)
+USE_STP_NEW=0
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -49,9 +59,10 @@ GIT_DIR="cliver"
 GOOGLE_PERFTOOLS_GIT="https://github.com/gperftools/gperftools.git"
 LLVM_GIT="$GIT_HOST:$GIT_DIR/$LLVM.git"
 WLLVM_GIT="$GIT_HOST:$GIT_DIR/whole-program-llvm.git"
+MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # up = https://github.com/stp/minisat.git
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
-STP_GIT="https://github.com/stp/stp.git"
+STP_GIT="https://github.com/stp/stp.git" # up = https://github.com/stp/stp.git
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
@@ -71,9 +82,8 @@ LIBUNWIND_PACKAGE="$LIBUNWIND.tar.gz"
 SPARSEHASH_PACKAGE="$SPARSEHASH.tar.gz"
 #LLVM_PACKAGE="$LLVM.tgz"
 LLVM_PACKAGE="$LLVM.src.tar.gz"
-LLVMGCC_PACKAGE="$LLVMGCC.source.tgz"
-#LLVMGCC_BIN_PACKAGE="$LLVMGCC_BIN.tar.bz2"
-LLVMGCC_BIN_PACKAGE="${LLVMGCC_BIN}-x86_64-unknown-ubuntu12.04.xz"
+CLANG_PACKAGE="$CLANG.source.tgz" # unused (and does not exist)
+CLANG_BIN_PACKAGE="${CLANG_BIN}-x86_64-unknown-ubuntu12.04.xz"
 NCURSES_PACKAGE="$NCURSES.tar.gz"
 ZLIB_PACKAGE="$ZLIB.tar.gz"
 WAFFLES_PACKAGE="$WAFFLES.tar.gz"
@@ -109,12 +119,13 @@ initialize_root_directories()
   LOCAL_ROOT="$ROOT_DIR/local"
 
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
+  MINISAT_ROOT="$ROOT_DIR/local"
   STP_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
   LLVM_ROOT="$ROOT_DIR/local"
   WLLVM_ROOT="$ROOT_DIR/local"
   BOOST_ROOT="$ROOT_DIR/local"
-  LLVMGCC_ROOT="$ROOT_DIR/local/$LLVMGCC_BIN"
+  CLANG_ROOT="$ROOT_DIR/local/$CLANG_BIN"
   LIBUNWIND_ROOT="$ROOT_DIR/local"
   SPARSEHASH_ROOT="$ROOT_DIR/local"
   NCURSES_ROOT="$ROOT_DIR/local"

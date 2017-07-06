@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This file contains variables supplementing gsec_common for build targets
+# "release" and "debug" (which was the original "crazymerge").  It should be
+# included via "source", not run directly.
+
+KLEE_BRANCH="cliver"
+USE_STP_NEW=1
