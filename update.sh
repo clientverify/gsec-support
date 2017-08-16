@@ -523,7 +523,7 @@ build_llvm ()
 
   LLVM_MAKE_OPTIONS=" -j $MAKE_THREADS REQUIRES_RTTI=1 DEBUG_SYMBOLS=1 "
 
-  leval make $LLVM_MAKE_OPTIONS $TARGET 
+  leval make $LLVM_MAKE_OPTIONS $TARGET
 }
 
 update_llvm()
@@ -718,37 +718,37 @@ config_klee()
   mkdir -p $ROOT_DIR/build/$KLEE
   cd $ROOT_DIR/build/$KLEE
 
-  KLEE_CONFIG_OPTIONS="--prefix=$KLEE_ROOT -libdir=$KLEE_ROOT/lib/$KLEE "
+  export PATH=$ROOT_DIR/build/llvm/Release+Debug+Asserts/bin/:$PATH
 
-  KLEE_CONFIG_OPTIONS+="--with-llvmsrc=$ROOT_DIR/src/$LLVM "
-  KLEE_CONFIG_OPTIONS+="--with-llvmobj=$ROOT_DIR/build/$LLVM "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcc=$CLANG_ROOT/bin/$LLVM_CC "
-  KLEE_CONFIG_OPTIONS+="--with-llvmcxx=$CLANG_ROOT/bin/$LLVM_CXX "
+  KLEE_CMAKE_OPTIONS=" -DCMAKE_INSTALL_PREFIX=$KLEE_ROOT "
+  KLEE_CMAKE_OPTIONS+=" -DCMAKE_INSTALL_LIBDIR=$KLEE_ROOT/lib/$KLEE "
 
-  if [ $USE_LLVM29 -eq 0 ]; then
-    KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
-  fi
-
-  # stp r940
-  KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
-  
-  # stp git upstream
-  #KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
-
-  KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_SOLVER_STP=ON "
+  KLEE_CMAKE_OPTIONS+=" -DSTP_DIR=$STP_ROOT "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_POSIX_RUNTIME=ON "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_KLEE_UCLIBC=ON  "
+  KLEE_CMAKE_OPTIONS+=" -DKLEE_UCLIBC_PATH=$UCLIBC_ROOT "
+  KLEE_CMAKE_OPTIONS+=" -DGTEST_SRC_DIR=$ROOT_DIR/googletest-release-1.7.0 "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_SYSTEM_TESTS=ON "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_UNIT_TESTS=ON "
+  KLEE_CMAKE_OPTIONS+=" -DLLVMCC=$CLANG_ROOT/bin/$LLVM_CC "
+  KLEE_CMAKE_OPTIONS+=" -DLLVMCXX=$CLANG_ROOT/bin/$LLVM_CXX "
+  KLEE_CMAKE_OPTIONS+=" -DENABLE_KLEE_ASSERTS=ON "
+  KLEE_CMAKE_OPTIONS+=" -DUSE_CXX11=ON "
+  KLEE_CMAKE_OPTIONS+=" -DUSE_CMAKE_FIND_PACKAGE_LLVM=FALSE"
+  KLEE_CMAKE_OPTIONS+=" -DLLVM_CONFIG_BINARY=$ROOT_DIR/local/bin/llvm-config "
 
   if test ${ALTCC+defined}; then
-   KLEE_CONFIG_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
+   KLEE_CMAKE_OPTIONS+="CC=$ALTCC CXX=$ALTCXX "
   fi
 
   if [ $BUILD_DEBUG -eq 1 ]; then
-   KLEE_CONFIG_OPTIONS+="--with-runtime=Debug+Asserts"
+   KLEE_CMAKE_OPTIONS+=" -DCMAKE_BUILD_TYPE=Debug"
   else
-   KLEE_CONFIG_OPTIONS+="--with-runtime=Release"
+   KLEE_CMAKE_OPTIONS+=" -DCMAKE_BUILD_TYPE=Release"
   fi
 
-
-  leval $ROOT_DIR/src/$KLEE/configure $KLEE_CONFIG_OPTIONS 
+  leval cmake $KLEE_CMAKE_OPTIONS $ROOT_DIR/src/$KLEE/
 }
 
 make_klee()
@@ -792,6 +792,21 @@ make_klee()
   #leval make $make_options uninstall
 
   leval make $env_options $make_options $TARGET
+
+
+  #Should be moved to build_klee_helper
+  #assumes ROOT_DIR contains googletest-release-1.7.0/ directory.
+  necho " [klee: make systemtests] "
+  #Needed by systemtests to find stp.
+  export LD_LIBRARY_PATH=$ROOT_DIR/build/stp/lib/
+  #this cp is not required on install, but is on new builds
+  #cp $ROOT_DIR/local/bin/klee-replay $ROOT_DIR/build/klee/bin/
+  leval make systemtests $env_options $make_options $TARGET
+
+  #This should be removed, as it is done elsewhere.  We should
+  #always be running unittests on every build tho.
+  necho " [klee: make unittests] "
+  leval make unittests $env_options $make_options $TARGET
 }
 
 build_klee_helper()
@@ -1244,7 +1259,7 @@ manage_openssl()
 
       cd $ROOT_DIR"/src/$OPENSSL"
 
-      leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
+      leval git checkout $OPENSSL_BRANCH
 
       # Build native shared library (.so) for linking with other libraries
       config_and_build_openssl_shared
