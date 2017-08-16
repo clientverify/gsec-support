@@ -715,6 +715,9 @@ install_stp()
 
 config_klee()
 {
+  cp $ROOT_DIR/gsec-support/googletest-release-1.7.0.tar $ROOT_DIR
+  tar -xf $ROOT_DIR/googletest-release-1.7.0.tar  -C $ROOT_DIR
+
   mkdir -p $ROOT_DIR/build/$KLEE
   cd $ROOT_DIR/build/$KLEE
 
