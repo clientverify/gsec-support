@@ -1372,7 +1372,9 @@ config_and_build_openssh()
   openssh_config_options+="--without-openssl "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
-  openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty "
+  if [ $OPENSSH_PRIV_SEP -eq 1 ]; then
+    openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty "
+  fi
 
   local config_env=""
   config_env+="CC=wllvm "
