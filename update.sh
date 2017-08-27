@@ -1422,6 +1422,9 @@ config_and_build_openssh()
   leval extract-bc $OPENSSH_ROOT/bin/ssh
   leval cp $OPENSSH_ROOT/bin/ssh.bc $OPENSSH_ROOT/bin/ssh${tag}.bc
 
+  leval extract-bc $OPENSSH_ROOT/sbin/sshd
+  leval cp $OPENSSH_ROOT/sbin/sshd.bc $OPENSSH_ROOT/sbin/sshd${tag}.bc
+
   export PATH="${PATH_ORIGINAL}"
 }
 
