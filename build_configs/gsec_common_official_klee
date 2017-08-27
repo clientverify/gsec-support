@@ -1,4 +1,0 @@
-KLEE_BRANCH="master"
-KLEE_GIT="https://github.com/klee/klee.git"
-OPENSSL_BRANCH="cve_2015_0205"
-USE_STP_NEW=1
