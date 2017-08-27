@@ -775,8 +775,6 @@ make_klee()
 
   local klee_ldflags="-L$BOOST_ROOT/lib -L$GOOGLE_PERFTOOLS_ROOT/lib -Wl,-rpath=${BOOST_ROOT}/lib "
   local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
-  #local klee_cxxflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include -I${GLIBC_INCLUDE_PATH} "
-  #local klee_cppflags="-I$OPENSSL_ROOT/include -I$BOOST_ROOT/include -I$GOOGLE_PERFTOOLS_ROOT/include "
   local klee_cflags="-I${GLIBC_INCLUDE_PATH} -I$OPENSSL_ROOT/include "
 
   if [ $USE_LLVM29 -eq 0 ]; then
@@ -794,7 +792,7 @@ make_klee()
   # old klee/cliver libs are not used before recently compiled libs
   #leval make $make_options uninstall
 
-  leval make $env_options $make_options $TARGET
+  leval LD_LIBRARY_PATH=$ROOT_DIR/build/stp/lib/ make $env_options $make_options $TARGET
 
 
   #Should be moved to build_klee_helper
@@ -802,14 +800,8 @@ make_klee()
   necho " [klee: make systemtests] "
   #Needed by systemtests to find stp.
   export LD_LIBRARY_PATH=$ROOT_DIR/build/stp/lib/
-  #this cp is not required on install, but is on new builds
-  #cp $ROOT_DIR/local/bin/klee-replay $ROOT_DIR/build/klee/bin/
   leval make systemtests $env_options $make_options $TARGET
 
-  #This should be removed, as it is done elsewhere.  We should
-  #always be running unittests on every build tho.
-  necho " [klee: make unittests] "
-  leval make unittests $env_options $make_options $TARGET
 }
 
 build_klee_helper()
