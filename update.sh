@@ -1368,8 +1368,8 @@ config_and_build_openssh()
 
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
-  openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
-  #openssh_config_options+="--without-openssl "
+  #openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
+  openssh_config_options+="--without-openssl "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
   if [ $OPENSSH_PRIV_SEP ]; then
