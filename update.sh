@@ -1233,7 +1233,7 @@ build_optimized_openssl_bitcode()
   local tag=$1
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch "
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
   fi
@@ -1368,11 +1368,11 @@ config_and_build_openssh()
 
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
-  #openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
-  openssh_config_options+="--without-openssl "
+  openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
+  #openssh_config_options+="--without-openssl "
   openssh_config_options+="--without-pie "
   openssh_config_options+="--disable-strip "
-  if [ $OPENSSH_PRIV_SEP -eq 1 ]; then
+  if [ $OPENSSH_PRIV_SEP ]; then
     openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty "
   fi
 
@@ -1445,7 +1445,7 @@ build_optimized_openssh_bitcode()
   local tag=$1
 
   necho "[Optimizing${tag}] "
-  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch "
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
   fi
