@@ -1244,7 +1244,8 @@ manage_openssl()
 
       cd $ROOT_DIR"/src/$OPENSSL"
 
-      leval git checkout -b $OPENSSL_BRANCH origin/$OPENSSL_BRANCH
+      leval git checkout tags/$OPENSSL_BRANCH
+      leval ./config
 
       # Build native shared library (.so) for linking with other libraries
       config_and_build_openssl_shared
@@ -1356,19 +1357,20 @@ config_and_build_openssh()
   local tag=$2
   mkdir -p ${LOCAL_ROOT}/var/empty
 
+  export PATH="${OPENSSH_ROOT}:${PATH}"
+  export LD_FLAGS="-static "
+  export LD_LIBRARY_PATH="${OPENSSL_ROOT}/lib/ "
   local openssh_config_options=""
-  openssh_config_options+="--prefix=${OPENSSH_ROOT} "
-  #openssh_config_options+="--with-ssl-dir=${OPENSSL_ROOT} "
-  openssh_config_options+="--without-openssl "
-  openssh_config_options+="--without-pie "
-  openssh_config_options+="--disable-strip "
-  openssh_config_options+="--with-privsep-path=${LOCAL_ROOT}/var/empty "
+  openssh_config_options+=" --prefix=${OPENSSH_ROOT} "
+  openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/include "
+  openssh_config_options+=" --with-ldflags=-static "
+  openssh_config_options+=" --with-libs=-I${OPENSSL_ROOT}/lib/libssl.a "
 
   local config_env=""
   config_env+="CC=wllvm "
   local cflags_for_config=""
-  cflags_for_config="-DCLIVER "
-  cflags_for_config+="-DWITH_KTEST "
+  #cflags_for_config="-DCLIVER "
+  #cflags_for_config+="-DWITH_KTEST "
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
     cflags_for_config+="-g " # compile with debugging symbols
@@ -1397,6 +1399,7 @@ config_and_build_openssh()
 
   necho "[Configuring${tag}] "
   leval autoreconf -i
+  #This is where we're having trouble
   leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
 
   necho "[Compiling${tag}] "
@@ -1438,6 +1441,8 @@ build_optimized_openssh_bitcode()
     opt_passes="-strip-debug ${opt_passes}"
   fi
   leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSH_ROOT}/bin/ssh-opt${tag}.bc ${OPENSSH_ROOT}/bin/ssh${tag}.bc
+
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${OPENSSH_ROOT}/sbin/sshd-opt${tag}.bc ${OPENSSH_ROOT}/sbin/sshd${tag}.bc
 }
 
 manage_openssh()
