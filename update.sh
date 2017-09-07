@@ -1169,6 +1169,10 @@ config_and_build_openssl()
   leval extract-bc $OPENSSL_ROOT/bin/openssl
   leval cp $OPENSSL_ROOT/bin/openssl.bc $OPENSSL_ROOT/bin/openssl${tag}.bc
 
+  leval extract-bc $OPENSSL_ROOT/lib/libssl.a
+  leval extract-bc $OPENSSL_ROOT/lib/libcrypto.a
+
+
   export PATH="${PATH_ORIGINAL}"
 }
 
@@ -1357,20 +1361,17 @@ config_and_build_openssh()
   local tag=$2
   mkdir -p ${LOCAL_ROOT}/var/empty
 
-  export PATH="${OPENSSH_ROOT}:${PATH}"
-  export LD_FLAGS="-static "
-  export LD_LIBRARY_PATH="${OPENSSL_ROOT}/lib/ "
+  export PATH="${OPENSSH_ROOT}:${OPENSSH_ROOT}/lib/:${PATH}"
+  #export LDFLAGS=" -L${OPENSSL_ROOT}/lib/ "
+  export LIBS=" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a ${OPENSSL_ROOT}/lib/libz.a -Wl,-Bdynamic -ldl "
+  export CPPFLAGS="-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ "
   local openssh_config_options=""
   openssh_config_options+=" --prefix=${OPENSSH_ROOT} "
-  openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/include "
-  openssh_config_options+=" --with-ldflags=-static "
-  openssh_config_options+=" --with-libs=-I${OPENSSL_ROOT}/lib/libssl.a "
+  openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/lib/libssl.a "
 
   local config_env=""
-  config_env+="CC=wllvm "
+  #config_env+="CC=wllvm "
   local cflags_for_config=""
-  #cflags_for_config="-DCLIVER "
-  #cflags_for_config+="-DWITH_KTEST "
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
     cflags_for_config+="-g " # compile with debugging symbols
@@ -1378,8 +1379,6 @@ config_and_build_openssh()
 
   cflags_for_config+=""
   config_env+="CFLAGS=\"${cflags_for_config}\" "
-
-  #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
 
   local make_options=""
   make_options+="-j $MAKE_THREADS " # parallel build
