@@ -1365,8 +1365,7 @@ config_and_build_openssh()
   openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/lib/libssl.a "
 
   local config_env=""
-  #config_env+="CC=wllvm "
-  config_env+="CC=clang "
+  config_env+="CC=wllvm "
   local cflags_for_config=""
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
