@@ -1,4 +1,4 @@
-KLEE_BRANCH="klee_taint_caughtup"
+KLEE_BRANCH="parallel-rc-thesis-fakepadding"
 OPENSSL_BRANCH="OpenSSL_0_9_8zh"
 OPENSSH_BRANCH="PRE_PRIV_SEP"
-USE_STP_NEW=1
+#USE_STP_NEW=1

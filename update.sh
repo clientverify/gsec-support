@@ -1169,10 +1169,6 @@ config_and_build_openssl()
   leval extract-bc $OPENSSL_ROOT/bin/openssl
   leval cp $OPENSSL_ROOT/bin/openssl.bc $OPENSSL_ROOT/bin/openssl${tag}.bc
 
-  leval extract-bc $OPENSSL_ROOT/lib/libssl.a
-  leval extract-bc $OPENSSL_ROOT/lib/libcrypto.a
-
-
   export PATH="${PATH_ORIGINAL}"
 }
 
@@ -1362,8 +1358,7 @@ config_and_build_openssh()
   mkdir -p ${LOCAL_ROOT}/var/empty
 
   export PATH="${OPENSSH_ROOT}:${OPENSSH_ROOT}/lib/:${PATH}"
-  #export LDFLAGS=" -L${OPENSSL_ROOT}/lib/ "
-  export LIBS=" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a ${OPENSSL_ROOT}/lib/libz.a -Wl,-Bdynamic -ldl "
+  export LIBS=" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl "
   export CPPFLAGS="-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ "
   local openssh_config_options=""
   openssh_config_options+=" --prefix=${OPENSSH_ROOT} "
@@ -1371,6 +1366,7 @@ config_and_build_openssh()
 
   local config_env=""
   #config_env+="CC=wllvm "
+  config_env+="CC=clang "
   local cflags_for_config=""
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
