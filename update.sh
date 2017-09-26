@@ -649,7 +649,7 @@ install_stp_git()
 
   necho "[Cloning] "
   cd $ROOT_DIR"/src"
-  leval git clone $STP_GIT
+  leval git clone --branch $STP_BRANCH $STP_GIT
 
   necho "[Compiling] "
   mkdir -p $ROOT_DIR/build/$STP
