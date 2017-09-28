@@ -1835,7 +1835,7 @@ main()
     manage_openssh opt
     manage_boringssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
-    install_zlib
+    #install_zlib # zlib is still required, but we can use the system version
     install_expat
     install_tetrinet
     install_xpilot_with_wllvm
