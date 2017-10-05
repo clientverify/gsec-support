@@ -1373,6 +1373,8 @@ config_and_build_openssh()
   fi
 
   cflags_for_config+=""
+  cflags_for_config+=" -DCLIVER "
+  cflags_for_config+=" -DWITH_KTEST "
   config_env+="CFLAGS=\"${cflags_for_config}\" "
 
   local make_options=""
