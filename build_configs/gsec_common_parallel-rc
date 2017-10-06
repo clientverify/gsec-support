@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This file contains variables supplementing gsec_common for build target
+# "parallel".  It should be included via "source", not run directly.
+
+KLEE_BRANCH="parallel-rc-thesis-fakepadding"
+USE_STP_NEW=0

@@ -38,7 +38,7 @@ FOLLY="folly"
 # Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="parallel-rc-thesis-fakepadding"
+KLEE_BRANCH="sparklee-cliver"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
@@ -52,7 +52,7 @@ FOLLY_TAG="2016.07.26"
 
 # Build choices
 # Note: try to minimize ad-hoc package swapping like this; use branches instead
-USE_STP_NEW=0
+USE_STP_NEW=1
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
