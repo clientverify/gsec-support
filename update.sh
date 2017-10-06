@@ -893,7 +893,7 @@ install_klee()
 
   cd $ROOT_DIR"/src/$KLEE"
 
-  leval git checkout -b $KLEE_BRANCH origin/$KLEE_BRANCH 
+  leval git checkout $KLEE_BRANCH
   
   necho "[Configuring] "
   config_klee

@@ -30,7 +30,7 @@ GHMM="ghmm"
 # Repository Branches/Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="cliver"
+KLEE_BRANCH="crazymerge1.0.0"    # actually a tag, not a branch
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="cve_2015_0205"
