@@ -390,33 +390,6 @@ install_uclibc_git()
   necho "[Done]\n"
 }
 
-# Facebook C++ Library
-install_folly()
-{
-  necho "$FOLLY\t\t\t"
-  check_dirs $FOLLY|| { return 0; }
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone  $FOLLY_GIT
-  cd $ROOT_DIR/src/$FOLLY
-  leval git checkout tags/$FOLLY_TAG -b $FOLLY_TAG
-
-  necho "[Configuring] "
-  cd $ROOT_DIR/src/$FOLLY/folly
-  leval autoreconf -ivf
-  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' ./configure --prefix=$FOLLY_ROOT
-
-  necho "[Compiling] "
-  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make -j $MAKE_THREADS
-
-  necho "[Installing] "
-  mkdir -p $FOLLY_ROOT
-  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make install
-
-  necho "[Done]\n"
-}
-
 install_clang_bin()
 {
   necho "$CLANG_BIN\t"
@@ -935,186 +908,6 @@ update_klee()
   necho "[Done]\n"
 }
 
-build_tetrinet()
-{
-  TETRINET_MAKE_OPTIONS="NCURSES_DIR=${NCURSES_ROOT} "
-  TETRINET_MAKE_OPTIONS+="PREFIX=${TETRINET_ROOT} "
-  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER=\"${CLANG_ROOT}/bin/${LLVM_CC}\" "
-  TETRINET_MAKE_OPTIONS+="LLVMCOMPILER_FLAGS=\"-I${GLIBC_INCLUDE_PATH}\" "
-  TETRINET_MAKE_OPTIONS+="LLVMLINKER=\"${LLVM_ROOT}/bin/${LLVM_LD}\" "
-
-  if test ${ALTCC+defined}; then
-    TETRINET_MAKE_OPTIONS+="CC=$ALTCC LD=$ALTCC "
-  fi
-
-  necho "[Compiling] "
-  leval make $TETRINET_MAKE_OPTIONS install
-
-  necho "[Installing] "
-  mkdir -p $TETRINET_ROOT
-  leval make $TETRINET_MAKE_OPTIONS install 
-}
-
-update_tetrinet()
-{
-  necho "$TETRINET\t\t"
-
-  if [ ! -e "$ROOT_DIR/src/$TETRINET/.git" ]; then
-    echo "[Error] (git directory missing) "; exit;
-  fi
-
-  cd $ROOT_DIR/src/$TETRINET
-
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    if [ "$(git_current_branch)" != "$TETRINET_BRANCH" ]; then
-      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-    fi
-    
-    necho "[Checking] "
-    leval git remote update 
-  fi
-
-  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
-
-    if [ $BUILD_LOCAL -eq 0 ]; then
-      necho "[Pulling] "
-      leval git pull --all 
-    fi
-
-    if [ $FORCE_CLEAN -eq 1 ]; then 
-      necho "[Cleaning] "
-      leval make clean 
-    fi
-
-    build_tetrinet
-
-  fi
-
-  necho "[Done]\n"
-}
-
-install_tetrinet()
-{
-  necho "$TETRINET\t\t"
-
-  check_dirs $TETRINET|| { return 0; }
-
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone $TETRINET_GIT 
-
-  cd $ROOT_DIR"/src/$TETRINET"
-
-  if [ "$TETRINET_BRANCH" != "master" ]; then
-    leval git checkout $TETRINET_BRANCH
-  fi
-
-  build_tetrinet
-
-  necho "[Done]\n"
-}
-
-config_and_build_xpilot_with_wllvm()
-{
-  local llvm_compiler_options=$1
-  local tag=$2
-
-  local xpilot_config_options=""
-  xpilot_config_options+="--disable-sdl-client --disable-sdl-gameloop "
-  xpilot_config_options+="--disable-sdltest --disable-xp-mapedit "
-  xpilot_config_options+="--disable-replay --disable-sound "
-  xpilot_config_options+="--enable-select-sched --prefix=$XPILOT_ROOT "
-  xpilot_config_options+="--program-suffix=${tag} "
-
-  local make_options=""
-  make_options+="CC=wllvm "
-  make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
-  make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
-
-  export LLVM_COMPILER=${LLVM_CC}
-  export LLVM_COMPILER_FLAGS="-fno-slp-vectorize -fno-slp-vectorize-aggressive -fno-vectorize -I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} -DXLIB_ILLEGAL_ACCESS -D__GNUC__ ${llvm_compiler_options} "
-  PATH_ORIGINAL="${PATH}"
-  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
-
-  necho "[Configuring${tag}] "
-  leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
-
-  necho "[Compiling${tag}] "
-  leval make $make_options
-
-  necho "[Installing${tag}] "
-  mkdir -p $XPILOT_ROOT
-  leval make $make_options install
-  leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11${tag}
-
-  necho "[Optimizing${tag}] "
-  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
-  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
-    opt_passes="-strip-debug ${opt_passes}"
-  fi
-  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so ${opt_passes} --time-passes -o ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}-opt.bc ${XPILOT_ROOT}/bin/xpilot-ng-x11${tag}.bc
-
-  export PATH="${PATH_ORIGINAL}"
-}
-
-update_xpilot_with_wllvm()
-{
-  necho "$XPILOT\t\t\t"
-
-  if [ ! -e "$ROOT_DIR/src/$XPILOT/.git" ]; then
-    echo "[Error] (git directory missing) "; exit;
-  fi
-
-  cd $ROOT_DIR/src/$XPILOT
-
-  if [ $BUILD_LOCAL -eq 0 ]; then
-    if [ "$(git_current_branch)" != "$XPILOT_BRANCH" ]; then
-      echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
-    fi
-
-    necho "[Checking] "
-    leval git remote update
-  fi
-
-  if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind ; then
-
-    if [ $BUILD_LOCAL -eq 0 ]; then
-      necho "[Pulling] "
-      leval git pull --all
-    fi
-
-    # Build two versions of xpilot, to support cliver and lli
-    config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
-    config_and_build_xpilot_with_wllvm " " "-run"
-  fi
-
-  necho "[Done]\n"
-}
-
-install_xpilot_with_wllvm()
-{
-  necho "$XPILOT\t\t\t"
-
-  check_dirs $XPILOT || { return 0; }
-  cd $ROOT_DIR"/src"
-
-  necho "[Cloning] "
-  leval git clone $XPILOT_GIT $XPILOT
-
-  cd $ROOT_DIR"/src/$XPILOT"
-
-  if [ "$XPILOT_BRANCH" != "master" ]; then
-    leval git checkout $XPILOT_BRANCH
-  fi
-
-  # Build two versions of xpilot, to support cliver and lli
-  config_and_build_xpilot_with_wllvm "-DNUKLEAR" "-klee"
-  config_and_build_xpilot_with_wllvm " " "-run"
-
-  necho "[Done]\n"
-}
-
 config_and_build_openssl()
 {
   local llvm_compiler_options=$1
@@ -1306,51 +1099,6 @@ manage_openssl()
 
 ###############################################################################
 
-manage_testclientserver()
-{
-  necho "$TESTCLIENTSERVER \t"
-  case $1 in
-    install)
-      check_dirs $TESTCLIENTSERVER || { return 0; }
-
-      cd $ROOT_DIR"/src"
-      leval mkdir $TESTCLIENTSERVER
-
-      ## KLEE needs to be installed
-      necho "[Copying] "
-      leval cp ./$KLEE/test/Cliver/ClientServer.c ./$TESTCLIENTSERVER
-      leval cp ./$KLEE/test/Cliver/KTestSocket.inc ./$TESTCLIENTSERVER
-      leval cp ./$KLEE/lib/Basic/KTest.cpp ./$TESTCLIENTSERVER
-
-      cd $ROOT_DIR"/src/$TESTCLIENTSERVER"
-      local srcfile="ClientServer.c"
-      local native_compile_flags="-B/usr/lib/x86_64-linux-gnu KTest.cpp $srcfile -DKTEST=\"\\\"./$TESTCLIENTSERVER.ktest\\\"\" -I$ROOT_DIR\"/src/klee/include\" "
-      local bc_compile_flags=" $srcfile -I$ROOT_DIR\"/src/klee/include\" -DKLEE -DCLIENT -emit-llvm -c "
-
-      local TESTCC=gcc
-      if test ${ALTCC+defined}; then
-        TESTCC=$ALTCC
-      fi
-
-      necho "[Compiling] "
-      leval ${CLANG_ROOT}/bin/${LLVM_CC} -g ${bc_compile_flags} -o $TESTCLIENTSERVER.bc
-      leval ${TESTCC} $native_compile_flags -g -o $TESTCLIENTSERVER
-
-      necho "[Installing] "
-      leval cp $TESTCLIENTSERVER $ROOT_DIR/local/bin/
-      leval cp $TESTCLIENTSERVER.bc $ROOT_DIR/local/bin/
-      ;;
-
-    update)
-      ;;
-
-  esac
-  necho "[Done]\n"
-}
-
-###############################################################################
-
-
 config_and_build_openssh()
 {
   local llvm_compiler_options=$1
@@ -1361,21 +1109,28 @@ config_and_build_openssh()
   export LIBS=" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl "
   export CPPFLAGS="-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ "
   local openssh_config_options=""
-  openssh_config_options+=" --prefix=${OPENSSH_ROOT} "
+  openssh_config_options+="--prefix=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/lib/libssl.a "
+  #added from labnotebook
+  openssh_config_options+=" --with-default-path=${OPENSSH_ROOT} "
+  openssh_config_options+=" --with-pid-dir=${OPENSSH_ROOT} "
+  #openssh_config_options+=" --with-pam "
+  openssh_config_options+=" --disable-lastlog"
 
   local config_env=""
   config_env+="CC=wllvm "
   local cflags_for_config=""
+  cflags_for_config="-DCLIVER "
+  cflags_for_config+="-DWITH_KTEST "
 
   if [ $BUILD_DEBUG_ALL -eq 1 ]; then
     cflags_for_config+="-g " # compile with debugging symbols
   fi
 
   cflags_for_config+=""
-  cflags_for_config+=" -DCLIVER "
-  cflags_for_config+=" -DWITH_KTEST "
   config_env+="CFLAGS=\"${cflags_for_config}\" "
+
+  #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
 
   local make_options=""
   make_options+="-j $MAKE_THREADS " # parallel build
@@ -1395,7 +1150,6 @@ config_and_build_openssh()
 
   necho "[Configuring${tag}] "
   leval autoreconf -i
-  #This is where we're having trouble
   leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
 
   necho "[Compiling${tag}] "
@@ -1830,16 +1584,12 @@ main()
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL
     manage_boringssl install
-    install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_openssh opt
     manage_boringssl opt # 'opt' requires klee to be installed
-    manage_testclientserver install
     #install_zlib # zlib is still required, but we can use the system version
     install_expat
-    install_tetrinet
-    install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     echo
