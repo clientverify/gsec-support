@@ -4,5 +4,5 @@
 # "release" and "debug" (which was the original "crazymerge").  It should be
 # included via "source", not run directly.
 
-KLEE_BRANCH="cliver"
+KLEE_BRANCH="crazymerge1.0.0"
 USE_STP_NEW=1

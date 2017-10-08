@@ -3,4 +3,6 @@
 # This file contains variables supplementing gsec_common for build target
 # "parallel-e".  It should be included via "source", not run directly.
 
-OPENSSL_BRANCH="playback_101ef"
+KLEE_BRANCH="parallel-rc-thesis-fakepadding"
+OPENSSL_BRANCH="playback_101e"
+USE_STP_NEW=0

@@ -649,7 +649,7 @@ install_stp_git()
 
   necho "[Cloning] "
   cd $ROOT_DIR"/src"
-  leval git clone $STP_GIT
+  leval git clone --branch $STP_BRANCH $STP_GIT
 
   necho "[Compiling] "
   mkdir -p $ROOT_DIR/build/$STP
@@ -1007,7 +1007,7 @@ install_tetrinet()
   cd $ROOT_DIR"/src/$TETRINET"
 
   if [ "$TETRINET_BRANCH" != "master" ]; then
-    leval git checkout -b $TETRINET_BRANCH origin/$TETRINET_BRANCH 
+    leval git checkout $TETRINET_BRANCH
   fi
 
   build_tetrinet
@@ -1105,7 +1105,7 @@ install_xpilot_with_wllvm()
   cd $ROOT_DIR"/src/$XPILOT"
 
   if [ "$XPILOT_BRANCH" != "master" ]; then
-    leval git checkout -b $XPILOT_BRANCH origin/$XPILOT_BRANCH
+    leval git checkout $XPILOT_BRANCH
   fi
 
   # Build two versions of xpilot, to support cliver and lli
@@ -1244,7 +1244,7 @@ manage_openssl()
 
       cd $ROOT_DIR"/src/$OPENSSL"
 
-      leval git checkout tags/$OPENSSL_BRANCH
+      leval git checkout $OPENSSL_BRANCH
       leval ./config
 
       # Build native shared library (.so) for linking with other libraries
@@ -1455,7 +1455,7 @@ manage_openssh()
 
       cd $ROOT_DIR"/src/$OPENSSH"
 
-      leval git checkout -b $OPENSSH_BRANCH origin/$OPENSSH_BRANCH
+      leval git checkout $OPENSSH_BRANCH
 
       # Build only one version. Later we might need 2 versions in order to
       # support cliver and lli, like OpenSSL.
@@ -1836,7 +1836,7 @@ main()
     manage_openssh opt
     manage_boringssl opt # 'opt' requires klee to be installed
     manage_testclientserver install
-    install_zlib
+    #install_zlib # zlib is still required, but we can use the system version
     install_expat
     install_tetrinet
     install_xpilot_with_wllvm

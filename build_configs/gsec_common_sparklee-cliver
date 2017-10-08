@@ -3,4 +3,5 @@
 # This file contains variables supplementing gsec_common for build target
 # "parallel".  It should be included via "source", not run directly.
 
-# Currently it is empty, as "parallel" was used as the starting point.
+# This is intentionally blank. Currently, gsec_common already provides the
+# right parameters for this build.

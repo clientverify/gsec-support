@@ -38,7 +38,7 @@ FOLLY="folly"
 # Repository Branches and Tags
 LLVM_BRANCH="release_34-cliver"
 WLLVM_BRANCH="llvm-gcc"
-KLEE_BRANCH="parallel-rc-thesis-fakepadding"
+KLEE_BRANCH="sparklee-cliver"
 TETRINET_BRANCH="master"
 XPILOT_BRANCH="master"
 OPENSSL_BRANCH="heartbleed"
@@ -46,12 +46,13 @@ OPENSSH_BRANCH="cliver"
 BORINGSSL_BRANCH="playback_support"
 UCLIBC_BRANCH="cloud9-support"
 MINISAT_BRANCH="master"
-STP_BRANCH="2.1.2"               # actually a tag, not a branch
+STP_BRANCH="threadsafe"
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
 FOLLY_TAG="2016.07.26"
 
-# Build choices (try to minimize these and use branches instead)
-USE_STP_NEW=0
+# Build choices
+# Note: try to minimize ad-hoc package swapping like this; use branches instead
+USE_STP_NEW=1
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -62,7 +63,7 @@ WLLVM_GIT="$GIT_HOST:$GIT_DIR/whole-program-llvm.git"
 MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # up = https://github.com/stp/minisat.git
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
-STP_GIT="https://github.com/stp/stp.git" # up = https://github.com/stp/stp.git
+STP_GIT="$GIT_HOST:$GIT_DIR/$STP.git" # up = https://github.com/stp/stp.git
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
