@@ -1105,16 +1105,13 @@ config_and_build_openssh()
   local tag=$2
   mkdir -p ${LOCAL_ROOT}/var/empty
 
-  export PATH="${OPENSSH_ROOT}:${OPENSSH_ROOT}/lib/:${PATH}"
-  export LIBS=" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl "
-  export CPPFLAGS="-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ "
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/lib/libssl.a "
   #added from labnotebook
   openssh_config_options+=" --with-default-path=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-pid-dir=${OPENSSH_ROOT} "
-  #openssh_config_options+=" --with-pam "
+  openssh_config_options+=" --with-pam "
   openssh_config_options+=" --disable-lastlog"
 
   local config_env=""
@@ -1128,7 +1125,9 @@ config_and_build_openssh()
   fi
 
   cflags_for_config+=""
-  config_env+="CFLAGS=\"${cflags_for_config}\" "
+  config_env+=" CFLAGS=\"${cflags_for_config}\" "
+  config_env+=" CPPFLAGS=\"-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ \" "
+  config_env+=" LIBS=\" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl \" "
 
   #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
 
@@ -1583,13 +1582,13 @@ main()
     #install_ghmm
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL
-    manage_boringssl install
+#    manage_boringssl install
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_openssh opt
-    manage_boringssl opt # 'opt' requires klee to be installed
+#    manage_boringssl opt # 'opt' requires klee to be installed
     #install_zlib # zlib is still required, but we can use the system version
-    install_expat
+#    install_expat
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     echo
