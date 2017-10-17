@@ -1657,6 +1657,167 @@ manage_boringssl()
 }
 
 ###############################################################################
+config_and_build_libmodbus()
+{
+  local llvm_compiler_options=$1
+  local tag=$2
+  local save_directory="$(pwd)"
+  # Unfortunately, libmodbus doesn't support out-of-source-dir builds,
+  # so libmodbus_build_dir == libmodbus_src_dir
+  local libmodbus_build_dir="$ROOT_DIR/src/$LIBMODBUS"
+
+  local config_options=""
+  config_options+="--prefix=${LIBMODBUS_ROOT} "
+  config_options+="--enable-static "
+  config_options+="CC=wllvm "
+  local cflags_options=""
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    cflags_options+="-g -O0 "
+  fi
+  cflags_options+="-DCLIVER "
+  config_options+="CFLAGS='${cflags_options}' "
+
+  local make_options=""
+  make_options+="C_INCLUDE_PATH=${GLIBC_INCLUDE_PATH} "
+  make_options+="LIBRARY_PATH=${GLIBC_LIBRARY_PATH} "
+
+  export LLVM_COMPILER=${LLVM_CC}
+  LLVM_COMPILER_FLAGS=""
+  LLVM_COMPILER_FLAGS+="-fno-slp-vectorize "
+  LLVM_COMPILER_FLAGS+="-fno-slp-vectorize-aggressive "
+  LLVM_COMPILER_FLAGS+="-fno-vectorize "
+  LLVM_COMPILER_FLAGS+="-I${GLIBC_INCLUDE_PATH} -B${GLIBC_LIBRARY_PATH} "
+  LLVM_COMPILER_FLAGS+="${llvm_compiler_options} "
+  export LLVM_COMPILER_FLAGS
+  PATH_ORIGINAL="${PATH}"
+  export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
+
+  necho "[Configuring${tag}] "
+  #leval mkdir -p "$libmodbus_build_dir"
+  leval cd "$libmodbus_build_dir"
+  leval ./autogen.sh
+  leval ./configure ${config_options}
+
+  necho "[Cleaning${tag}] "
+  leval make clean
+
+  necho "[Compiling${tag}] "
+  leval make V=1
+
+  # libmodbus "make check" is a no-op; tests must be run manually
+
+  # if [ $SKIP_TESTS -eq 0 ]; then
+  #   necho "[Testing${tag}] "
+  #   # Do we need to use a system-wide lockfile here?
+  #   leval make check
+  # fi
+
+  necho "[Installing${tag}] "
+  leval mkdir -p "${LIBMODBUS_ROOT}/bin"
+  leval make install
+  leval cp tests/unit-test-server \
+        "${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-server
+  local clientpath="${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-client
+  leval cp tests/unit-test-server "${clientpath}"
+  leval extract-bc "${clientpath}"
+  leval cp "${clientpath}.bc" "${clientpath}${tag}.bc"
+
+  export PATH="${PATH_ORIGINAL}"
+
+  cd $save_directory
+}
+
+build_optimized_libmodbus_bitcode()
+{
+  local tag=$1
+  local clientpath="${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-client
+
+  necho "[Optimizing${tag}] "
+  local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
+  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+    opt_passes="-strip-debug ${opt_passes}"
+  fi
+  leval ${LLVM_ROOT}/bin/opt -load=${KLEE_ROOT}/lib/libkleePasses.so \
+        ${opt_passes} --time-passes -o "${clientpath}-opt${tag}.bc" \
+        "${clientpath}${tag}.bc"
+}
+
+manage_libmodbus()
+{
+  # Unfortunately, libmodbus doesn't support out-of-source-dir builds,
+  # so libmodbus_build_dir == libmodbus_src_dir
+  local libmodbus_build_dir="$ROOT_DIR/src/$LIBMODBUS"
+  local libmodbus_src_dir="$ROOT_DIR/src/$LIBMODBUS"
+
+  necho "$LIBMODBUS  \t\t"
+  case $1 in
+    install)
+      check_dirs $LIBMODBUS || { return 0; }
+
+      cd $ROOT_DIR"/src"
+
+      necho "[Cloning] "
+      leval git clone $LIBMODBUS_GIT $LIBMODBUS
+
+      cd "$libmodbus_src_dir"
+
+      leval git checkout $LIBMODBUS_BRANCH
+
+      # Build two versions of libmodbus, to support cliver and lli
+      config_and_build_libmodbus "-DKLEE" "-klee"
+      config_and_build_libmodbus " " "-run"
+      ;;
+
+    update)
+      if [ ! -e "$ROOT_DIR/src/$LIBMODBUS/.git" ]; then
+        echo "[Error] (git directory missing) "; exit;
+      fi
+
+      cd $ROOT_DIR/src/$LIBMODBUS
+
+      if [ $BUILD_LOCAL -eq 0 ]; then
+        if [ "$(git_current_branch)" != "$LIBMODBUS_BRANCH" ]; then
+          echo "[Error] (unknown git branch "$(git_current_branch)") "; exit;
+        fi
+        necho "[Checking] "
+        leval git remote update
+      fi
+
+      if [ $FORCE_COMPILATION -eq 1 ] || git status -uno | grep -q behind
+      then
+
+        if [ $BUILD_LOCAL -eq 0 ]; then
+          necho "[Pulling] "
+          leval git pull --all
+        fi
+
+        if [ $FORCE_CLEAN -eq 1 ]; then
+          necho "[Cleaning] "
+          leval cd $libmodbus_build_dir
+          leval make clean
+          leval cd -
+        fi
+
+        # Build two versions of libmodbus, to support cliver and lli
+        config_and_build_libmodbus "-DKLEE" "-klee"
+        config_and_build_libmodbus " " "-run"
+
+        # run opt on two versions of libmodbus, to support cliver and lli
+        build_optimized_libmodbus_bitcode "-klee"
+        build_optimized_libmodbus_bitcode "-run"
+      fi
+      ;;
+    opt*)
+      # run opt on two versions of libmodbus, to support cliver and lli
+      build_optimized_libmodbus_bitcode "-klee"
+      build_optimized_libmodbus_bitcode "-run"
+      ;;
+
+  esac
+  necho "[Done]\n"
+}
+
+###############################################################################
 
 on_exit()
 {
@@ -1829,11 +1990,13 @@ main()
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL
     manage_boringssl install
+    manage_libmodbus install
     install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_openssh opt
     manage_boringssl opt # 'opt' requires klee to be installed
+    manage_libmodbus opt
     manage_testclientserver install
     #install_zlib # zlib is still required, but we can use the system version
     install_expat
@@ -1863,6 +2026,9 @@ main()
       boringssl)
         manage_boringssl update
         ;;
+      libmodbus)
+        manage_libmodbus update
+        ;;
       llvm)
         update_llvm
         ;;
@@ -1878,13 +2044,17 @@ main()
     update_wllvm
     manage_openssl update
     manage_openssh update # Note: SSH depends on OpenSSL
-    manage_openssh opt
     manage_boringssl update
+    manage_libmodbus update
     update_klee
+    manage_openssl opt
+    manage_openssh opt
+    manage_boringssl opt
+    manage_libmodbus opt
     update_tetrinet
     update_xpilot_with_wllvm
   fi
-  
+
   echo
 }
 
