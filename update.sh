@@ -1037,18 +1037,18 @@ config_and_build_xpilot_with_wllvm()
   PATH_ORIGINAL="${PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   leval $ROOT_DIR/src/$XPILOT/configure $xpilot_config_options $make_options
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval make $make_options
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   mkdir -p $XPILOT_ROOT
   leval make $make_options install
   leval extract-bc $XPILOT_ROOT/bin/xpilot-ng-x11${tag}
 
-  necho "[Optimizing${tag}] "
+  necho "[Optimizing-for${tag}] "
   local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
@@ -1149,21 +1149,21 @@ config_and_build_openssl()
   echo 'exec '"${LLVM_COMPILER}"' -M "$@"' >> "${MAKEDEPEND}"
   chmod +x "${MAKEDEPEND}"
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval make $make_options depend
   leval make $make_options
 
   if [ $SKIP_TESTS -eq 1 ]; then
-    necho "[Testing${tag} (skipped)] "
+    necho "[Testing-for${tag} (skipped)] "
   else
-    necho "[Testing${tag}] "
+    necho "[Testing-for${tag}] "
     leval make $make_options test
   fi
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   mkdir -p $OPENSSL_ROOT
   leval make install_sw
   leval extract-bc $OPENSSL_ROOT/bin/openssl
@@ -1200,14 +1200,14 @@ config_and_build_openssl_shared()
   echo 'exec '"${CC}"' -M "$@"' >> "${MAKEDEPEND}"
   chmod +x "${MAKEDEPEND}"
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   leval $ROOT_DIR/src/$OPENSSL/config $openssl_config_options
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval make $make_options depend
   leval make $make_options
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   mkdir -p $OPENSSL_ROOT
   leval make install_sw
 
@@ -1222,7 +1222,7 @@ build_optimized_openssl_bitcode()
 {
   local tag=$1
 
-  necho "[Optimizing${tag}] "
+  necho "[Optimizing-for${tag}] "
   local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
@@ -1395,11 +1395,11 @@ config_and_build_openssh()
     leval make clean
   fi
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   leval autoreconf -i
   leval $config_env $ROOT_DIR/src/$OPENSSH/configure $openssh_config_options
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval make $make_options
 
   # Note: this takes forever, and uses specific hard-coded ports.  Therefore,
@@ -1416,7 +1416,7 @@ config_and_build_openssh()
   #  leval lockfile-remove --lock-name $OPENSSH_LOCKFILE
   #fi
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   mkdir -p $OPENSSH_ROOT
   leval make install-nokeys
   leval extract-bc $OPENSSH_ROOT/bin/ssh
@@ -1432,7 +1432,7 @@ build_optimized_openssh_bitcode()
 {
   local tag=$1
 
-  necho "[Optimizing${tag}] "
+  necho "[Optimizing-for${tag}] "
   local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
@@ -1542,7 +1542,7 @@ config_and_build_boringssl()
   PATH_ORIGINAL="${PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   leval mkdir -p "$boringssl_build_directory"
   leval cd "$boringssl_build_directory"
   leval rm -f CMakeCache.txt
@@ -1550,19 +1550,19 @@ config_and_build_boringssl()
       $boringssl_config_options \
       $ROOT_DIR/src/$BORINGSSL
 
-  necho "[Cleaning${tag}] "
+  necho "[Cleaning-for${tag}] "
   leval ninja clean
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval ninja
 
   if [ $SKIP_TESTS -eq 0 ]; then
-    necho "[Testing${tag}] "
+    necho "[Testing-for${tag}] "
     # Do we need to use a system-wide lockfile here?
     leval ninja run_tests
   fi
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   leval mkdir -p $BORINGSSL_ROOT
   leval cp tool/bssl $BORINGSSL_ROOT/bin/
   leval extract-bc $BORINGSSL_ROOT/bin/bssl
@@ -1577,7 +1577,7 @@ build_optimized_boringssl_bitcode()
 {
   local tag=$1
 
-  necho "[Optimizing${tag}] "
+  necho "[Optimizing-for${tag}] "
   local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
@@ -1692,27 +1692,27 @@ config_and_build_libmodbus()
   PATH_ORIGINAL="${PATH}"
   export PATH="${ROOT_DIR}/local/bin:${LLVM_ROOT}/bin:${CLANG_ROOT}/bin/:${PATH}"
 
-  necho "[Configuring${tag}] "
+  necho "[Configuring-for${tag}] "
   #leval mkdir -p "$libmodbus_build_dir"
   leval cd "$libmodbus_build_dir"
   leval ./autogen.sh
   leval ./configure ${config_options}
 
-  necho "[Cleaning${tag}] "
+  necho "[Cleaning-for${tag}] "
   leval make clean
 
-  necho "[Compiling${tag}] "
+  necho "[Compiling-for${tag}] "
   leval make V=1
 
   # libmodbus "make check" is a no-op; tests must be run manually
 
   # if [ $SKIP_TESTS -eq 0 ]; then
-  #   necho "[Testing${tag}] "
+  #   necho "[Testing-for${tag}] "
   #   # Do we need to use a system-wide lockfile here?
   #   leval make check
   # fi
 
-  necho "[Installing${tag}] "
+  necho "[Installing-for${tag}] "
   leval mkdir -p "${LIBMODBUS_ROOT}/bin"
   leval make install
   leval cp tests/unit-test-server \
@@ -1732,7 +1732,7 @@ build_optimized_libmodbus_bitcode()
   local tag=$1
   local clientpath="${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-client
 
-  necho "[Optimizing${tag}] "
+  necho "[Optimizing-for${tag}] "
   local opt_passes="-O3 -disable-loop-vectorization -disable-slp-vectorization -lowerswitch -intrinsiccleaner -phicleaner"
   if [ $BUILD_DEBUG_ALL -eq 0 ]; then
     opt_passes="-strip-debug ${opt_passes}"
@@ -2033,7 +2033,7 @@ main()
         update_llvm
         ;;
       *)
-       echo "${SELECTIVE_BUILD_TARGET} not found!"; exit
+       echo "${SELECTIVE_BUILD_TARGET} selective build recipe not found!"; exit
         ;;
     esac
 
