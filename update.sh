@@ -1671,7 +1671,7 @@ config_and_build_libmodbus()
   config_options+="--enable-static "
   config_options+="CC=wllvm "
   local cflags_options=""
-  if [ $BUILD_DEBUG_ALL -eq 0 ]; then
+  if [ $BUILD_DEBUG_ALL -eq 1 ]; then
     cflags_options+="-g -O0 "
   fi
   cflags_options+="-DCLIVER "
