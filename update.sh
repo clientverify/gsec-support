@@ -1718,7 +1718,7 @@ config_and_build_libmodbus()
   leval cp tests/unit-test-server \
         "${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-server
   local clientpath="${LIBMODBUS_ROOT}"/bin/libmodbus-unit-test-client
-  leval cp tests/unit-test-server "${clientpath}"
+  leval cp tests/unit-test-client "${clientpath}"
   leval extract-bc "${clientpath}"
   leval cp "${clientpath}.bc" "${clientpath}${tag}.bc"
 
