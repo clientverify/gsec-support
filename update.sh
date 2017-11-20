@@ -1107,11 +1107,12 @@ config_and_build_openssh()
 
   local openssh_config_options=""
   openssh_config_options+="--prefix=${OPENSSH_ROOT} "
-  openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT}/lib/libssl.a "
+  openssh_config_options+=" --with-ssl-dir=${OPENSSL_ROOT} "
   #added from labnotebook
   openssh_config_options+=" --with-default-path=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-pid-dir=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-pam "
+  openssh_config_options+=" --with-privsep-path=$ROOT_DIR/var/empty "
   openssh_config_options+=" --disable-lastlog"
 
   local config_env=""
