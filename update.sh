@@ -1113,7 +1113,7 @@ config_and_build_openssh()
   openssh_config_options+=" --with-pid-dir=${OPENSSH_ROOT} "
   openssh_config_options+=" --with-pam "
   openssh_config_options+=" --with-privsep-path=$ROOT_DIR/var/empty "
-  openssh_config_options+=" --disable-lastlog"
+  openssh_config_options+=" --without-lastlog"
 
   local config_env=""
   config_env+="CC=wllvm "
@@ -1128,7 +1128,7 @@ config_and_build_openssh()
   cflags_for_config+=""
   config_env+=" CFLAGS=\"${cflags_for_config}\" "
   config_env+=" CPPFLAGS=\"-I${OPENSSL_ROOT}/include/openssl/ -I${OPENSSL_ROOT}/include/ \" "
-  config_env+=" LIBS=\" ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl \" "
+  config_env+=" LIBS=\" -lresolv ${OPENSSL_ROOT}/lib/libssl.a ${OPENSSL_ROOT}/lib/libcrypto.a -ldl \" "
 
   #llvm_compiler_options+="-DOPENSSL_PRNG_ONLY " # don't gather entropy locally
 

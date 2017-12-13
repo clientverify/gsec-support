@@ -1,2 +1,2 @@
 OPENSSL_BRANCH="playback_0_9_8zh"
-OPENSSH_BRANCH="PRIV_SEP"
+OPENSSH_BRANCH="2003_forking_privsep"
