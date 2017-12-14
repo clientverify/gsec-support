@@ -390,6 +390,33 @@ install_uclibc_git()
   necho "[Done]\n"
 }
 
+# Facebook C++ Library
+install_folly()
+{
+  necho "$FOLLY\t\t\t"
+  check_dirs $FOLLY|| { return 0; }
+  cd $ROOT_DIR"/src"
+
+  necho "[Cloning] "
+  leval git clone  $FOLLY_GIT
+  cd $ROOT_DIR/src/$FOLLY
+  leval git checkout tags/$FOLLY_TAG -b $FOLLY_TAG
+
+  necho "[Configuring] "
+  cd $ROOT_DIR/src/$FOLLY/folly
+  leval autoreconf -ivf
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' ./configure --prefix=$FOLLY_ROOT
+
+  necho "[Compiling] "
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make -j $MAKE_THREADS
+
+  necho "[Installing] "
+  mkdir -p $FOLLY_ROOT
+  leval LD_LIBRARY_PATH='$OPENSSL_ROOT/lib' CPPFLAGS='-I$OPENSSL_ROOT/include' LDFLAGS='-L$OPENSSL_ROOT/lib' make install
+
+  necho "[Done]\n"
+}
+
 install_clang_bin()
 {
   necho "$CLANG_BIN\t"
@@ -1584,6 +1611,7 @@ main()
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL
 #    manage_boringssl install
+    install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_openssh opt

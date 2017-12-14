@@ -1,2 +1,3 @@
+KLEE_BRANCH="privsep_sparklee"
 OPENSSL_BRANCH="playback_0_9_8zh"
 OPENSSH_BRANCH="2003_forking_privsep"
