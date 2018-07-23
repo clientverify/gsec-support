@@ -1989,19 +1989,24 @@ main()
     #install_ghmm
     manage_openssl install
     manage_openssh install # NOTE: SSH depends on OpenSSL
-    manage_boringssl install
+    # Boring ssl needs go and ninja and I don't care enough to
+    # match versions correctly.
+    #manage_boringssl install
     manage_libmodbus install
+    # https://github.com/facebook/folly/issues/607
+    # MUST set gcc version to 5x series.
     install_folly
     install_klee
     manage_openssl opt # 'opt' requires klee to be installed
     manage_openssh opt
-    manage_boringssl opt # 'opt' requires klee to be installed
+    #manage_boringssl opt # 'opt' requires klee to be installed
     manage_libmodbus opt
     manage_testclientserver install
     #install_zlib # zlib is still required, but we can use the system version
-    install_expat
-    install_tetrinet
-    install_xpilot_with_wllvm
+    # Not testing tetrinet or xpilot.
+    #install_expat
+    #install_tetrinet
+    #install_xpilot_with_wllvm
   
   elif [ $SELECTIVE_BUILD -eq 1 ]; then
     echo
