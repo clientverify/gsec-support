@@ -203,7 +203,7 @@ initialize_bc()
         KTEST_DIR="$DATA_DIR/network/tetrinet-klee/$DATA_TAG"
       fi
       BC_FILE="$TETRINET_ROOT/bin/${BC_MODE}.bc"
-      TRAINING_DIR="$DATA_DIR/training/${BC_MODE}/$DATA_TAG"
+      TRAINING_DIR="$DATA_DIR/klee-droppings/training/${BC_MODE}/$DATA_TAG"
       ;;
     xpilot*)
       # HACK_HOSTNAME and XPILOTHOST handle this for now...
