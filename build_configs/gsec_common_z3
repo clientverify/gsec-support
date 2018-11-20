@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# This file contains variables supplementing gsec_common for klee with Z3.
+# It should be included via "source", not run directly.
+
+KLEE_SMT_SOLVER=$Z3
