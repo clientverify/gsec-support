@@ -21,6 +21,7 @@ SPARSEHASH="sparsehash-2.0.2"
 NCURSES="ncurses-5.7"
 MINISAT="minisat"
 STP="stp"
+Z3="z3"
 TETRINET="tetrinet"
 WAFFLES="waffles-2011-12-6"
 ZLIB="zlib-1.2.5"
@@ -49,12 +50,14 @@ LIBMODBUS_BRANCH="cliver"
 UCLIBC_BRANCH="cloud9-support"
 MINISAT_BRANCH="master"
 STP_BRANCH="threadsafe"
+Z3_BRANCH="z3-4.8.1"
 GOOGLE_PERFTOOLS_TAG="gperftools-2.4"
 FOLLY_TAG="2016.07.26"
 
 # Build choices
 # Note: try to minimize ad-hoc package swapping like this; use branches instead
 USE_STP_NEW=1
+KLEE_SMT_SOLVER=$STP
 
 # Source repositories
 GIT_HOST="git@git.cs.unc.edu"
@@ -66,6 +69,7 @@ MINISAT_GIT="$GIT_HOST:$GIT_DIR/$MINISAT.git" # up = https://github.com/stp/mini
 STP_REV=940
 STP_SVN="https://stp-fast-prover.svn.sourceforge.net/svnroot/stp-fast-prover/trunk/stp"
 STP_GIT="$GIT_HOST:$GIT_DIR/$STP.git" # up = https://github.com/stp/stp.git
+Z3_GIT="https://github.com/Z3Prover/z3.git"
 KLEE_GIT="$GIT_HOST:$GIT_DIR/$KLEE.git"
 TETRINET_GIT="$GIT_HOST:$GIT_DIR/$TETRINET.git"
 XPILOT_GIT="$GIT_HOST:$GIT_DIR/$XPILOT.git"
@@ -125,6 +129,7 @@ initialize_root_directories()
   UCLIBC_ROOT="$ROOT_DIR/src/$UCLIBC"
   MINISAT_ROOT="$ROOT_DIR/local"
   STP_ROOT="$ROOT_DIR/local"
+  Z3_ROOT="$ROOT_DIR/local"
   KLEE_ROOT="$ROOT_DIR/local"
   LLVM_ROOT="$ROOT_DIR/local"
   WLLVM_ROOT="$ROOT_DIR/local"

@@ -713,6 +713,30 @@ install_stp()
   necho "[Done]\n"
 }
 
+install_z3()
+{
+  necho "$Z3\t\t\t"
+  check_dirs $Z3 || { return 0; }
+
+  necho "[Cloning] "
+  cd $ROOT_DIR"/src"
+  leval git clone $Z3_GIT
+  cd $ROOT_DIR"/src/z3"
+  leval git checkout $Z3_BRANCH
+
+  leval python scripts/mk_make.py  --prefix=$ROOT_DIR/local
+
+  necho "[Compiling] "
+  cd $ROOT_DIR"/src/z3/build"
+  leval make VERBOSE=1 -j $MAKE_THREADS
+
+  necho "[Installing] "
+  leval make install
+
+  necho "[Done]\n"
+  cd $ROOT_DIR
+}
+
 config_klee()
 {
   mkdir -p $ROOT_DIR/build/$KLEE
@@ -729,11 +753,11 @@ config_klee()
     KLEE_CONFIG_OPTIONS+="--enable-cxx11 "
   fi
 
-  # stp r940
-  KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
-  
-  # stp git upstream
-  #KLEE_CONFIG_OPTIONS+="--with-stp=$ROOT_DIR/build/$STP "
+  if [ $KLEE_SMT_SOLVER == $Z3 ]; then
+    KLEE_CONFIG_OPTIONS+="--with-z3=$Z3_ROOT "
+  else
+    KLEE_CONFIG_OPTIONS+="--with-stp=$STP_ROOT "
+  fi
 
   KLEE_CONFIG_OPTIONS+="--with-uclibc=$UCLIBC_ROOT --enable-posix-runtime "
 
@@ -783,6 +807,10 @@ make_klee()
     klee_cxxflags+="-Wno-unused-functions -Wno-unused-local-typedefs "
   else
     klee_cxxflags+="-std=c++0x "
+  fi
+  if [ $KLEE_SMT_SOLVER == $Z3 ]; then
+    local klee_libs=" -ldl -lz3 -lz -lboost_serialization -lboost_system -lboost_thread -lboost_regex -lfolly -lcap -lutil -lglog -lprofiler -ltcmalloc -lpthread -ltinfo "
+    env_options+=" LIBS=\"${klee_libs}\" "
   fi
 
   env_options+="LDFLAGS=\"${klee_ldflags}\" CXXFLAGS=\"${klee_cxxflags}\" CFLAGS=\"${klee_cflags}\" "
@@ -1942,7 +1970,9 @@ main()
   # force usage of gcc-5
   set_alternate_gcc
 
-  if [ $USE_STP_NEW -eq 1 ]; then
+  if [ $KLEE_SMT_SOLVER == $Z3 ]; then
+    lecho "Building with Z3"
+  elif [ $USE_STP_NEW -eq 1 ]; then
     lecho "Building with newer STP + minisat"
   else
     lecho "Building with older STP + cryptominisat2"
@@ -1980,7 +2010,9 @@ main()
     #install_boost
     install_uclibc_git
     install_ncurses
-    if [ $USE_STP_NEW -eq 1 ]; then
+    if [ $KLEE_SMT_SOLVER == $Z3 ]; then
+        install_z3
+    elif [ $USE_STP_NEW -eq 1 ]; then
       install_minisat
       install_stp_git
     else
