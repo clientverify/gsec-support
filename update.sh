@@ -49,7 +49,7 @@ get_file()
   if [[ $(expr match $REMOTE_PATH "http") -gt 0 ]]; then
     leval wget $REMOTE_PATH/$FILE -O $LOCAL_DEST/$FILE
   else
-    leval scp $REMOTE_PATH/$FILE $LOCAL_DEST/ 
+    leval scp -r $REMOTE_PATH/$FILE $LOCAL_DEST/
   fi
 }
 
