@@ -82,7 +82,7 @@ GHMM_SVN="svn://svn.code.sf.net/p/ghmm/code/trunk/ghmm"
 FOLLY_GIT="https://github.com/facebook/folly.git"
 
 # Tarball locations
-PACKAGE_DIR="http://cs.unc.edu/~nesfield/cliverfiles/"
+PACKAGE_DIR="/playpen/cliver_dependencies/"
 UCLIBC_PACKAGE="$UCLIBC.tgz"
 BOOST_PACKAGE="$BOOST.tar.gz"
 UDIS86_PACKAGE="$UDIS86.tar.gz"
